@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="utf-8">
+  <script>try{var t=JSON.parse(localStorage.getItem("cs-theme"));if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Χριστιανισμός & Επιστήμη — Ραδιοφωνικές εκπομπές, άρθρα και θέματα</title>
+  <meta name="description" content="Η εκπομπή «Χριστιανισμός & Επιστήμη» κάθε δεύτερη Πέμπτη στις 22:00. Ακούστε όλο το αρχείο εκπομπών, διαβάστε άρθρα και θέματα.">
+  <meta name="theme-color" content="#1C2B6E">
+  <meta property="og:title" content="Χριστιανισμός & Επιστήμη">
+  <meta property="og:description" content="«Θέλετε γνωρίσει την αλήθειαν, και η αλήθεια θέλει σας ελευθερώσει» (Ιωάν. η΄ 32)">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231C2B6E'/%3E%3Cpath d='M32 12v40M20 26h24' stroke='%23C8A54A' stroke-width='5' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='32' r='17' fill='none' stroke='%23C8A54A' stroke-width='2' opacity='.6'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400;1,7..72,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/site.css?v=114829838c">
+</head>
+<body>
+  <a class="skip" href="#archive">Μετάβαση στο αρχείο εκπομπών</a>
+
+  <header class="topbar">
+    <div class="wrap topbar__inner">
+      <a class="brand" href="index.html" aria-label="Χριστιανισμός & Επιστήμη, αρχική">
+        <svg class="brand__mark" viewBox="0 0 40 40" aria-hidden="true">
+          <circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="1.4" opacity=".55"/>
+          <ellipse cx="20" cy="20" rx="17" ry="6.5" fill="none" stroke="currentColor" stroke-width="1.1" opacity=".35" transform="rotate(-28 20 20)"/>
+          <path d="M20 8v24M13 16h14" stroke="var(--gold)" stroke-width="2.6" stroke-linecap="round"/>
+        </svg>
+        <span class="brand__name">Χριστιανισμός <span class="amp">&amp;</span> Επιστήμη</span>
+      </a>
+      <nav class="nav" id="nav" aria-label="Κύρια πλοήγηση">
+        <a href="#archive" aria-current="page">Εκπομπές</a>
+        <a href="articles.html">Άρθρα</a>
+        <a href="material.html">Θέματα</a>
+        <a href="faq.html">Ερωτήσεις</a>
+        <a href="media.html">Πολυμέσα</a>
+        <a href="links.html">Σύνδεσμοι</a>
+        <a href="contact.html">Επικοινωνία</a>
+      </nav>
+      <div class="topbar__tools">
+        <button class="iconbtn" id="searchJump" aria-label="Αναζήτηση εκπομπής">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+        </button>
+        <button class="iconbtn" id="themeToggle" aria-label="Εναλλαγή φωτεινού/σκοτεινού θέματος">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"/></svg>
+        </button>
+        <button class="iconbtn menubtn" id="menuToggle" aria-label="Μενού" aria-expanded="false" aria-controls="nav">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- HERO -->
+    <section class="hero" aria-labelledby="heroTitle">
+      <svg class="hero__sky" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <g fill="none" stroke="currentColor">
+          <circle cx="980" cy="120" r="380" stroke-width="1" opacity=".16"/>
+          <circle cx="980" cy="120" r="260" stroke-width="1" opacity=".12"/>
+          <ellipse cx="980" cy="120" rx="520" ry="170" stroke-width="1" opacity=".14" transform="rotate(-18 980 120)"/>
+        </g>
+        <g fill="currentColor" id="stars"></g>
+      </svg>
+
+      <div class="wrap hero__grid">
+        <div class="hero__text">
+          <p class="hero__kicker">Ραδιοφωνική εκπομπή από το ράδιο «Χριστιανισμός»</p>
+          <h1 id="heroTitle" class="hero__verse">«Θέλετε γνωρίσει την αλήθειαν, και η αλήθεια θέλει σας ελευθερώσει»</h1>
+          <p class="hero__ref">Ιωάννης η΄ 32</p>
+          <p class="hero__lede">Μέσα από τις νεότερες ανακαλύψεις και τα θαύματα της Δημιουργίας που η σύγχρονη επιστήμη έρχεται να εξιχνιάσει, δείχνουμε ότι η Αγία Γραφή είναι ο Λόγος του Θεού. <a href="about.html">Διαβάστε για εμάς</a></p>
+        </div>
+
+        <aside class="onair" aria-label="Επόμενη ζωντανή εκπομπή">
+          <div class="onair__head">
+            <span class="onair__dot" aria-hidden="true"></span>
+            <span id="onairLabel">Επόμενη ζωντανή εκπομπή</span>
+          </div>
+          <p class="onair__date" id="nextDate">—</p>
+          <p class="onair__meta">Κάθε δεύτερη Πέμπτη, 22:00 ώρα Ελλάδας</p>
+          <div class="countdown" id="countdown" aria-live="polite"></div>
+          <a class="btn btn--gold" id="liveLink" href="#" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12a7 7 0 0 1 14 0M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/></svg>
+            Ακούστε ζωντανά
+          </a>
+          <a class="onair__cal" id="calLink" href="#" download="christianity-science.ics">Προσθήκη στο ημερολόγιο</a>
+        </aside>
+      </div>
+
+      <div class="wrap">
+        <article class="latest" id="latest" aria-label="Τελευταία εκπομπή"></article>
+      </div>
+    </section>
+
+    <!-- CONTINUE LISTENING -->
+    <section class="wrap resume" id="resume" hidden aria-label="Συνέχεια ακρόασης"></section>
+
+    <!-- ARCHIVE -->
+    <section class="archive" id="archive" aria-labelledby="archiveTitle">
+      <div class="wrap">
+        <div class="archive__head">
+          <div>
+            <h2 id="archiveTitle" class="h2">Αρχείο εκπομπών</h2>
+            <p class="archive__sub" id="archiveStats"></p>
+          </div>
+          <div class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>
+            <label class="sr" for="q">Αναζήτηση στις εκπομπές</label>
+            <input id="q" type="search" placeholder="Αναζήτηση θέματος, π.χ. «Γένεση» ή «εξέλιξη»" autocomplete="off">
+            <kbd class="search__kbd" aria-hidden="true">/</kbd>
+          </div>
+        </div>
+
+        <div class="seasons" role="toolbar" aria-label="Φιλτράρισμα ανά κύκλο εκπομπών" id="seasonBar"></div>
+
+        <p class="results" id="results" aria-live="polite"></p>
+        <div id="list" class="list"></div>
+
+        <div class="empty" id="empty" hidden>
+          <p class="empty__title">Καμία εκπομπή δεν ταιριάζει με την αναζήτηση.</p>
+          <p>Δοκιμάστε μια πιο γενική λέξη ή <button class="linkbtn" id="clearSearch">δείτε όλες τις εκπομπές</button>.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- MORE -->
+    <section class="more" aria-label="Περισσότερα">
+      <div class="wrap more__grid">
+        <article class="column">
+          <h2 class="h3">Η μηνιαία στήλη μας στην εφημερίδα «Χριστιανισμός»</h2>
+          <p class="column__month" id="colMonth"></p>
+          <a class="column__title" id="colLink" href="#" target="_blank" rel="noopener"></a>
+          <p class="column__all"><a id="colAll" href="#" target="_blank" rel="noopener">Όλα τα άρθρα της στήλης</a></p>
+          <p class="column__extra"><a href="files/rapture_before_tribulation.pdf">Η αρπαγή πριν τη μεγάλη θλίψη (PDF)</a></p>
+        </article>
+        <div class="video">
+          <h2 class="h3">Βίντεο</h2>
+          <div class="video__frame" id="videoFrame">
+            <button class="video__poster" id="videoPoster" aria-label="Αναπαραγωγή βίντεο">
+              <span class="video__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer__grid">
+      <div>
+        <p class="footer__brand">Χριστιανισμός &amp; Επιστήμη</p>
+        <p class="footer__txt">Ραδιοφωνική εκπομπή στο ράδιο <a href="https://www.christianity.gr" target="_blank" rel="noopener">«Χριστιανισμός»</a>, κάθε δεύτερη Πέμπτη στις 22:00.</p>
+      </div>
+      <nav class="footer__nav" aria-label="Δευτερεύουσα πλοήγηση">
+        <a href="articles.html">Άρθρα</a><a href="material.html">Θέματα</a><a href="faq.html">Ερωτήσεις</a>
+        <a href="media.html">Πολυμέσα</a><a href="links.html">Σύνδεσμοι</a><a href="contact.html">Επικοινωνία</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- PERSISTENT PLAYER -->
+  <div class="player" id="player" hidden role="region" aria-label="Πρόγραμμα αναπαραγωγής">
+    <div class="player__progress">
+      <input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Θέση αναπαραγωγής">
+    </div>
+    <div class="player__inner">
+      <div class="player__info">
+        <p class="player__title" id="pTitle"></p>
+        <p class="player__meta" id="pMeta"></p>
+      </div>
+      <div class="player__controls">
+        <button class="iconbtn" id="back15" aria-label="Πίσω 15 δευτερόλεπτα">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6"/><path d="M4 4v4h4"/><text x="12" y="15.5" text-anchor="middle" font-size="7" font-family="Commissioner, sans-serif" fill="currentColor" stroke="none">15</text></svg>
+        </button>
+        <button class="playbtn" id="playPause" aria-label="Αναπαραγωγή">
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+          <svg class="i-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+          <span class="spinner" aria-hidden="true"></span>
+        </button>
+        <button class="iconbtn" id="fwd15" aria-label="Εμπρός 15 δευτερόλεπτα">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v4h-4"/><text x="12" y="15.5" text-anchor="middle" font-size="7" font-family="Commissioner, sans-serif" fill="currentColor" stroke="none">15</text></svg>
+        </button>
+      </div>
+      <div class="player__parts" id="pParts" role="group" aria-label="Ημίωρα εκπομπής"></div>
+      <div class="player__side">
+        <span class="player__time" id="pTime">0:00 / 0:00</span>
+        <button class="chip" id="speed" aria-label="Ταχύτητα αναπαραγωγής">1×</button>
+        <a class="iconbtn" id="pDownload" href="#" download aria-label="Λήψη αυτού του ημίωρου">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+        </a>
+        <button class="iconbtn" id="pClose" aria-label="Κλείσιμο προγράμματος αναπαραγωγής">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+    </div>
+    <audio id="audio" preload="metadata"></audio>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/broadcasts.js?v=6961707e06"></script>
+  <script src="js/app.js?v=3b80667e06"></script>
+</body>
+</html>

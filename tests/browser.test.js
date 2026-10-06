@@ -1,0 +1,394 @@
+/*
+ * Browser tests (headless Chrome via puppeteer-core).
+ *
+ * Needs: a local server on BASE (default http://127.0.0.1:8081) serving the project folder,
+ *        e.g.  python -m http.server 8081 --bind 127.0.0.1
+ *        puppeteer-core installed (npm i puppeteer-core) and Chrome/Edge installed.
+ * Run:   node --test tests/browser.test.js
+ */
+"use strict";
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const fs = require("fs");
+const path = require("path");
+const puppeteer = require("puppeteer-core");
+
+const ROOT = path.resolve(__dirname, "..");
+const BASE = process.env.BASE || "http://127.0.0.1:8081/";
+const CHROME = process.env.CHROME || [
+  "C:/Program Files/Google/Chrome/Application/chrome.exe",
+  "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe",
+  "/usr/bin/google-chrome", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+].find((p) => fs.existsSync(p));
+
+let browser;
+test.before(async () => {
+  browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ["--autoplay-policy=no-user-gesture-required", "--mute-audio"] });
+});
+test.after(async () => { if (browser) await browser.close(); });
+
+/** Open a fresh page (own storage), collecting console errors and failed same-origin requests. */
+async function open(url, { width = 1280, height = 900, before } = {}) {
+  const ctx = await browser.createBrowserContext();
+  const page = await ctx.newPage();
+  await page.setViewport({ width, height });
+  page.problems = [];
+  page.on("pageerror", (e) => page.problems.push("JS error: " + e.message));
+  page.on("console", (m) => { if (m.type() === "error" && !/youtube|ytimg|googleapis|gstatic|doubleclick/i.test(m.text() + (m.location().url || ""))) page.problems.push("console: " + m.text()); });
+  page.on("requestfailed", (r) => { if (r.url().startsWith(BASE) && !/\.mp3/.test(r.url())) page.problems.push("failed: " + r.url()); });
+  page.on("response", (r) => { if (r.url().startsWith(BASE) && r.status() >= 400) page.problems.push(r.status() + " " + r.url()); });
+  if (before) await before(page);
+  await page.goto(BASE + url, { waitUntil: "load" });
+  page.close2 = () => ctx.close();
+  return page;
+}
+
+function allPages() {
+  const out = [];
+  (function walk(dir) {
+    for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (dir === ROOT && ["mp3", "pictures", "tests", "tools", "node_modules"].includes(f.name)) continue;
+      const p = path.join(dir, f.name);
+      if (f.isDirectory()) walk(p);
+      else if (/\.html?$/.test(f.name)) out.push(path.relative(ROOT, p).replace(/\\/g, "/"));
+    }
+  })(ROOT);
+  return out.filter((p) => !/http-equiv="refresh"/.test(fs.readFileSync(path.join(ROOT, p), "utf8")));
+}
+
+/* =====================================================================
+   Every page: loads cleanly, no JS errors, no broken assets, fits a phone
+   ===================================================================== */
+test("every page loads without JS errors or broken local assets, and fits a 375px phone", async () => {
+  const pages = allPages(), problems = [];
+  const ctx = await browser.createBrowserContext();
+  const page = await ctx.newPage();
+  await page.setViewport({ width: 375, height: 800, isMobile: true, hasTouch: true });
+  let current = "", list = [];
+  page.on("pageerror", (e) => list.push("JS error: " + e.message));
+  page.on("response", (r) => { if (r.url().startsWith(BASE) && r.status() >= 400 && !/\.mp3/.test(r.url())) list.push(r.status() + " " + r.url().slice(BASE.length)); });
+  for (const p of pages) {
+    current = p; list = [];
+    await page.goto(BASE + p, { waitUntil: "load" });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (overflow > 1) list.push(`horizontal scroll ${overflow}px`);
+    const css = await page.evaluate(() => getComputedStyle(document.querySelector(".topbar") || document.body).position);
+    if (css !== "sticky") list.push("stylesheet not applied");
+    if (list.length) problems.push(current + ": " + list.join(" | "));
+  }
+  await ctx.close();
+  assert.deepEqual(problems.slice(0, 15), [], `${problems.length} of ${pages.length} pages have problems`);
+});
+
+/* =====================================================================
+   Home page: archive, search, filters, deep links
+   ===================================================================== */
+test("home: archive lists all 355 broadcasts in 20 seasons", async () => {
+  const page = await open("index.html");
+  assert.equal(await page.$$eval("#list .ep", (e) => e.length), 355);
+  assert.equal(await page.$$eval("#list .season", (e) => e.length), 20);
+  assert.match(await page.$eval("#archiveStats", (e) => e.textContent), /355 εκπομπές σε 20 κύκλους/);
+  assert.match(await page.$eval("#latest .latest__title", (e) => e.textContent), /αθεϊστικά/);
+  assert.deepEqual(page.problems, []);
+  await page.close2();
+});
+
+test("home: search ignores accents and highlights matches", async () => {
+  const page = await open("index.html");
+  await page.type("#q", "γενεση");
+  await page.waitForFunction(() => document.querySelectorAll("#list .ep").length < 355);
+  const titles = await page.$$eval("#list .ep__title", (e) => e.map((x) => x.textContent));
+  assert.ok(titles.length >= 3 && titles.every((t) => /γένεσ/i.test(t)), titles.join(" / "));
+  assert.ok(await page.$("#list mark"));
+  assert.match(await page.$eval("#results", (e) => e.textContent), /Βρέθηκαν \d+ εκπομπές για «γενεση»/);
+  await page.close2();
+});
+
+test("home: search with no match shows the empty state; clearing restores everything", async () => {
+  const page = await open("index.html");
+  await page.type("#q", "ζζζζζζ");
+  await page.waitForFunction(() => !document.querySelector("#empty").hidden);
+  assert.equal(await page.$$eval("#list .ep", (e) => e.length), 0);
+  await page.click("#clearSearch");
+  await page.waitForFunction(() => document.querySelectorAll("#list .ep").length === 355);
+  assert.equal(await page.$eval("#empty", (e) => e.hidden), true);
+  await page.close2();
+});
+
+test("home: season chips filter the list", async () => {
+  const page = await open("index.html");
+  await page.click('#seasonBar [data-season="1"]');
+  assert.equal(await page.$$eval("#list .season", (e) => e.length), 1);
+  assert.equal(await page.$$eval("#list .ep", (e) => e.length), 12);
+  assert.equal(await page.$eval('#seasonBar [data-season="1"]', (e) => e.getAttribute("aria-pressed")), "true");
+  await page.click('#seasonBar [data-season="all"]');
+  assert.equal(await page.$$eval("#list .ep", (e) => e.length), 355);
+  await page.close2();
+});
+
+test("home: '/' jumps to search; Escape leaves it", async () => {
+  const page = await open("index.html");
+  await page.keyboard.press("/");
+  await page.waitForFunction(() => document.activeElement && document.activeElement.id === "q", { timeout: 2000 });
+  await page.keyboard.press("Escape");
+  assert.notEqual(await page.evaluate(() => document.activeElement.id), "q");
+  await page.close2();
+});
+
+test("home: deep link #e-2013_11_14 shows and highlights that broadcast even when filtered", async () => {
+  const page = await open("index.html#e-2013_11_14");
+  assert.equal(await page.$eval("#e-2013_11_14", (e) => e.classList.contains("is-target")), true);
+  // filter to another season, then navigate to the hash
+  await page.click('#seasonBar [data-season="1"]');
+  await page.evaluate(() => { location.hash = ""; location.hash = "#e-2013_11_14"; });
+  await page.waitForSelector("#e-2013_11_14.is-target");
+  await page.close2();
+});
+
+/* =====================================================================
+   Player
+   ===================================================================== */
+const audioState = (page) => page.evaluate(() => {
+  const a = document.querySelector("#audio");
+  return { src: decodeURI(a.getAttribute("src") || ""), t: a.currentTime, paused: a.paused, rate: a.playbackRate, ready: a.readyState };
+});
+
+test("player: play button loads part 1 from the local mp3 folder and plays", async () => {
+  const page = await open("index.html");
+  await page.click('#e-2008_01_31 .ep__play');
+  await page.waitForFunction(() => document.querySelector("#audio").readyState >= 1, { timeout: 15000 });
+  const s = await audioState(page);
+  assert.equal(s.src, "mp3/broadcasts/Season_01/2008_01_31/CS_2008_01_31_(1)_Eisagogiki.mp3");
+  assert.equal(await page.$eval("#player", (e) => e.hidden), false);
+  assert.match(await page.$eval("#pTitle", (e) => e.textContent), /Εισαγωγική/);
+  assert.deepEqual(page.problems, []);
+  await page.close2();
+});
+
+test("player: speed button cycles and the choice survives a reload", async () => {
+  const page = await open("index.html");
+  await page.click('#e-2008_01_31 .ep__play');
+  await page.click("#speed");
+  assert.equal(await page.$eval("#speed", (e) => e.textContent), "1,25×");
+  assert.equal((await audioState(page)).rate, 1.25);
+  await page.reload({ waitUntil: "load" });
+  assert.equal(await page.$eval("#speed", (e) => e.textContent), "1,25×");
+  await page.close2();
+});
+
+test("player: switching parts quickly does not jump to the previous part's saved position", async () => {
+  // Part 1 has saved progress at 10:00; part 3 has none and must start at 0.
+  const page = await open("index.html", {
+    before: (p) => p.evaluateOnNewDocument(() => localStorage.setItem("cs-progress", JSON.stringify({ "2008_01_31": { t: [600], d: [1800] } }))),
+  });
+  await page.evaluate(() => {
+    document.querySelector('#e-2008_01_31 .part[data-part="0"]').click();
+    document.querySelector('#e-2008_01_31 .part[data-part="2"]').click();
+  });
+  await page.waitForFunction(() => document.querySelector("#audio").readyState >= 1, { timeout: 15000 });
+  await new Promise((r) => setTimeout(r, 300));
+  const s = await audioState(page);
+  assert.match(s.src, /_\(3\)_/);
+  assert.ok(s.t < 5, `part 3 started at ${s.t.toFixed(1)}s instead of 0`);
+  await page.close2();
+});
+
+test("player: progress is remembered and offered as 'Συνέχεια' after reload", async () => {
+  const page = await open("index.html");
+  await page.click('#e-2008_01_31 .ep__play');
+  await page.waitForFunction(() => document.querySelector("#audio").readyState >= 1, { timeout: 15000 });
+  await page.evaluate(() => { const a = document.querySelector("#audio"); a.currentTime = 125; a.dispatchEvent(new Event("timeupdate")); a.pause(); });
+  await page.reload({ waitUntil: "load" });
+  assert.equal(await page.$eval("#resume", (e) => e.hidden), false);
+  assert.match(await page.$eval("#resume", (e) => e.textContent), /1ο ημίωρο, 2:0[45]/);
+  await page.click("#resumeBtn");
+  await page.waitForFunction(() => document.querySelector("#audio").currentTime > 100, { timeout: 15000 });
+  await page.close2();
+});
+
+test("player: close button hides the player and stops audio", async () => {
+  const page = await open("index.html");
+  await page.click('#e-2008_01_31 .ep__play');
+  await page.click("#pClose");
+  assert.equal(await page.$eval("#player", (e) => e.hidden), true);
+  assert.equal((await audioState(page)).src, "");
+  await page.close2();
+});
+
+test("player: download menu lists 4 existing mp3s and closes with Escape", async () => {
+  const page = await open("index.html");
+  await page.click('#e-2008_01_31 [data-dl]');
+  const links = await page.$$eval("#e-2008_01_31 .dlmenu a", (e) => e.map((a) => a.getAttribute("href")));
+  assert.equal(links.length, 4);
+  for (const l of links) assert.ok(fs.existsSync(path.join(ROOT, decodeURI(l))), l);
+  assert.equal(await page.$eval('#e-2008_01_31 [data-dl]', (e) => e.getAttribute("aria-expanded")), "true");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.$("#e-2008_01_31 .dlmenu"), null);
+  await page.close2();
+});
+
+test("home: 'Αντιγραφή συνδέσμου' copies the broadcast link", async () => {
+  const page = await open("index.html");
+  await browser.defaultBrowserContext().overridePermissions(BASE, ["clipboard-read", "clipboard-write", "clipboard-sanitized-write"]);
+  await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = (t) => { window.__copied = t; return Promise.resolve(); }; });
+  await page.click('#e-2008_01_31 [data-share]');
+  await page.waitForFunction(() => window.__copied);
+  assert.equal(await page.evaluate(() => window.__copied), BASE + "index.html#e-2008_01_31");
+  await page.waitForFunction(() => document.querySelector("#toast").classList.contains("is-on"));
+  await page.close2();
+});
+
+/* =====================================================================
+   Next live broadcast: countdown and calendar file
+   ===================================================================== */
+async function openAt(isoNow) {
+  return open("index.html", {
+    before: (p) => p.evaluateOnNewDocument((now) => {
+      const offset = Date.parse(now) - Date.now();
+      window.__shift = (ms) => { window.__extra = (window.__extra || 0) + ms; };
+      const real = Date.now;
+      Date.now = () => real() + offset + (window.__extra || 0);
+    }, isoNow),
+  });
+}
+
+test("countdown: shows the next Thursday 22:00 broadcast", async () => {
+  const page = await openAt("2026-10-12T10:00:00Z");
+  assert.match(await page.$eval("#nextDate", (e) => e.textContent), /Πέμπτη 15 Οκτωβρίου/);
+  assert.equal(await page.$$eval("#countdown div", (e) => e.length), 4);
+  await page.close2();
+});
+
+test("countdown: after the live show ends it moves on to the next broadcast (no reload)", async () => {
+  const page = await openAt("2026-10-15T19:30:00Z");                 // during the show
+  await page.waitForFunction(() => document.querySelector(".onair").classList.contains("is-live"));
+  await page.evaluate(() => window.__shift(3 * 3600e3));            // 3 hours later
+  await new Promise((r) => setTimeout(r, 1500));
+  assert.equal(await page.$eval(".onair", (e) => e.classList.contains("is-live")), false, "still says 'live' after the show ended");
+  assert.match(await page.$eval("#nextDate", (e) => e.textContent), /29 Οκτωβρίου/);
+  await page.close2();
+});
+
+test("calendar file: valid iCalendar that repeats every 2 weeks at 22:00 Athens time all year", async () => {
+  const page = await openAt("2026-10-12T10:00:00Z");
+  const href = await page.$eval("#calLink", (e) => e.getAttribute("href"));
+  const ics = decodeURIComponent(href.replace(/^data:text\/calendar;charset=utf-8,/, ""));
+  for (const line of ["BEGIN:VCALENDAR", "VERSION:2.0", "BEGIN:VEVENT", "RRULE:FREQ=WEEKLY;INTERVAL=2", "END:VEVENT", "END:VCALENDAR"])
+    assert.ok(ics.includes(line), line);
+  assert.ok(ics.split("\r\n").every((l) => l.length > 0), "CRLF line endings");
+  const event = ics.slice(ics.indexOf("BEGIN:VEVENT"));          // skip the VTIMEZONE block
+  const start = (event.match(/^DTSTART[^\r\n]*/m) || [""])[0];
+  // A repeating event stored in UTC moves to 21:00 when the clocks go back.
+  assert.match(start, /^DTSTART;TZID=Europe\/Athens:20261015T220000$/, "DTSTART must be in Athens local time, got " + start);
+  assert.ok(/BEGIN:VTIMEZONE[\s\S]*TZID:Europe\/Athens/.test(ics), "VTIMEZONE for Europe/Athens");
+  const stamp = (ics.match(/^DTSTAMP:(\S+)/m) || [])[1];
+  assert.ok(stamp && !start.endsWith(stamp), "DTSTAMP should be the creation time, not the event time");
+  await page.close2();
+});
+
+/* =====================================================================
+   Inner pages
+   ===================================================================== */
+test("theme: toggle switches dark/light and is remembered on other pages", async () => {
+  const page = await open("faq.html", { before: (p) => p.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }]) });
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const light = await bg();
+  await page.click("#themeToggle");
+  assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark");
+  assert.notEqual(await bg(), light);
+  await page.goto(BASE + "material/2012_11_15.htm", { waitUntil: "load" });
+  assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark");
+  await page.goto(BASE + "index.html", { waitUntil: "load" });
+  assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark");
+  await page.close2();
+});
+
+test("theme: saved dark theme is applied before the page is first painted (no white flash)", async () => {
+  const page = await open("about.html", {
+    before: async (p) => {
+      await p.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }]);
+      await p.evaluateOnNewDocument(() => {
+        localStorage.setItem("cs-theme", JSON.stringify("dark"));
+        // record the theme at the moment the <body> element first appears
+        // <html> does not exist yet when this runs, so watch the whole document
+        new MutationObserver((_, o) => { if (document.body) { window.__themeAtBody = document.documentElement.getAttribute("data-theme"); o.disconnect(); } })
+          .observe(document, { childList: true, subtree: true });
+      });
+    },
+  });
+  assert.equal(await page.evaluate(() => window.__themeAtBody), "dark");
+  await page.close2();
+});
+
+test("mobile menu opens and closes", async () => {
+  const page = await open("articles.html", { width: 375, height: 800 });
+  assert.equal(await page.$eval("#nav", (e) => getComputedStyle(e).display), "none");
+  await page.click("#menuToggle");
+  assert.equal(await page.$eval("#nav", (e) => getComputedStyle(e).display), "flex");
+  assert.equal(await page.$eval("#menuToggle", (e) => e.getAttribute("aria-expanded")), "true");
+  await page.click("#menuToggle");
+  assert.equal(await page.$eval("#nav", (e) => getComputedStyle(e).display), "none");
+  await page.close2();
+});
+
+test("mobile menu closes with Escape", async () => {
+  const page = await open("articles.html", { width: 375, height: 800 });
+  await page.click("#menuToggle");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.$eval("#nav", (e) => getComputedStyle(e).display), "none");
+  await page.close2();
+});
+
+test("articles: filter is accent-insensitive and shows an empty message", async () => {
+  const page = await open("articles.html");
+  const visible = () => page.$$eval(".linklist li", (e) => e.filter((x) => !x.hidden).length);
+  assert.equal(await visible(), 51);
+  await page.type("#filter", "εξαρτησεις");
+  assert.equal(await visible(), 5);
+  await page.click("#filter", { count: 3 }); await page.keyboard.type("qqqq");
+  assert.equal(await visible(), 0);
+  assert.equal(await page.$eval("#filterEmpty", (e) => e.hidden), false);
+  await page.close2();
+});
+
+test("faq: link #q-3 opens that question; filter works", async () => {
+  const page = await open("faq.html#q-3");
+  assert.equal(await page.$eval("#q-3", (e) => e.open), true);
+  assert.equal(await page.$eval("#q-1", (e) => e.open), false);
+  await page.type("#filter", "ηλιου");
+  const shown = await page.$$eval(".faq details", (e) => e.filter((x) => !x.hidden).map((x) => x.id));
+  assert.deepEqual(shown, ["q-5", "q-7"]);
+  await page.close2();
+});
+
+test("topics: 13 tiles render as a grid", async () => {
+  const page = await open("material.html");
+  assert.equal(await page.$$eval(".topic", (e) => e.length), 13);
+  assert.equal(await page.$eval(".topics", (e) => getComputedStyle(e).display), "grid");
+  const h = await page.$$eval(".topic", (e) => e.map((x) => x.getBoundingClientRect().height));
+  assert.ok(h.every((x) => x >= 150), "tiles are tall cards");
+  await page.close2();
+});
+
+test("media: the poll audio player can load its mp3", async () => {
+  const page = await open("media.html");
+  const src = await page.$eval("audio", (a) => a.getAttribute("src"));
+  assert.ok(fs.existsSync(path.join(ROOT, src)), src);
+  await page.$eval("audio", (a) => { a.preload = "metadata"; a.load(); });
+  await page.waitForFunction(() => document.querySelector("audio").readyState >= 1, { timeout: 15000 });
+  await page.close2();
+});
+
+test("converted pages: videos use privacy-friendly YouTube embeds and pager links work", async () => {
+  const page = await open("material/2012_11_15.htm");
+  const pager = await page.$$eval(".pager a", (e) => e.map((a) => a.href));
+  assert.ok(pager.length >= 1);
+  for (const href of pager) {
+    const r = await page.evaluate((u) => fetch(u).then((x) => x.status), href);
+    assert.equal(r, 200, href);
+  }
+  const v = await open("material/AschExperiment.htm");
+  assert.match(await v.$eval(".embed iframe", (e) => e.src), /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
+  await v.close2();
+  await page.close2();
+});
