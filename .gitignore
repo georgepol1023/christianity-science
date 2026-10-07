@@ -6,3 +6,6 @@ files/
 node_modules/
 tests/node_modules/
 *.part
+
+# Working files of the translation tools
+translation/_*

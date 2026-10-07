@@ -93,14 +93,72 @@ test("home: archive lists all 355 broadcasts in 20 seasons", async () => {
   await page.close2();
 });
 
-test("home: search ignores accents and highlights matches", async () => {
+/** Type a query into the archive search and return the ranked titles and the status line. */
+async function searchFor(page, q) {
+  await page.$eval("#q", (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); }, q);
+  await new Promise((r) => setTimeout(r, 300));               // input is debounced by 120 ms
+  return page.evaluate(() => ({
+    titles: [...document.querySelectorAll("#list .ep__title")].map((x) => x.textContent),
+    msg: document.querySelector("#results").textContent,
+    empty: !document.querySelector("#empty").hidden,
+  }));
+}
+
+test("search: ignores accents, ranks the best matches first and highlights them", async () => {
   const page = await open("index.html");
-  await page.type("#q", "γενεση");
-  await page.waitForFunction(() => document.querySelectorAll("#list .ep").length < 355);
-  const titles = await page.$$eval("#list .ep__title", (e) => e.map((x) => x.textContent));
-  assert.ok(titles.length >= 3 && titles.every((t) => /γένεσ/i.test(t)), titles.join(" / "));
+  const r = await searchFor(page, "γενεση");
+  assert.ok(r.titles.length >= 4, r.titles.join(" / "));
+  assert.ok(r.titles.slice(0, 4).every((t) => /Γένεσ/.test(t)), r.titles.slice(0, 4).join(" / "));
   assert.ok(await page.$("#list mark"));
-  assert.match(await page.$eval("#results", (e) => e.textContent), /Βρέθηκαν \d+ εκπομπές για «γενεση»/);
+  assert.match(r.msg, /Βρέθηκαν \d+ εκπομπές για «γενεση», οι πιο σχετικές πρώτα/);
+  await page.close2();
+});
+
+test("search: tolerates typos", async () => {
+  const page = await open("index.html");
+  for (const [q, want] of [["γενσεη", /Γένεσ/], ["αστρονομεια", /^Αστρονομία/], ["εγκεφαλς", /Εγκέφαλος/], ["τεχνιτη νοιμοσινη", /Τεχνητή νοημοσύνη/i]]) {
+    const r = await searchFor(page, q);
+    assert.match(r.titles[0] || "", want, `«${q}» → ${r.titles[0]}`);
+  }
+  await page.close2();
+});
+
+test("search: finds other word forms and Greeklish", async () => {
+  const page = await open("index.html");
+  let r = await searchFor(page, "εξελιξεως");
+  assert.ok(r.titles.filter((t) => /Εξέλιξη/.test(t)).length >= 3, r.titles.join(" / "));
+  r = await searchFor(page, "genesi");
+  assert.match(r.titles[0], /Γένεσ/);
+  r = await searchFor(page, "exelixi");
+  assert.match(r.titles.slice(0, 5).join(" "), /Εξέλιξη/);
+  await page.close2();
+});
+
+test("search: several vague words still find broadcasts matching only some of them", async () => {
+  const page = await open("index.html");
+  const r = await searchFor(page, "ψυχολογια εφηβων");
+  assert.ok(r.titles.length >= 3);
+  assert.ok(r.titles.slice(0, 4).some((t) => /εφήβων/i.test(t)) && r.titles.some((t) => /ψυχολογία/i.test(t)), r.titles.join(" / "));
+  await page.close2();
+});
+
+test("search: with no good match shows the closest broadcasts and says so", async () => {
+  const page = await open("index.html");
+  const r = await searchFor(page, "γενσεη");
+  assert.ok(r.titles.length > 0);
+  assert.match(r.msg, /Δεν βρέθηκε ακριβής αντιστοιχία/);
+  assert.equal(await page.$eval("#list .season__title", (e) => e.textContent), "Πλησιέστερες εκπομπές");
+  await page.close2();
+});
+
+test("search: one result uses the singular, and the season filter still applies", async () => {
+  const page = await open("index.html");
+  let r = await searchFor(page, "bullying");
+  assert.equal(r.titles.length, 1);
+  assert.equal(r.msg, "Βρέθηκε 1 εκπομπή για «bullying».");
+  await page.click('#seasonBar [data-season="2"]');
+  r = await page.evaluate(() => [...document.querySelectorAll("#list .ep__season")].map((x) => x.textContent));
+  assert.ok(r.every((s) => s === "2ος κύκλος"), r.join(", "));
   await page.close2();
 });
 
@@ -390,5 +448,51 @@ test("converted pages: videos use privacy-friendly YouTube embeds and pager link
   const v = await open("material/AschExperiment.htm");
   assert.match(await v.$eval(".embed iframe", (e) => e.src), /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
   await v.close2();
+  await page.close2();
+});
+
+/* =====================================================================
+   English version
+   ===================================================================== */
+test("english home: interface, titles and dates are in English; audio plays from the shared mp3 folder", async () => {
+  const page = await open("en/index.html");
+  assert.equal(await page.$$eval("#list .ep", (e) => e.length), 355);
+  assert.match(await page.$eval("#archiveStats", (e) => e.textContent), /^355 broadcasts in 20 seasons, .*Audio in Greek\.$/);
+  assert.equal(await page.$eval("#seasonBar .chip", (e) => e.textContent), "All seasons");
+  assert.match(await page.$eval("#latest .latest__meta", (e) => e.textContent), /^\d{1,2} [A-Z][a-z]+ \d{4}, Season \d+, \d parts$/);
+  assert.match(await page.$eval("#list .ep__title", (e) => e.textContent), /^[\x00-\u024f“”‘’–—…·]+$/);   // Latin text only
+  await page.click("#list .ep .ep__play");
+  await page.waitForFunction(() => document.querySelector("#audio").readyState >= 1, { timeout: 15000 });
+  assert.match(await page.$eval("#audio", (a) => decodeURI(a.getAttribute("src"))), /^\.\.\/mp3\/broadcasts\//);
+  assert.match(await page.$eval("#pMeta", (e) => e.textContent), /, part 1 of \d$/);
+  assert.deepEqual(page.problems, []);
+  await page.close2();
+});
+
+test("english home: search works with English and with Greek words", async () => {
+  const page = await open("en/index.html");
+  let r = await searchFor(page, "genesis");
+  assert.match(r.titles[0], /Genesis/);
+  assert.match(r.msg, /^Found \d+ broadcasts for “genesis”, most relevant first\.$/);
+  r = await searchFor(page, "γενεση");
+  assert.match(r.titles[0], /Genesis/);
+  r = await searchFor(page, "evolushun");
+  assert.ok(r.titles.length > 0);
+  await page.close2();
+});
+
+test("language button switches between the Greek and English page and keeps the theme", async () => {
+  const page = await open("faq.html");
+  await page.click("#themeToggle");
+  await Promise.all([page.waitForNavigation(), page.click("#langSwitch")]);
+  assert.ok(page.url().endsWith("/en/faq.html"));
+  assert.equal(await page.evaluate(() => document.documentElement.lang), "en");
+  assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark");
+  assert.equal(await page.$eval("h1", (e) => e.textContent), "Answers to listeners' questions");
+  await Promise.all([page.waitForNavigation(), page.click("#langSwitch")]);
+  assert.ok(page.url().endsWith("/faq.html") && !page.url().includes("/en/"));
+  await page.goto(BASE + "material/2012_11_15.htm", { waitUntil: "load" });
+  await Promise.all([page.waitForNavigation(), page.click("#langSwitch")]);
+  assert.ok(page.url().endsWith("/en/material.html"));
   await page.close2();
 });

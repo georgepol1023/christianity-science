@@ -5,7 +5,7 @@ Run after changing anything in css/ or js/:   python tools/stamp.py
 import hashlib, os, re
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-ASSETS = ["css/site.css", "js/app.js", "js/page.js", "js/broadcasts.js"]
+ASSETS = ["css/site.css", "js/app.js", "js/page.js", "js/broadcasts.js", "js/broadcasts-en.js"]
 SKIP = {"mp3", "pictures", "tools", ".git"}
 
 versions = {}

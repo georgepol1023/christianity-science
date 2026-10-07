@@ -188,6 +188,25 @@ test("app.js: highlight() marks accent-insensitive matches and stays safe", () =
   assert.equal(ctx.highlight("αα", ["α"]), "<mark>αα</mark>");
 });
 
+test("app.js: editDist() counts typos, including swapped letters, and stops early", () => {
+  const ctx = {};
+  vm.runInNewContext(appFunctions(["editDist"]), ctx);
+  assert.equal(ctx.editDist("γενεση", "γενεση", 2), 0);
+  assert.equal(ctx.editDist("γενσεη", "γενεση", 2), 1);          // swapped letters count once
+  assert.equal(ctx.editDist("εγκεφαλσ", "εγκεφαλοσ", 2), 1);      // inputs are normalised (ς → σ) before comparing
+  assert.equal(ctx.editDist("αβγδ", "ωψχφ", 1), 2);              // gives up beyond max
+  assert.equal(ctx.editDist("α", "αβγδεζ", 2), 3);
+});
+
+test("app.js: greeklish() turns Latin typing into Greek", () => {
+  const ctx = {};
+  vm.runInNewContext("var GL = " + read("js/app.js").match(/var GL = (\[[\s\S]*?\]\]);/)[1] + ";\n" + appFunctions(["greeklish"]), ctx);
+  assert.equal(ctx.greeklish("genesi"), "γενεσι");
+  assert.equal(ctx.greeklish("theos"), "θεοσ");
+  assert.equal(ctx.greeklish("psychi"), "ψυχι");
+  assert.equal(ctx.greeklish("exelixi"), "εξελιξι");
+});
+
 test("app.js: fmt() and fmtSpeed() format times and speeds", () => {
   const ctx = {};
   vm.runInNewContext(appFunctions(["fmt", "fmtSpeed"]), ctx);
@@ -281,7 +300,7 @@ test("html: every content page has lang, charset, viewport, title and descriptio
   for (const p of PAGES) {
     const s = read(p);
     if (/http-equiv="refresh"/.test(s)) continue;                      // redirect stubs
-    const need = { lang: /<html lang="el"/, charset: /<meta charset="utf-8">/i, viewport: /name="viewport"/,
+    const need = { lang: /<html lang="(el|en)"/, charset: /<meta charset="utf-8">/i, viewport: /name="viewport"/,
       title: /<title>[^<]{3,}<\/title>/, description: /name="description" content="[^"]{10,}"/ };
     const miss = Object.entries(need).filter(([, re]) => !re.test(s)).map(([k]) => k);
     if (miss.length) bad.push(p + ": " + miss.join(", "));
@@ -400,7 +419,7 @@ test("tools/stamp.py: stamps nested pages correctly and is idempotent", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-"));
   fs.mkdirSync(path.join(tmp, "tools")); fs.mkdirSync(path.join(tmp, "css")); fs.mkdirSync(path.join(tmp, "js")); fs.mkdirSync(path.join(tmp, "material"));
   fs.copyFileSync(path.join(ROOT, "tools/stamp.py"), path.join(tmp, "tools/stamp.py"));
-  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/broadcasts.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
+  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/broadcasts.js", "js/broadcasts-en.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
   fs.writeFileSync(path.join(tmp, "a.html"), '<link href="css/site.css"><script src="js/page.js?v=0000000000"></script>');
   fs.writeFileSync(path.join(tmp, "material/b.htm"), '<link href="../css/site.css">');
   const py = process.env.PYTHON || "python";
@@ -413,4 +432,58 @@ test("tools/stamp.py: stamps nested pages correctly and is idempotent", () => {
   assert.match(out1, /stamped 2 pages/);
   assert.match(out2, /stamped 0 pages/);
   fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+/* =====================================================================
+   7. English version (en/)
+   ===================================================================== */
+const MAIN = ["index.html", "about.html", "articles.html", "material.html", "faq.html", "media.html", "links.html", "contact.html"];
+
+test("english: every main page has an English version and they point to each other", () => {
+  for (const p of MAIN) {
+    const el = read(p), en = read("en/" + p);
+    assert.match(en, /<html lang="en">/, p);
+    assert.ok(el.includes(`href="en/${p}" hreflang="en"`), p + ": EN button");
+    assert.ok(en.includes(`href="../${p}" hreflang="el"`), "en/" + p + ": ΕΛ button");
+    assert.ok(el.includes(`<link rel="alternate" hreflang="en" href="en/${p}">`), p + ": hreflang alternate");
+    assert.ok(en.includes(`<link rel="alternate" hreflang="el" href="../${p}">`), "en/" + p + ": hreflang alternate");
+  }
+});
+
+test("english: no untranslated Greek text on the English pages", () => {
+  const bad = [];
+  for (const p of MAIN) {
+    const text = read("en/" + p).replace(/<(script|style)\b[\s\S]*?<\/\1>/g, " ").replace(/<[^>]+>/g, " ");
+    const greek = (text.match(/[\u0370-\u03ff\u1f00-\u1fff][^\n]{0,40}/g) || []).filter((g) => !/^ΕΛ(\s|$)/.test(g));     // the language button itself (\b does not work with Greek letters)
+    if (greek.length) bad.push(`en/${p}: ${greek.slice(0, 3).join(" | ")}`);
+  }
+  assert.deepEqual(bad, []);
+});
+
+test("english: every broadcast has an English title", () => {
+  const ctx = { window: {} };
+  vm.runInNewContext(read("js/broadcasts.js") + "\n" + read("js/broadcasts-en.js"), ctx);
+  const dates = [];
+  for (const s of ctx.window.BROADCASTS) for (const e of s.episodes) dates.push(e.date);
+  const en = ctx.window.BROADCAST_TITLES_EN;
+  assert.deepEqual(dates.filter((d) => !en[d] || /[\u0370-\u03ff]/.test(en[d])), []);
+  assert.deepEqual(Object.keys(en).filter((d) => !dates.includes(d)), []);
+});
+
+test("english: Scripture quotations use the King James wording", () => {
+  const home = read("en/index.html"), about = read("en/about.html");
+  assert.ok(home.includes("And ye shall know the truth, and the truth shall make you free"));
+  assert.ok(about.includes("all scripture") || about.includes("given by inspiration of God"));
+  assert.doesNotMatch(read("en/articles.html") + about, /divine inspiration/i);
+});
+
+test("english: Greek pages without a translation offer the English section instead", () => {
+  const bad = [];
+  for (const p of PAGES.filter((x) => /^(material|categories|articles|files|mp3)\//.test(x))) {
+    const s = read(p);
+    if (/http-equiv="refresh"/.test(s)) continue;
+    const m = s.match(/<a class="iconbtn langbtn"[^>]*href="([^"]+)"/);
+    if (!m || !fs.existsSync(path.join(ROOT, path.dirname(p), m[1]))) bad.push(p);
+  }
+  assert.deepEqual(bad.slice(0, 5), [], bad.length + " pages without a working EN button");
 });

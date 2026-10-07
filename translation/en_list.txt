@@ -1,0 +1,307 @@
+0	Christianity & Science — Radio broadcasts, articles and topics
+1	Skip to the broadcast archive
+2	Christianity <span class="amp">&amp;</span> Science
+3	Broadcasts
+4	Articles
+5	Topics
+6	Questions
+7	Media
+8	Links
+9	Contact
+10	A radio broadcast on Radio Christianity
+11	“And ye shall know the truth, and the truth shall make you free”
+12	John 8:32
+13	Through the latest discoveries and the wonders of Creation that modern science is uncovering, we show that the Bible is the Word of God. <a href="about.html">Read about us</a>
+14	Next live broadcast
+15	Every second Thursday, 22:00 Greek time
+16	Add to calendar
+17	Broadcast archive
+18	Search the broadcasts
+19	No broadcast matches your search.
+20	Try a more general word or <button class="linkbtn" id="clearSearch">see all broadcasts</button>.
+21	Our monthly column in the newspaper “Christianity”
+22	<a id="colAll" href="#" target="_blank" rel="noopener">All articles in the column (in Greek)</a>
+23	<a href="files/rapture_before_tribulation.pdf">The Rapture before the Great Tribulation (PDF, in Greek)</a>
+24	Video
+25	Christianity &amp; Science
+26	A radio broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener">Radio Christianity</a>, every second Thursday at 22:00 Greek time.
+27	Listen live
+28	The “Christianity & Science” broadcast, every second Thursday at 22:00 Greek time. Listen to the whole broadcast archive and read articles and studies.
+29	Christianity & Science
+30	“And ye shall know the truth, and the truth shall make you free” (John 8:32)
+31	Christianity & Science, home
+32	Main navigation
+33	Search the broadcasts
+34	Switch between light and dark theme
+35	Menu
+36	Latest broadcast
+37	Continue listening
+38	Search for a topic, e.g. “Genesis” or “evolution”
+39	Filter by season
+40	More
+41	Play video
+42	Secondary navigation
+43	Audio player
+44	Playback position
+45	Back 15 seconds
+46	Play
+47	Forward 15 seconds
+48	Parts of the broadcast
+49	Playback speed
+50	Download this part
+51	Close the audio player
+52	Who we are — Christianity & Science
+53	Skip to content
+54	Who we are
+55	Welcome to christianity-science.gr
+56	Through the latest discoveries, and by looking closely at the wonders of Creation that modern science is uncovering, we want to make it clear that the Bible is the Word of God and the absolute Truth.<br><br>The purpose of this website is not simply to offer a body of knowledge, but through that knowledge to glorify the name of the Lord and to lift up the Cross of Christ and His redeeming work, so that everyone is moved to seek and to know their Creator.<br><br>Behind the great discoveries we should see the Creator. Man tends to worship nature, but worship and honour belong to the One who created it. Those who worship the creature more than the Creator (Romans 1:25) fall into corruption, and the truth escapes them (Romans 1:21). When a person finds the truth, their life is made right and complete.<br><br>It is true that someone who enjoys the benefits of science without knowing the Creator misses a very large part of the good they could receive. For what God wants to give us is not only what comes to us through creation: His purpose is also to heal the soul and to give it eternal life.<br><br>That God is the source of all knowledge (see also Exodus 31:3) is a great truth that is either overlooked through carelessness or deliberately set aside. The Lord gives man science so that he may know the things He has made, with the final purpose that man may know God.
+57	What this website <strong>does not</strong> set out to do:
+58	It does not try to offer people a faith built on reason and scientific knowledge.
+59	It does not aim to present scientific theories and opinions in detail.
+60	It does not try to force the Bible to fit current scientific theories.
+61	What this website <strong>does</strong> set out to do:
+62	It seeks to tear down the views that hide behind pseudo-scientific knowledge in order to damage the credibility of the Bible.<br><br><em><strong>“Casting down imaginations, and every high thing that exalteth itself against the knowledge of God, and bringing into captivity every thought to the obedience of Christ.” (2 Corinthians 10:5)<br> </strong></em>
+63	We want to shake the weak foundations of those scientific views that are published uncritically in the media every day and stand against the Word of God, by offering plenty of scientific arguments of our own.
+64	We want to encourage people to think differently about what they may be taught at school, or hear every day, about the relationship between Christianity and science.
+65	We want to confirm and strengthen Christians' faith in the inerrancy of the Word of God, and that it is given by inspiration of God (2 Timothy 3:16).
+66	We want to give Christians, and especially Christian students, arguments so that they do not hesitate to take part in such discussions.
+67	We should point out, however, that we do not present ourselves as scientific authorities who can answer every question, but as people redeemed by Jesus Christ who, by talking and working together with you, will try to grow in knowledge and in faith in the Word of God and in the redeeming work of the Cross of Golgotha.<br><br>Finally, we would like to stress that scientific knowledge helps, but we always come to God by faith (Hebrews 11:3 &amp; 6). It is there that the Word of God is proved true and that God does His work in a person's life.<br><br>After all, the Word of God does not need the support of science to do the work for which God sent it. Yet the Christian faith has a foundation that also rests on reasoned arguments. Today, when knowledge has increased (Daniel 12:4), God calls us to love Him with all our mind as well.<br><br><em>“… The Lord our God is one Lord: and thou shalt love the Lord thy God with all thy <strong>heart</strong>, and with all thy <strong>soul</strong>, and with all thy <strong>mind</strong>, and with all thy <strong>strength</strong>: this is the first commandment.” (Mark 12:29–30)</em><br><br>We hope you enjoy exploring our website. We ask for your prayers and your involvement: send us questions on subjects that concern you, and any related material you may have. You can reach us by e-mail at <strong>science@christianity.gr</strong><br> <br><br>The Lord bless you,<br>The “Christianity & Science” team
+68	A radio broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener">Radio Christianity</a>, every second Thursday at 22:00 Greek time. <a href="about.html">Who we are</a>
+69	The purpose of the “Christianity &amp; Science” website.
+70	Articles — Christianity & Science
+71	Articles by category
+72	Choose a category to see its articles. The articles themselves are in Greek.
+73	51 categories
+74	Search the categories…
+75	<a href="articles/general.htm">General</a>
+76	<a href="articles/LHCExperiment_(1).htm">CERN – the LHC accelerator</a>
+77	<a href="articles/DNA.htm">DNA – genetic information</a>
+78	<a href="articles/DNA-Biochemical_Similarity.htm">DNA – biochemical similarity</a>
+79	<a href="articles/bible_books-translations.htm">The Bible: books &amp; translations</a>
+80	<a href="articles/BibleSpreading.htm">The Bible: its spread</a>
+81	<a href="articles/Unemployment.htm">Unemployment</a>
+82	<a href="articles/Fossils-CambrianExplosion.htm">Fossils – the Cambrian explosion</a>
+83	<a href="articles/Carnival.htm">Carnival</a>
+84	<a href="articles/Abiogenesis_(1).htm">The spontaneous generation of life</a>
+85	<a href="articles/AnthropicPrinciple.htm">The anthropic principle</a>
+86	<a href="articles/Anthropoids.htm">Hominids</a>
+87	<a href="articles/bible_credibility_(1).htm">The reliability of the Bible</a>
+88	<a href="articles/creation_(1).htm">Astronomy – cosmology</a>
+89	<a href="articles/Atmosphere.htm">The atmosphere</a>
+90	<a href="articles/biblical_archaeology_(1).htm">Biblical archaeology</a>
+91	<a href="articles/Videogames.htm">Video games</a>
+92	<a href="articles/SpaceMissions.htm">Space missions</a>
+93	<a href="articles/Brain.htm">The brain</a>
+94	<a href="articles/AdolescentBrain.htm">The teenage brain</a>
+95	<a href="articles/BeginningOfHuman.htm">When human life begins</a>
+96	<a href="articles/Bullying.htm">Violence in schools</a>
+97	<a href="articles/Alcohol.htm">Addictions: alcohol</a>
+98	<a href="articles/InternetAddiction_(1).htm">Addictions: the internet</a>
+99	<a href="articles/Smoking_(1).htm">Addictions: smoking</a>
+100	<a href="articles/Drugs.htm">Addictions: drugs</a>
+101	<a href="articles/Television.htm">Addictions: television</a>
+102	<a href="articles/EvolutionGeneral.htm">Evolution in general</a>
+103	<a href="articles/EvolutionaryThought.htm">Evolutionary thought</a>
+104	<a href="articles/Implants-Neoevolution.htm">Electronic implants – neo-evolution</a>
+105	<a href="articles/Inspiration-Inerrancy.htm">The Bible: given by inspiration of God, and its inerrancy</a>
+106	<a href="articles/historic_references.htm">Historical references</a>
+107	<a href="articles/ClimateChange.htm">Climate change</a>
+108	<a href="articles/Cell.htm">The cell</a>
+109	<a href="articles/Mutations.htm">Mutations</a>
+110	<a href="articles/IrreducibleComplexity.htm">Irreducible complexity</a>
+111	<a href="articles/WaterCycle.htm">Water – the water cycle</a>
+112	<a href="articles/Fasting.htm">Fasting</a>
+113	<a href="articles/MentalDisordersEpidemic.htm">A worldwide epidemic of mental disorders</a>
+114	<a href="articles/HumanSpiritualSubstance.htm">Man's spiritual nature</a>
+115	<a href="articles/GlobalWarming.htm">Global warming</a>
+116	<a href="articles/personalities-biographies.htm">People – biographies</a>
+117	<a href="articles/prophecies.htm">Prophecies</a>
+118	<a href="articles/Resurrection.htm">The Crucifixion and the Resurrection</a>
+119	<a href="articles/comparative_studies.htm">Comparative studies</a>
+120	<a href="articles/Parents-Children.htm">Parents &amp; children</a>
+121	<a href="articles/TimeRelativity.htm">The relativity of time</a>
+122	<a href="articles/Vegistial-Homologue_Organs.htm">Vestigial and homologous organs</a>
+123	<a href="articles/VegetableKingdom.htm">The plant kingdom</a>
+124	<a href="articles/HaeckelFraud.htm">Haeckel's forgery</a>
+125	<a href="articles/Christianity-Environment.htm">Christianity &amp; the environment</a>
+126	No category found. Try another word.
+127	“Christianity &amp; Science” articles by category.
+128	Topics — Christianity & Science
+129	Topic categories
+130	Studies and material from the broadcasts, grouped by topic. The studies themselves are in Greek.
+131	<span class="topic__count">6 studies</span> <span class="topic__title">The reliability of the Bible</span>
+132	<span class="topic__count">4 studies</span> <span class="topic__title">Astronomy – cosmology</span>
+133	<span class="topic__count">4 studies</span> <span class="topic__title">Science in the news</span>
+134	<span class="topic__count">7 studies</span> <span class="topic__title">Evolution or Creation?</span>
+135	<span class="topic__count">1 study</span> <span class="topic__title">Man's spiritual nature</span>
+136	<span class="topic__count">3 studies</span> <span class="topic__title">Social issues</span>
+137	<span class="topic__count">1 study</span> <span class="topic__title">The environment – climate change</span>
+138	<span class="topic__count">2 studies</span> <span class="topic__title">The human brain</span>
+139	<span class="topic__count">1 study</span> <span class="topic__title">Parents &amp; children</span>
+140	<span class="topic__count">2 studies</span> <span class="topic__title">The end times</span>
+141	<span class="topic__count">1 study</span> <span class="topic__title">Customs – feasts – traditions</span>
+142	<span class="topic__count">1 study</span> <span class="topic__title">Other topics</span>
+143	<span class="topic__count">2 studies</span> <span class="topic__title">Fearfully and wonderfully made</span>
+144	Topics covered by “Christianity &amp; Science”.
+145	Questions — Christianity & Science
+146	Answers to listeners' questions
+147	Tap a question to see it in full, with the answer.
+148	8 questions
+149	Search the questions…
+150	Life on other planets
+151	Question
+152	Is there any kind of life on other planets? (not necessarily intelligent life)
+153	Life may seem to be something ordinary on our planet. In reality, however, a great number of cosmological parameters must lie within specific numerical limits for life to be possible. This is exactly what holds for the Earth. If even one of all these parameters had a slightly different value, there would be no life on our planet.
+154	By 2009, 322 cosmological parameters had been found that lie within very narrowly defined numerical limits so as to favour life on Earth, and new ones are constantly being discovered. The probability of all of them occurring together by chance has been calculated at 1 in 10<sup>304</sup>! If we consider that the number of all the planets in the universe is estimated to be only of the order of 10<sup>22</sup>, we realise that, normally, there should not be a single planet in the universe with life on it. The existence of life on Earth is therefore a miracle.
+155	On the basis of these data we can conclude that it is mathematically and physically impossible for any form of life to exist on another planet.
+156	You can read more in our article on the <a href="material/2008_06_05-19.htm">anthropic principle</a>.
+157	Similarity between ape and human DNA
+158	How can it be explained that human DNA is 96%–98% similar to the DNA of various <br> species of ape, if the theory of evolution is not true?
+159	First of all, the figure of 96%–98% is inaccurate. There are two main reasons for this:
+160	because the DNA of the chimpanzee, for example, is 12% larger than human DNA, so the similarity should be expressed in terms of the genes being compared each time, not in terms of the whole genome.
+161	because the percentage of genetic similarity varies from study to study, depending on the part of the genome examined, the amount of DNA used and the computational techniques applied.
+162	So the results of the various studies actually give a range of similarity between 87% and 96%.
+163	We should also know that a difference in DNA of even 1% corresponds to about 30 million “chemical letters” (nitrogenous bases). And if a change (mutation) in a single “chemical letter” can bring about the dramatic changes we see in genetic diseases, how great a difference can 30 million chemical letters make from one organism to another, so that when we compare man with the chimpanzee we are speaking of a different species! (simply with some similarities).
+164	Moreover, genetic similarity does not seem to lead to clear evolutionary conclusions, since there are species that are very similar in form but have little genetic similarity to each other, and that are genetically more similar to other species which they resemble less in form.
+165	Finally, similarity in the DNA code does not necessarily mean similarity in the information it carries.
+166	You can read more details in our <a href="material/2009_01_29.htm#Genetic_Similarity">article on this</a>.
+167	The end of the world on 21 December 2012?
+168	Is it true that the world will end on 21 December 2012?
+169	No, it is not true. It is a rumour built on scientific-sounding scenarios that do not actually stand up. You can read more in our <a href="material/2012_12_13.htm">article on this</a>.
+170	Life from outer space – panspermia
+171	Could life on Earth have come from micro-organisms that originated <br> in space, reached the Earth on meteorites and then evolved?
+172	Regarding this theory (panspermia), the finding its supporters mostly refer to is the <a href="files/Katagomaste_apo_to_Diastima_in.gr.pdf">Murchison meteorite</a>, which fell in Australia in 1969 and was found to contain certain amino acids (the building blocks of proteins) and certain nucleobases (the building blocks of DNA and RNA), which even contain the rare isotope carbon-13, thought to be of non-terrestrial origin.
+173	The theory of panspermia, however, does not solve the problem of <a href="material/2008_10_23.htm">abiogenesis</a>; it simply moves it to another environment. This counts rather against the theory: if it is impossible to explain the spontaneous appearance of life on a planet as <a href="material/2008_06_05-19.htm">suitable</a> as the Earth, how much harder would it be for this to have happened in the hostile space environment of another planet? And of course, the reason this alternative is being looked for is that it is becoming ever clearer that there has not been enough time on Earth for abiogenesis, and then evolution, to take place.
+174	So if life really did appear on some other planet, since there are no known planets with suitable conditions, that planet would have to be very far away. Some estimate that the nearest such planet is somewhere in the Andromeda galaxy, 44 light years away. Studies have shown that for pieces of rock from our neighbour Mars to reach the Earth, they often have to wander through space for even millions of years. How much longer, then, would they need to reach the Earth from so distant a planet! But let us suppose that there is a suitable planet around the nearest star (Proxima Centauri, 4.2 light years away), and that a piece breaks away from it at an escape velocity like that of the Earth (11 km/s). Then, if it is not deflected and does not collide with anything else, it needs 115,000 years to reach the Earth. If it starts from the Andromeda galaxy, it has to travel for more than 1 million years!
+175	This means that the organic molecules or micro-organisms travelling on the meteorite would have remained exposed to the conditions of space (no air, extreme temperatures, high doses of radiation) for a very long time, and so it would be impossible for them to survive.
+176	In addition, when a celestial body enters the Earth's atmosphere, high temperatures develop (1600 <sup>o</sup>C) that destroy meteorites either completely or for the most part. And that is without speaking of the conditions under which a piece of rock breaks away from a planet to become a meteorite, which could happen, for example, in a very violent collision. Could micro-organisms survive such an ejection and such enormous acceleration? And even if they survived all these conditions and reached the Earth, what guarantees that this “seeding” would succeed, and that the micro-organisms could adapt, survive further and evolve?
+177	In any case, even if spores or bacteria are one day found on other planets, for example on Mars, this alone proves nothing. For if we accept that living matter can be carried from Mars to the Earth, the reverse may just as well have happened, from pieces of the Earth's surface that broke away and reached Mars, or even more so from spacecraft from Earth that land on the surface of Mars or the Moon.
+178	You can read more about the problems panspermia faces as a theory in the article <a href="http://creation.com/did-life-come-from-outer-space" target="_blank" rel="noopener">Did life come from outer space?</a> on the <a href="http://creation.com/" target="_blank" rel="noopener">creation.com</a> website.
+179	The sun standing still for Joshua
+180	Can science explain the event recorded in the book of <br> Joshua, that the sun stood still for a whole day?
+181	This event is recorded in the book of Joshua, chapter 10, verses 12–14, and describes how God stopped the sun and the moon for a full day so that the people of Israel could finish the battle against the Amorites. It was therefore a day that lasted 48 hours in all.
+182	From a scientific point of view, such an event cannot happen. Moreover, any slowing of the Earth's rotation would cause catastrophic floods and weather on a vast scale, as the oceans and the atmosphere would keep moving at their original speed. It was therefore a miracle that God performed, similar to the moving back of the shadow on the sundial recorded in 2 Kings 20:8–11.
+183	For the historicity of this event, as for the Flood, there is evidence in the accounts of ancient peoples of a longer day or night, depending on where each people lived (in the eastern or the western hemisphere). For example:
+184	There is an ancient Greek myth about Phaethon, son of the god Apollo, who secretly took from his father the chariot with the winged horses with which Apollo guided the sun on its daily course across the sky. Not knowing how to drive the chariot well, young Phaethon caused chaos and a day longer than usual.
+185	The demigod hero Maui of Māori mythology in New Zealand delayed the sunrise, so that the night lasted longer than usual.
+186	The chronicles of the Culhuacan empire (in the region of Mexico) record a night that was slow to end.
+187	You can read more in the article <a href="http://creation.com/joshuas-long-day" target="_blank" rel="noopener">Joshua’s long day</a> on the <a href="http://creation.com/" target="_blank" rel="noopener">creation.com</a> website.
+188	The Bible and science disagree on the age of the Earth
+189	According to various estimates based on the Bible, Creation took place 6 to 10 thousand years ago, while according to scientific data the Earth is about 4.5 billion years old and the universe 13.7 billion years old. What explains this contradiction?
+190	The estimates that, on the basis of the Bible, give Creation an age of 6 to 10 thousand years usually take the 6 days in the first chapter of Genesis as 6 periods of twenty-four hours. But a careful study of that passage, and of other parts of the Bible, gives several reasons why these 6 days could not have been twenty-four-hour days. You can find more details in <a href="material/2008_05_22.htm">our article on this</a>.
+191	So by the word “day” a longer period is meant, which we cannot define precisely. We could therefore consider that the total length of the 6 days of Creation corresponds to the ages that science estimates today for the Earth and the universe, and so there is no contradiction.
+192	Of course, we should always keep some reservation about these ages, since scientists themselves say that they are only estimates (based on certain observations and methods of measurement) and not fully proven facts.
+193	The darkness at the Crucifixion: was it an eclipse of the sun?
+194	Could the three hours of darkness during the Lord's crucifixion have been caused by an eclipse of the sun?
+195	No, the darkness during the Lord's crucifixion cannot have been caused by an eclipse of the sun. It was a supernatural event, which we describe in more detail in an <a href="files/CrucifixionDarkness.pdf">article on this</a>.
+196	Proving God's existence through science
+197	Question – comment
+198	Trying to turn someone to Christianity, and more generally <br> trying to prove that God exists, through logical arguments, makes no sense.
+199	The aim of the “Christianity &amp; Science” broadcast and of this website is not to try to prove the existence of God, but to point out that even for a completely rational thinker, the path of logical argument can make them seriously question whether the view that there is no God holds up logically.
+200	Matters of faith and the miraculous works of God cannot be examined by a process of proof. What can be put to a scientific test, and pass it, is their historicity: that what the Bible records are events that really took place in human history.
+201	Proof of God's existence is a personal matter for each person, and comes not as the result of a process of reasoning but as the result of personal experience.
+202	You can read more about the purpose of this website in <a href="about.html">our article on this</a>.
+203	No question found. Try another word.
+204	Answers to questions from listeners of the “Christianity &amp; Science” broadcast.
+205	Media — Christianity & Science
+206	Interviews, videos &amp; books
+207	Interviews – talks
+208	Surveys
+209	Books
+210	<a href="material/Chalkias_interview.htm">“The beginnings of archaeology”</a>
+211	Christos Chalkias
+212	<a href="material/Simopoulos_interview.htm">“Astronomy – cosmology”</a>
+213	Dionysis Simopoulos
+214	<a href="mp3/interviews/general/Lanitis_interview.htm">“The relationship between the Bible and science”</a>
+215	Christos Lanitis
+216	<a href="material/Pitsounis.htm">“On mental disorders”</a>
+217	Nikos Pitsounis
+218	<a href="material/Ad.Giorgos.htm">“A testimony of healing from depression”</a>
+219	Brother Giorgos
+220	<a href="material/MKalokairinos-Ergasia.htm">“Trials at work”</a>
+221	Manolis Kalokairinos
+222	<a href="material/JoshMcDowell_GR_2008.htm">“Parents and teenagers”</a>
+223	<a href="material/Mihalis_Peristerakis.htm">“Raising children as Christians”</a>
+224	Michalis Peristerakis
+225	The crew of Apollo 8 reading Genesis 1:1–10 on 24 December 1968
+226	<a href="material/PetrosZ-Thleskopia.htm">“Observational astronomy &amp; faith in God”</a>
+227	Petros Z., a Christian amateur astronomer
+228	<a href="mp3/polls/resurrection/easter_2008.mp3">“Is the Resurrection of Christ a historical event?”</a>
+229	Athens – Easter 2008 [mp3, in Greek]
+230	<a href="mp3/polls/christians-scientists/ChristiansScientists.htm">“How can a scientist also be a Christian?”</a>
+231	The views of born-again Christians working in various fields of science
+232	<a href="mp3/polls/anxiety/Anxiety.htm">“Dealing with anxiety”</a>
+233	The experiences and views of born-again Christians
+234	<a href="http://www2.warwick.ac.uk/knowledge/engineering/kevinwarwick/" target="_blank" rel="noopener">A talk</a> by the British cybernetics scientist Kevin Warwick
+235	<a href="files/Harvey_Fineberg-Are_we_ready_for_neo-evolution.pdf">A talk</a> by Harvey Fineberg, president of the US Institute of Medicine
+236	A short video presentation of the ALMA radio telescope
+237	A short review of the history of the telescope
+238	A video from NASA's JPL
+239	NASA's video refuting the end of the world
+240	<a href="material/MysteriousWorkingsOfAdolescentBrain.htm">The mysterious workings of the adolescent brain</a>
+241	From the Institute of Cognitive Neuroscience, London
+242	<a href="material/ClimateChanges.htm">Climate change – a Greek student documentary</a>
+243	A degree project from the University of the Aegean
+244	<a href="material/FromConceptionToBirth.htm">From conception to birth</a>
+245	The development of the embryo in the womb, visualised
+246	<a href="material/AschExperiment.htm">The Asch experiment</a>
+247	A psychology experiment on conformity with the majority
+248	<a href="material/StanfordExperiment.htm">The Stanford experiment</a>
+249	A psychology experiment on adapting to roles
+250	<a href="material/MilgramExperiment.htm">The Milgram experiment</a>
+251	A psychology experiment on obedience to authority
+252	A documentary by <a href="http://www.illustramedia.com/tppinfo.htm" target="_blank" rel="noopener">Illustra Media</a>
+253	A documentary by <a href="http://www.illustramedia.com/cfacinfo.htm" target="_blank" rel="noopener">Illustra Media</a>
+254	<a href="material/SunEarthMoon.htm">The special phenomena between the Sun, the Earth and the Moon</a>
+255	A video by the “Christianity and Science” team
+256	The structure and organelles of a cell
+257	<a href="material/DNAFunctions.htm">The wonderful mechanisms of DNA</a>
+258	Selected videos on the structure &amp; copying of DNA and on protein synthesis
+259	A documentary by <a href="http://www.illustramedia.com/umolinfo.htm" target="_blank" rel="noopener">Illustra Media</a>
+260	A video by the <a href="http://www.discovery.org/csc/" target="_blank" rel="noopener">Discovery Institute</a>
+261	A lecture by Josh McDowell on relationships between parents and children
+262	A BBC documentary on near-death experiences
+263	<a href="material/SafeInternet.htm">Safe internet use for children &amp; young people</a>
+264	Findings of recent studies – what the Word of God says
+265	<a href="material/InternetAddiction_NET.htm">Games, addiction, children and the internet</a>
+266	Clips from the programme “Yesterday, Today, Tomorrow” on NET (Greek television)
+267	<a href="material/BibleChina.htm">The spread of the Bible in China</a>
+268	A series of videos with footage and statistics
+269	<a href="material/Zito_Apodeikseis-McDowell.htm">“I ask for proof” (in Greek)</a>
+270	Josh McDowell · O Logos Publications
+271	<a href="material/Eksoghinoi-Lanitis.htm">Extraterrestrials – an interdisciplinary approach (in Greek)</a>
+272	Christos Lanitis · Pergamos Publications, Athens 2007
+273	<a href="http://www.scribd.com/doc/14888282/ΚΡΙΤΙΚΗ-ΣΤΟΝ-ΔΑΡΒΙΝΟ" target="_blank" rel="noopener">Darwin and the theory of evolution (in Greek)</a>
+274	Nikolaos P. Vasileiadis · O Sotir Publications
+275	<a href="material/OiOuranoiDihgountai-Damianakis.htm">“The heavens declare” (in Greek)</a>
+276	Manos Damianakis · Pnevmatikes Ekdoseis, Athens
+277	<a href="material/ApoTonPithiko-Fragkos.htm">“From the ape?” (in Greek)</a>
+278	Ap. Ch. Fragkos · Adelfotis “Stavros” Publications, Athens 1988
+279	<a href="material/HowToBecomeHeroToYourChildren.htm">How to be a hero to your children (in Greek)</a>
+280	Josh McDowell · O Logos Publications
+281	<a href="material/Father-Child.htm">Father and child (in Greek)</a>
+282	<a href="files/Revelation_of_John_from_Leonidas_Feggos.pdf">The Revelation of John: a commentary by L. Feggos (in Greek)</a>
+283	Christianity Publications, 2000
+284	<a href="material/Oi_synetoi_thelousi_noisei.htm">“The wise shall understand” (in Greek)</a>
+285	A study of material on the end times
+286	Please note that our website does not represent, and is not connected with, the creators of the media files above.
+287	Interviews, surveys, videos and books from “Christianity &amp; Science”.
+288	Sections
+289	Links — Christianity & Science
+290	Useful links
+291	Apologetics websites
+292	<a href="http://www.diakrisis.gr/" target="_blank" rel="noopener"><span>Diakrisis (in Greek)<small>diakrisis.gr</small></span></a>
+293	Science
+294	<a href="http://www.eugenfound.edu.gr/" target="_blank" rel="noopener"><span>Eugenides Foundation<small>eugenfound.edu.gr</small></span></a>
+295	Encyclopaedias
+296	<a href="http://el.wikipedia.org/" target="_blank" rel="noopener"><span>Wikipedia (in Greek)<small>el.wikipedia.org</small></span></a>
+297	Christian publications
+298	<a href="http://christianity.gr/?module=newspaper&amp;mode=newspaper_page" target="_blank" rel="noopener"><span>The newspaper “Christianity” (in Greek)<small>christianity.gr</small></span></a>
+299	Please note that our website does not represent, and is not connected with, the content of other websites we link to.
+300	Useful links on apologetics, science and Christian publications.
+301	Contact — Christianity & Science
+302	Contact us
+303	A broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener" style="color:#fff">Radio Christianity</a>, every second Thursday at 22:00 Greek time.
+304	Telephone
+305	Only during the broadcast
+306	Contact the “Christianity &amp; Science” broadcast.
