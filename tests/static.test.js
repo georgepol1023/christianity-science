@@ -351,8 +351,10 @@ test("html: images have alt text attributes and external new-tab links have rel=
   assert.deepEqual(bad.slice(0, 10), []);
 });
 
-test("html: nothing links back to the old christianity-science.gr site", () => {
-  const bad = PAGES.filter((p) => /christianity-science\.gr\//i.test(read(p).replace(/PRODID[^"]*/g, "")));
+test("html: page content never links to the site by its full address (links stay relative)", () => {
+  // the canonical / language / sharing tags in <!-- seo --> are meant to hold the full address
+  const bad = PAGES.filter((p) => /(href|src)="https?:\/\/(www\.)?christianity-science\.gr\//i.test(
+    read(p).replace(/<!-- seo -->[\s\S]*?<!-- \/seo -->/g, "")));
   assert.deepEqual(bad, []);
 });
 
@@ -445,8 +447,12 @@ test("english: every main page has an English version and they point to each oth
     assert.match(en, /<html lang="en">/, p);
     assert.ok(el.includes(`href="en/${p}" hreflang="en"`), p + ": EN button");
     assert.ok(en.includes(`href="../${p}" hreflang="el"`), "en/" + p + ": ΕΛ button");
-    assert.ok(el.includes(`<link rel="alternate" hreflang="en" href="en/${p}">`), p + ": hreflang alternate");
-    assert.ok(en.includes(`<link rel="alternate" hreflang="el" href="../${p}">`), "en/" + p + ": hreflang alternate");
+    const site = (read("tools/seo.py").match(/SITE_URL = "([^"]+)"/) || [])[1];
+    const full = (x) => site + (x === "index.html" ? "" : x);
+    for (const s of [el, en]) {
+      assert.ok(s.includes(`<link rel="alternate" hreflang="el" href="${full(p)}">`), p + ": hreflang el (full address)");
+      assert.ok(s.includes(`<link rel="alternate" hreflang="en" href="${full("en/" + p)}">`), p + ": hreflang en (full address)");
+    }
   }
 });
 
@@ -486,4 +492,54 @@ test("english: Greek pages without a translation offer the English section inste
     if (!m || !fs.existsSync(path.join(ROOT, path.dirname(p), m[1]))) bad.push(p);
   }
   assert.deepEqual(bad.slice(0, 5), [], bad.length + " pages without a working EN button");
+});
+
+/* =====================================================================
+   8. Search engines, sharing, not-found page
+   ===================================================================== */
+const SITE = (read("tools/seo.py").match(/SITE_URL = "([^"]+)"/) || [])[1];
+
+test("seo: every content page has its full canonical address and sharing tags", () => {
+  const bad = [];
+  for (const p of PAGES) {
+    const s = read(p);
+    if (p === "404.html") continue;
+    if (/http-equiv="refresh"/.test(s)) { if (!/name="robots" content="noindex"/.test(s)) bad.push(p + ": redirect without noindex"); continue; }
+    const want = SITE + (p === "index.html" ? "" : p);
+    if (!s.includes(`<link rel="canonical" href="${want}">`)) bad.push(p + ": canonical");
+    if (!s.includes(`<meta property="og:image" content="${SITE}pictures/share.png">`)) bad.push(p + ": og:image");
+    if (/hreflang="[^"]*" href="(?!https?:)/.test(s)) bad.push(p + ": relative hreflang address");
+  }
+  assert.deepEqual(bad.slice(0, 10), [], bad.length + " pages");
+});
+
+test("seo: sitemap.xml lists existing pages with full addresses, robots.txt points to it", () => {
+  const xml = read("sitemap.xml");
+  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1].replace(/&amp;/g, "&"));
+  assert.ok(locs.length > 150, locs.length + " entries");
+  for (const l of locs) {
+    assert.ok(l.startsWith(SITE), l);
+    const rel = l.slice(SITE.length) || "index.html";
+    assert.ok(fs.existsSync(path.join(ROOT, rel)), "sitemap lists a missing page: " + rel);
+    assert.ok(!/http-equiv="refresh"/.test(read(rel)), "sitemap lists a redirect: " + rel);
+  }
+  assert.ok(locs.some((l) => l.endsWith("/en/faq.html")));
+  assert.ok(!locs.some((l) => l.includes("/files/")), "copies of other publishers' articles are not promoted");
+  assert.match(read("robots.txt"), new RegExp("Sitemap: " + SITE.replace(/\./g, "\.") + "sitemap\.xml"));
+});
+
+test("404 page: bilingual, not indexed, and every link starts at the site root", () => {
+  const s = read("404.html");
+  assert.match(s, /Η σελίδα δεν βρέθηκε/);
+  assert.match(s, /Page not found/);
+  assert.match(s, /name="robots" content="noindex"/);
+  const relative = attrs(s, "href").concat(attrs(s, "src")).filter((u) => !/^([a-z]+:|#|\/)/i.test(u));
+  assert.deepEqual(relative, []);
+});
+
+test("share image is a 1200×630 PNG", () => {
+  const b = fs.readFileSync(path.join(ROOT, "pictures/share.png"));
+  assert.equal(b.toString("ascii", 1, 4), "PNG");
+  assert.equal(b.readUInt32BE(16), 1200);
+  assert.equal(b.readUInt32BE(20), 630);
 });

@@ -496,3 +496,14 @@ test("language button switches between the Greek and English page and keeps the 
   assert.ok(page.url().endsWith("/en/material.html"));
   await page.close2();
 });
+
+test("a missing address shows the site's own not-found page, at any folder depth", async () => {
+  for (const u of ["no-such-page.html", "material/old/missing.htm"]) {
+    const page = await open(u);
+    assert.equal(await page.$eval("h1", (e) => e.textContent), "Η σελίδα δεν βρέθηκε");
+    assert.equal(await page.evaluate(() => getComputedStyle(document.querySelector(".topbar")).position), "sticky", "styles load from a nested path");
+    await Promise.all([page.waitForNavigation(), page.click('a[href="/en/index.html"]')]);
+    assert.ok(page.url().endsWith("/en/index.html"));
+    await page.close2();
+  }
+});

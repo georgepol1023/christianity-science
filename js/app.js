@@ -309,8 +309,8 @@
     var h = '<div class="parts" style="--n:' + ep.parts.length + '" role="group" aria-label="' + T.partsAria + '">';
     ep.parts.forEach(function (_, i) {
       var pct = partPct(ep.id, i);
-      h += '<button class="part' + (pct > 97 ? " is-done" : "") + '" data-ep="' + ep.id + '" data-part="' + i + '" style="--p:' + pct.toFixed(1) + '%" aria-label="' + T.listenPart(i + 1) + '">' +
-        '<span class="part__fill"></span>' + T.partBtn(i + 1) + "</button>";
+      h += '<button class="part' + (pct > 97 ? " is-done" : "") + (pct >= 1 ? " has-progress" : "") + '" data-ep="' + ep.id + '" data-part="' + i + '" style="--p:' + pct.toFixed(1) + '%" aria-label="' + T.listenPart(i + 1) + '">' +
+        T.partBtn(i + 1) + '<span class="part__track" aria-hidden="true"><span class="part__fill"></span></span></button>';
     });
     return h + "</div>";
   }
@@ -496,6 +496,7 @@
       b.classList.toggle("is-playing", cur && player.playing);
       b.classList.toggle("is-done", partPct(player.ep.id, i) > 97);
       b.style.setProperty("--p", partPct(player.ep.id, i).toFixed(1) + "%");
+      b.classList.toggle("has-progress", partPct(player.ep.id, i) >= 1);
     });
     $$("[data-play]").forEach(function (b) {
       var on = player.ep && b.dataset.play === player.ep.id && player.playing;
@@ -518,7 +519,7 @@
     saveProgress(false);
     store.set("cs-last", { id: player.ep.id, part: player.part, t: t });
     var pct = (t / d * 100).toFixed(1) + "%";
-    $$('.part[data-ep="' + player.ep.id + '"][data-part="' + player.part + '"]').forEach(function (b) { b.style.setProperty("--p", pct); });
+    $$('.part[data-ep="' + player.ep.id + '"][data-part="' + player.part + '"]').forEach(function (b) { b.style.setProperty("--p", pct); b.classList.toggle("has-progress", t / d >= .01); });
   });
   audio.addEventListener("ended", function () {
     var p = prog(player.ep.id); p.t[player.part] = p.d[player.part] = audio.duration || 1; saveProgress(true);

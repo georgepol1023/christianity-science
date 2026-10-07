@@ -180,7 +180,9 @@ def main():
         el_src = alternates(lang_switch(src, "en/" + page, "EN", "en", "English"), page, "en/" + page)
         if el_src != src:
             open(os.path.join(ROOT, page), "w", encoding="utf-8", newline="\n").write(el_src)
-        en = localise(translate_page(el_src, d, missing), page)
+        # the search/sharing tags are rebuilt for the English page by seo.py, so do not translate them
+        no_seo = re.sub(r"\s*<!-- seo -->.*?<!-- /seo -->", "", el_src, flags=re.S)
+        en = localise(translate_page(no_seo, d, missing), page)
         en = alternates(lang_switch(en, "../" + page, "ΕΛ", "el", "Ελληνικά"), "../" + page, page)
         if not extract:
             open(os.path.join(ROOT, "en", page), "w", encoding="utf-8", newline="\n").write(en)

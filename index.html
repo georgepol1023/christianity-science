@@ -5,8 +5,18 @@
   <script>try{var t=JSON.parse(localStorage.getItem("cs-theme"));if(t)document.documentElement.setAttribute("data-theme",t)}catch(e){}</script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Χριστιανισμός & Επιστήμη — Ραδιοφωνικές εκπομπές, άρθρα και θέματα</title>
-  <link rel="alternate" hreflang="el" href="index.html">
-  <link rel="alternate" hreflang="en" href="en/index.html">
+  <!-- seo -->
+  <link rel="canonical" href="https://www.christianity-science.gr/">
+  <link rel="alternate" hreflang="el" href="https://www.christianity-science.gr/">
+  <link rel="alternate" hreflang="en" href="https://www.christianity-science.gr/en/index.html">
+  <link rel="alternate" hreflang="x-default" href="https://www.christianity-science.gr/">
+  <meta property="og:url" content="https://www.christianity-science.gr/">
+  <meta property="og:image" content="https://www.christianity-science.gr/pictures/share.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="el_GR">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- /seo -->
   <meta name="description" content="Η εκπομπή «Χριστιανισμός & Επιστήμη» κάθε δεύτερη Πέμπτη στις 22:00. Ακούστε όλο το αρχείο εκπομπών, διαβάστε άρθρα και θέματα.">
   <meta name="theme-color" content="#1C2B6E">
   <meta property="og:title" content="Χριστιανισμός & Επιστήμη">
@@ -16,7 +26,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400;1,7..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=837025491c">
+  <link rel="stylesheet" href="css/site.css?v=52091469b0">
 </head>
 <body>
   <a class="skip" href="#archive">Μετάβαση στο αρχείο εκπομπών</a>
@@ -99,6 +109,27 @@
     <!-- CONTINUE LISTENING -->
     <section class="wrap resume" id="resume" hidden aria-label="Συνέχεια ακρόασης"></section>
 
+    <!-- MORE -->
+    <section class="more" aria-label="Περισσότερα">
+      <div class="wrap more__grid">
+        <article class="column">
+          <h2 class="h3">Η μηνιαία στήλη μας στην εφημερίδα «Χριστιανισμός»</h2>
+          <p class="column__month" id="colMonth"></p>
+          <a class="column__title" id="colLink" href="#" target="_blank" rel="noopener"></a>
+          <p class="column__all"><a id="colAll" href="#" target="_blank" rel="noopener">Όλα τα άρθρα της στήλης</a></p>
+          <p class="column__extra"><a href="files/rapture_before_tribulation.pdf">Η αρπαγή πριν τη μεγάλη θλίψη (PDF)</a></p>
+        </article>
+        <div class="video">
+          <h2 class="h3">Βίντεο</h2>
+          <div class="video__frame" id="videoFrame">
+            <button class="video__poster" id="videoPoster" aria-label="Αναπαραγωγή βίντεο">
+              <span class="video__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ARCHIVE -->
     <section class="archive" id="archive" aria-labelledby="archiveTitle">
       <div class="wrap">
@@ -127,26 +158,6 @@
       </div>
     </section>
 
-    <!-- MORE -->
-    <section class="more" aria-label="Περισσότερα">
-      <div class="wrap more__grid">
-        <article class="column">
-          <h2 class="h3">Η μηνιαία στήλη μας στην εφημερίδα «Χριστιανισμός»</h2>
-          <p class="column__month" id="colMonth"></p>
-          <a class="column__title" id="colLink" href="#" target="_blank" rel="noopener"></a>
-          <p class="column__all"><a id="colAll" href="#" target="_blank" rel="noopener">Όλα τα άρθρα της στήλης</a></p>
-          <p class="column__extra"><a href="files/rapture_before_tribulation.pdf">Η αρπαγή πριν τη μεγάλη θλίψη (PDF)</a></p>
-        </article>
-        <div class="video">
-          <h2 class="h3">Βίντεο</h2>
-          <div class="video__frame" id="videoFrame">
-            <button class="video__poster" id="videoPoster" aria-label="Αναπαραγωγή βίντεο">
-              <span class="video__play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5z"/></svg></span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer class="footer">
@@ -203,6 +214,6 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="js/broadcasts.js?v=6961707e06"></script>
-  <script src="js/app.js?v=a9f05b2df4"></script>
+  <script src="js/app.js?v=851bb1c690"></script>
 </body>
 </html>

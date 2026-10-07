@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /tests/
+Disallow: /tools/
+Disallow: /translation/
+Disallow: /material/printable/
+
+Sitemap: https://www.christianity-science.gr/sitemap.xml
