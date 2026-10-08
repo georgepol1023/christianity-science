@@ -20,8 +20,7 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 EXCLUDE = {1620, 1621, 1622, 1663, 2129, 2130, 2143, 2144, 2145, 2146, 2147, 2148, 2149, 2150, 2151, 2174}
 # Probably not part of the column (published outside the monthly rhythm); left out until confirmed.
 UNSURE = {1688, 2239, 2240, 2241}
-# Published mid-month but confirmed as column articles (add ids here after checking "review").
-CONFIRMED = set()
+CONFIRMED = set()   # (kept for compatibility; the RSS feed contains only column articles)
 
 MONTHS_GEN = ["Ιανουαρίου", "Φεβρουαρίου", "Μαρτίου", "Απριλίου", "Μαΐου", "Ιουνίου", "Ιουλίου",
               "Αυγούστου", "Σεπτεμβρίου", "Οκτωβρίου", "Νοεμβρίου", "Δεκεμβρίου"]
@@ -38,19 +37,23 @@ def get(url):
 
 # ---------------------------------------------------------------- 1. newspaper articles (online)
 def fetch_online(known, review):
-    """Walk the column's listing pages; read title and date of articles not seen before."""
+    """Every article of the column, from the newspaper's own RSS feed of the category.
+
+    The feed lists all articles (8 per page) and nothing else, unlike the web pages, whose
+    layout hides half of each page's articles and also carries menu links (radio, churches…).
+    Only titles, dates, links and preview pictures are kept.
+    """
     found, start = {}, 0
-    while True:
-        page = get(LIST_URL + ("?start=%d" % start if start else ""))
-        links = re.findall(r'href="(/ephemerida/christianismos-kai-episteme/(\d+)-[^"]+)"', page)
-        new = {int(i): "https://www.christianity.gr" + u for u, i in links}
-        if not new or set(new) <= set(found):
+    while start <= 2000:
+        feed = get(LIST_URL + "?format=feed&type=rss&start=%d" % start)
+        ids = {int(i): u for u, i in re.findall(r"<link>(https://www\.christianity\.gr/ephemerida/christianismos-kai-episteme/(\d+)-[^<]+)</link>", feed)}
+        if not ids or set(ids) <= set(found):
             break
-        found.update(new)
+        found.update(ids)
         start += 8
-        if start > 2000:
-            break
-    items = {e["id"]: e for e in known}
+    if len(found) < 50:
+        raise SystemExit("The column's RSS feed returned only %d articles; not updating (has the newspaper's site changed?)" % len(found))
+    items = {e["id"]: e for e in known if e["id"] in found or e["id"] not in EXCLUDE | UNSURE}
     for i, url in sorted(found.items()):
         if i in EXCLUDE or i in UNSURE or i in items:
             continue
@@ -60,21 +63,12 @@ def fetch_online(known, review):
         if not t or not d:
             print("  skipped (no title/date):", url)
             continue
-        title = html.unescape(t.group(1)).replace(" - Ραδιόφωνο Χριστιανισμός", "").strip()
-        title = re.sub(r"\s+", " ", title)
-        entry = {"id": i, "title": title, "date": d.group(1)[:10], "url": url, "image": preview_image(s)}
-        # column articles appear in the first days of the month; anything else (church pages, radio
-        # notices…) waits in data/column.json "review" until someone adds it to EXCLUDE or CONFIRMED
-        if int(entry["date"][8:10]) > 7 and i not in CONFIRMED:
-            if i not in {r["id"] for r in review}:
-                review.append(entry)
-                print("  needs review (published mid-month):", entry["date"], title)
-            continue
-        items[i] = entry
-        print("  new:", entry["date"], title)
+        title = re.sub(r"\s+", " ", html.unescape(t.group(1)).replace(" - Ραδιόφωνο Χριστιανισμός", "")).strip()
+        items[i] = {"id": i, "title": title, "date": d.group(1)[:10], "url": url, "image": preview_image(s)}
+        print("  new:", items[i]["date"], title)
     for i in EXCLUDE | UNSURE:
         items.pop(i, None)
-    # articles listed before images were collected: read just their preview image
+    # articles listed before pictures were collected: read just their preview picture
     for e in items.values():
         if "image" not in e:
             e["image"] = preview_image(get(e["url"]))
