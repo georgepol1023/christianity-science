@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400;1,7..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=52091469b0">
+  <link rel="stylesheet" href="css/site.css?v=5611d6a56c">
 </head>
 <body>
   <a class="skip" href="#content">Μετάβαση στο περιεχόμενο</a>
@@ -185,6 +185,34 @@
           </details>
         </div>
         <p class="empty" id="filterEmpty" hidden>Δεν βρέθηκε ερώτηση. Δοκιμάστε άλλη λέξη.</p>
+        <!-- ask -->
+        <section class="ask" aria-labelledby="askTitle">
+          <div class="ask__intro">
+            <h2 class="ask__title" id="askTitle">Κάντε τη δική σας ερώτηση</h2>
+            <p class="ask__lede">Δεν βρήκατε αυτό που ψάχνετε; Στείλτε μας την ερώτησή σας και θα σας απαντήσουμε στο e-mail σας.</p>
+          </div>
+          <form class="ask__form" id="askForm" novalidate data-to="science@christianity.gr" data-endpoint="">
+            <div class="field">
+              <label class="field__label" for="askQuestion">Η ερώτησή σας</label>
+              <textarea class="field__input" id="askQuestion" name="question" rows="6" required minlength="10" placeholder="Γράψτε εδώ την ερώτησή σας…"></textarea>
+              <p class="field__error" id="askQuestionError" hidden>Γράψτε την ερώτησή σας (τουλάχιστον 10 χαρακτήρες).</p>
+            </div>
+            <div class="field field--short">
+              <label class="field__label" for="askEmail">E-mail</label>
+              <input class="field__input" id="askEmail" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="example@example.com">
+              <p class="field__hint" id="askEmailHint">Μόνο για να σας απαντήσουμε. Δεν το δημοσιεύουμε.</p>
+              <p class="field__error" id="askEmailError" hidden>Γράψτε ένα έγκυρο e-mail.</p>
+            </div>
+            <div class="ask__actions">
+              <button class="ask__submit" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/></svg>
+                Αποστολή ερώτησης
+              </button>
+              <p class="ask__status" id="askStatus" role="status" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
+        <!-- /ask -->
       </div>
     </div>
   </main>
@@ -201,6 +229,6 @@
     </div>
   </footer>
 
-  <script src="js/page.js?v=7ac0de9920"></script>
+  <script src="js/page.js?v=e319bd60a2"></script>
 </body>
 </html>

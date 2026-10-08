@@ -1,0 +1,35 @@
+# Every Monday: add new articles of the newspaper column to the site (and the home page box).
+# Commits only when something changed; Render then redeploys the demo automatically.
+name: Update newspaper column
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"      # Mondays 06:00 UTC (09:00 Greek summer time)
+  workflow_dispatch: {}       # "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Fetch new column articles and rebuild pages
+        run: |
+          python tools/update_column.py
+          python tools/build_all.py
+      - name: Commit if anything changed
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "George"
+            git config user.email "148995294+georgepol1023@users.noreply.github.com"
+            git add -A
+            git commit -m "Update newspaper column list"
+            git push
+          else
+            echo "No new column articles."
+          fi

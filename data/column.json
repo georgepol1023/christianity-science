@@ -1,0 +1,620 @@
+{
+ "online": [
+  {
+   "id": 2437,
+   "title": "Ανάσταση ή Ψηφιακή αθανασία;",
+   "date": "2026-09-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2437-anastase-e-psephiake-athanasia",
+   "image": "https://www.christianity.gr/images/articles-newspaper/hands.jpg"
+  },
+  {
+   "id": 2432,
+   "title": "Η καταγωγή των πάντων! | Μέρος 2ο: Το αίνιγμα της πληροφορίας και ο χρόνος ως πρόκληση για την προέλευση της ζωής",
+   "date": "2026-08-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2432-e-katagoge-ton-panton-meros-2o-to-ainigma-tes-plerophorias-kai-o-chronos-os-proklese-gia-ten-proeleuse-tes-zoes",
+   "image": "https://www.christianity.gr/images/articles-newspaper/universe.jpg"
+  },
+  {
+   "id": 2428,
+   "title": "Η καταγωγή των πάντων! | Μέρος 1ο: Η αρχή του Σύμπαντος και η εκπληκτική του ρύθμιση",
+   "date": "2026-07-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2428-e-katagoge-ton-panton-meros-1o-e-arche-tou-sympantos-kai-e-ekplektike-tou-rythmise",
+   "image": "https://www.christianity.gr/images/joomlart/article/1c6c813bb9d5494160041c1c4ee2fb70.jpg"
+  },
+  {
+   "id": 2423,
+   "title": "Διαστημική αποστολή ARTEMIS II",
+   "date": "2026-06-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2423-diastemike-apostole-artemis-ii",
+   "image": "https://www.christianity.gr/images/articles-newspaper/science/universe.jpg"
+  },
+  {
+   "id": 2417,
+   "title": "Η απάτη του εύκολου πλουτισμού",
+   "date": "2026-05-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2417-e-apate-tou-eukolou-ploutismou",
+   "image": "https://www.christianity.gr/images/joomlart/article/a786836489dab4f04d53706ec376ba50.jpg"
+  },
+  {
+   "id": 2411,
+   "title": "Τα πρώτα βήματα της ζωής του παιδιού",
+   "date": "2026-04-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2411-ta-prota-bemata-tes-zoes-tou-paidiou",
+   "image": "https://www.christianity.gr/images/articles-newspaper/science/prota-vimata.jpg"
+  },
+  {
+   "id": 2407,
+   "title": "Η οξεία αντίδραση τρόμου & η αξιοπιστία της βιβλικής περιγραφής.",
+   "date": "2026-03-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2407-e-oxeia-antidrase-tromou-e-axiopistia-tes-biblikes-perigraphes",
+   "image": "https://www.christianity.gr/images/articles-newspaper/science/fear-god.jpg"
+  },
+  {
+   "id": 2400,
+   "title": "Η ταπείνωση του Ναβουχοδονόσορ: Μύθος ή ιατρική πιθανότητα;",
+   "date": "2026-02-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2400-e-tapeinose-tou-nabouchodonosor-mythos-e-iatrike-pithanoteta",
+   "image": "https://www.christianity.gr/images/articles-newspaper/science/mental-health.jpg"
+  },
+  {
+   "id": 2377,
+   "title": "Επιστήμονες με βαθιά πίστη στον Θεό (μέρος 1ο)",
+   "date": "2025-09-04",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2377-epistemones-me-bathia-piste-ston-theo-meros-1o",
+   "image": "https://www.christianity.gr/images/joomlart/article/7ced67c0d648122bcae10129de981341.jpg"
+  },
+  {
+   "id": 2372,
+   "title": "Ο θυμός και η διαχείρισή του",
+   "date": "2025-08-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2372-o-thymos-kai-e-diacheirise-tou",
+   "image": "https://www.christianity.gr/images/articles-newspaper/joy.jpeg"
+  },
+  {
+   "id": 2361,
+   "title": "Ομοιότητες της εκκλησίας με το ανθρώπινο σώμα",
+   "date": "2025-06-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2361-omoiotetes-tes-ekklesias-me-to-anthropino-soma",
+   "image": "https://www.christianity.gr/images/joomlart/article/072519f74a95ea36f571d1e83f1c23bd.jpg"
+  },
+  {
+   "id": 2354,
+   "title": "Διδάσκει η Αγία Γραφή ότι η Γη είναι επίπεδη;",
+   "date": "2025-05-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2354-didaskei-e-agia-graphe-oti-e-ge-einai-epipede",
+   "image": "https://www.christianity.gr/images/joomlart/article/1d36d23b156ead252433d4ce2c21c387.jpg"
+  },
+  {
+   "id": 2330,
+   "title": "Επιστημονικές αναφορές μέσα στην Αγία Γραφή – Μέρος 2ο",
+   "date": "2024-12-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2330-epistemonikes-anaphores-mesa-sten-agia-graphe-meros-2o",
+   "image": "https://www.christianity.gr/images/articles-newspaper/eisai-xristianos.jpeg"
+  },
+  {
+   "id": 2325,
+   "title": "Επιστημονικές αναφορές μέσα στην Αγία Γραφή – Μέρος 1ο",
+   "date": "2024-11-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2325-epistemonikes-anaphores-mesa-sten-agia-graphe-meros-1o",
+   "image": "https://www.christianity.gr/images/articles-newspaper/eisai-xristianos.jpeg"
+  },
+  {
+   "id": 2317,
+   "title": "Πώς ο άνθρωπος μιμείται τις βιολογικές διαδικασίες",
+   "date": "2024-10-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2317-pos-o-anthropos-mimeitai-tis-biologikes-diadikasies",
+   "image": "https://www.christianity.gr/images/articles-newspaper/science.jpg"
+  },
+  {
+   "id": 2309,
+   "title": "Ο ύπνος, η οκνηρία και οι καλές συνήθειες",
+   "date": "2024-08-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2309-o-ypnos-e-okneria-kai-oi-kales-synetheies",
+   "image": "https://www.christianity.gr/images/articles-newspaper/sleeping.jpeg"
+  },
+  {
+   "id": 2285,
+   "title": "Το θαύμα του ανθρώπινου εγκεφάλου!",
+   "date": "2024-03-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2285-to-thauma-tou-anthropinou-enkephalou",
+   "image": "https://www.christianity.gr/images/articles-newspaper/brain.jpeg"
+  },
+  {
+   "id": 2281,
+   "title": "Το θαύμα του ανθρώπινου οργανισμού!",
+   "date": "2024-02-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2281-to-thauma-tou-anthropinou-organismou",
+   "image": "https://www.christianity.gr/images/articles-newspaper/dna.jpg"
+  },
+  {
+   "id": 2274,
+   "title": "Κατακλυσμός (Μέρος 4ο)",
+   "date": "2024-01-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2274-kataklysmos-meros-4o",
+   "image": "https://www.christianity.gr/images/articles-newspaper/rainbow.jpeg"
+  },
+  {
+   "id": 2267,
+   "title": "Κατακλυσμός (Μέρος 3ο)",
+   "date": "2023-12-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2267-kataklysmos-meros-3o",
+   "image": "https://www.christianity.gr/images/articles-newspaper/rainbow.jpeg"
+  },
+  {
+   "id": 2242,
+   "title": "Τα οφέλη της αναβαλλόμενης ικανοποίησης (2ο μέρος)",
+   "date": "2023-07-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2242-ta-ophele-tes-anaballomenes-ikanopoieses-2o-meros",
+   "image": "https://www.christianity.gr/images/articles-newspaper/kids.jpeg"
+  },
+  {
+   "id": 2235,
+   "title": "Τα οφέλη της αναβαλλόμενης ικανοποίησης Μέρος 1ο",
+   "date": "2023-06-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2235-ta-ophele-tes-anaballomenes-ikanopoieses",
+   "image": "https://www.christianity.gr/images/articles-newspaper/kids.jpeg"
+  },
+  {
+   "id": 2231,
+   "title": "Εκκλησία και αποδοχή ομόφυλων ζευγαριών",
+   "date": "2023-05-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2231-ekklesia-kai-apodoche-omophylon-zeugarion",
+   "image": "https://www.christianity.gr/images/articles-newspaper/homosexual.jpeg"
+  },
+  {
+   "id": 2226,
+   "title": "Η δημιουργία του κόσμου (μέρος 2ο)",
+   "date": "2023-04-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2226-i-dimiourgia-tou-kosmou-meros-2o",
+   "image": "https://www.christianity.gr/images/articles-newspaper/creation.jpeg"
+  },
+  {
+   "id": 2200,
+   "title": "Διδάγματα από πρόσφατα αποβιώσαντες Αστρονόμους",
+   "date": "2022-11-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2200-didagmata-apo-prosphata-apobiosantes-astronomous",
+   "image": "https://www.christianity.gr/images/articles-newspaper/universe.jpg"
+  },
+  {
+   "id": 2197,
+   "title": "Μαθήματα μέσα από το Χρόνο!",
+   "date": "2022-10-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2197-mathemata-mesa-apo-to-chrono",
+   "image": "https://www.christianity.gr/images/articles-newspaper/time.jpg"
+  },
+  {
+   "id": 2193,
+   "title": "Η αγάπη κάνει την οικογένεια; Μέρος 2ο",
+   "date": "2022-09-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2193-e-agape-kanei-ten-oikogeneia-meros-2o",
+   "image": "https://www.christianity.gr/images/articles-newspaper/newborn.jpg"
+  },
+  {
+   "id": 2188,
+   "title": "Η αγάπη κάνει την οικογένεια; (1ο μέρος)",
+   "date": "2022-08-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2188-e-agape-kanei-ten-oikogeneia-1o-meros",
+   "image": "https://www.christianity.gr/images/articles-newspaper/family.jpg"
+  },
+  {
+   "id": 2106,
+   "title": "Από τη Σύλληψη στον Τοκετό",
+   "date": "2022-03-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2106-apo-ti-syllipsi-ston-toketo",
+   "image": "https://www.christianity.gr/images/joomlart/article/700226d13b56ab5f2f0330a17a7ee485.jpg"
+  },
+  {
+   "id": 2100,
+   "title": "Ποσοχή στα Fake News",
+   "date": "2022-02-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2100-posoxi-sta-fake-news",
+   "image": "https://www.christianity.gr/images/joomlart/article/21b9ad30781a3312d12f4eb3aa07aa4c.jpg"
+  },
+  {
+   "id": 2098,
+   "title": "Βιολογία, Μονογαμία και το ανθρώπινο είδος",
+   "date": "2022-01-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2098-viologia-monogamia-kai-to-anthropino-eidos",
+   "image": "https://www.christianity.gr/images/joomlart/article/8240a1907e29481b04619a0df33df9ab.jpg"
+  },
+  {
+   "id": 2090,
+   "title": "Ανθρωπότητα σε αναζήτηση χαράς",
+   "date": "2021-12-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2090-anthropotita-se-anazitisi-xaras",
+   "image": "https://www.christianity.gr/images/joomlart/article/37e331b7a1b39f090b1249a069a513d3.jpg"
+  },
+  {
+   "id": 2067,
+   "title": "Το πείραμα της κοινωνικής συμμόρφωσης και η θέση του Χριστιανού! (μέρος 1ο)",
+   "date": "2021-07-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2067-to-peirama-tis-koinonikis-symmorfosis-kai-i-thesi-tou-xristianoy-meros-1o",
+   "image": "https://www.christianity.gr/images/joomlart/article/2039f9c06c46d5e4b5d871c0089d076b.jpg"
+  },
+  {
+   "id": 2058,
+   "title": "Τι είναι ζωή;",
+   "date": "2021-06-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2058-ti-einai-zoi",
+   "image": "https://www.christianity.gr/images/joomlart/article/dd45d054dfce696b68bc0b43a11d1bfe.jpg"
+  },
+  {
+   "id": 2056,
+   "title": "Έχει ο αθεϊσμός απαντήσεις; (Μέρος 7ο) Η μετά θάνατον ζωή",
+   "date": "2021-05-03",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2056-exei-o-atheismos-apantiseis-meros-7o-i-meta-thanaton-zoi",
+   "image": "https://www.christianity.gr/images/joomlart/article/937f929d420ab20a5c9d96a1ab9e2021.jpg"
+  },
+  {
+   "id": 2051,
+   "title": "Έχει ο αθεϊσμός απαντήσεις; (Μέρος 6ο), Το πρόβλημα της Ηθικής",
+   "date": "2021-04-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2051-exei-o-atheismos-apantiseis-meros-6o-to-provlima-tis-ithikis",
+   "image": "https://www.christianity.gr/images/joomlart/article/c4416d79eef6dd018bcee3cd8b8ba561.jpg"
+  },
+  {
+   "id": 2019,
+   "title": "Έχει ο αθεϊσμός απαντήσεις;",
+   "date": "2020-10-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2019-exei-o-atheismos-apantiseis",
+   "image": "https://www.christianity.gr/images/joomlart/article/2ee6f501a6569cf213987ad1c50a88aa.jpg"
+  },
+  {
+   "id": 2011,
+   "title": "Ο οικογενειακός χρόνος - στον αιώνα της τεχνολογίας (Μέρος 3ο)",
+   "date": "2020-09-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2011-o-oikogeneiakos-xronos-ston-aiona-tis-texnologias-meros-3o",
+   "image": "https://www.christianity.gr/images/joomlart/article/f68bc1606a499c66a1eabd66e99d6817.jpg"
+  },
+  {
+   "id": 2009,
+   "title": "Ο οικογενειακός χρόνος - στον αιώνα της τεχνολογίας (Μέρος 2ο)",
+   "date": "2020-08-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2009-o-oikogeneiakos-xronos-ston-aiona-tis-texnologias-meros-2o",
+   "image": "https://www.christianity.gr/images/joomlart/article/4653e069ed7369840191e8bf38ab8dc9.jpg"
+  },
+  {
+   "id": 2000,
+   "title": "Ο οικογενειακός χρόνος - στον αιώνα της τεχνολογίας (Μέρος 1ο)",
+   "date": "2020-06-30",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2000-o-oikogeneiakos-xronos-ston-aiona-tis-texnologias",
+   "image": "https://www.christianity.gr/images/joomlart/article/00c636e00bee0ba03b364841363f738b.jpg"
+  },
+  {
+   "id": 1937,
+   "title": "Η γνώσις θέλει πληθυνθεί (Μέρος 2ο)",
+   "date": "2020-01-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1937-i-gnosis-thelei-plithynthei-meros-2o",
+   "image": "https://www.christianity.gr/images/joomlart/article/58b053c805beeea9e04dde1724076741.jpg"
+  },
+  {
+   "id": 1931,
+   "title": "Η γνώσις θέλει πληθυνθεί (Μερος 1ο)",
+   "date": "2019-12-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1931-i-gnosi-thelei-plithynthei-meros-1o",
+   "image": "https://www.christianity.gr/images/joomlart/article/7ced67c0d648122bcae10129de981341.jpg"
+  },
+  {
+   "id": 1925,
+   "title": "Εξ Ενός Αίματος…",
+   "date": "2019-11-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1925-eks-enos-aimatos",
+   "image": "https://www.christianity.gr/images/joomlart/article/59b514757c03f4e14c006ca63de02928.jpg"
+  },
+  {
+   "id": 1918,
+   "title": "Ο Πλανήτης μας νοσεί βαρύτατα Ποιος θα μας σώσει;",
+   "date": "2019-10-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1918-o-planitis-mas-nosei-varytata-poios-tha-mas-sosei",
+   "image": "https://www.christianity.gr/images/joomlart/article/c1a11e28afb03c9d81c096faa0a5ce8e.jpg"
+  },
+  {
+   "id": 1886,
+   "title": "Ο άδειος τάφος φωνάζει, αιώνες τώρα... Χριστός Ανέστη!",
+   "date": "2019-05-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1886-o-adeios-tafos-fonazei-aiones-tora-xristos-anesti",
+   "image": "https://www.christianity.gr/images/joomlart/article/3bc7aa7f337d2b6d218588b9fca9e94f.jpg"
+  },
+  {
+   "id": 1879,
+   "title": "Η βιβλιογραφική αξιοπιστία της Καινής Διαθήκης (Μέρος 4ο)",
+   "date": "2019-04-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1879-i-vivliografiki-aksiopistia-tis-kainis-diathikis-meros-4o",
+   "image": "https://www.christianity.gr/images/joomlart/article/7d0d25bfcaa1421c2931a4f0387462aa.jpg"
+  },
+  {
+   "id": 1871,
+   "title": "Η βιβλιογραφική αξιοπιστία της Καινής Διαθήκης (μέρος 3ο)",
+   "date": "2019-03-03",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1871-i-vivliografiki-aksiopistia-tis-kainis-diathikis-meros-3o",
+   "image": "https://www.christianity.gr/images/joomlart/article/873514e130e46a244b5aae0b135db01f.jpg"
+  },
+  {
+   "id": 1865,
+   "title": "Η αρχαιολογική και ιστορική αξιοπιστία της Καινής Διαθήκης (μέρος 2ο)",
+   "date": "2019-02-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1865-i-arxaiologiki-kai-istoriki-aksiopistia-tis-kainis-diathikis-meros-2o",
+   "image": "https://www.christianity.gr/images/joomlart/article/c9e8d9069e929f4898939a62f1adcffd.jpg"
+  },
+  {
+   "id": 1828,
+   "title": "Οι Φυσικές Επιστήμες στην Αναζήτηση της Αλήθειας (μέρος 1ο )",
+   "date": "2018-09-03",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1828-oi-fysikes-epistimes-stin-anazitisi-tis-alitheias-meros-1o",
+   "image": "https://www.christianity.gr/images/joomlart/article/e303e2027514497aaa0603a129a3eb42.jpg"
+  },
+  {
+   "id": 1817,
+   "title": "Μακρόκοσμος και Μικρόκοσμος Ο Ίδιος Κατασκευαστής",
+   "date": "2018-07-31",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1817-makrokosmos-kai-mikrokosmos-o-idios-kataskevastis",
+   "image": "https://www.christianity.gr/images/joomlart/article/78a38d90a5f5af5857b8e93fa4dd5a84.jpg"
+  },
+  {
+   "id": 1809,
+   "title": "Οι Ιστορικές Αποδείξεις της Ανάστασης του Ιησού Χριστού (Μέρος 3ο )",
+   "date": "2018-07-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1809-oi-istorikes-apodeikseis-tis-anastasis-tou-iisoy-xristoy-meros-3o",
+   "image": "https://www.christianity.gr/images/joomlart/article/78d607068cd064420401737e12f83bae.jpg"
+  },
+  {
+   "id": 1802,
+   "title": "(2o) Οι Ιστορικές Αποδείξεις της Ανάστασης του Ιησού Χριστού",
+   "date": "2018-06-02",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1802-oi-istorikes-apodeikseis-tis-anastasis-tou-iisoy-xristoy-meros-2o",
+   "image": "https://www.christianity.gr/images/joomlart/article/7be335477876db854960134c6e137164.jpg"
+  },
+  {
+   "id": 1770,
+   "title": "Αφιέρωμα στον αδελφό Λεωνίδα Φέγγο",
+   "date": "2018-01-01",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1770-xristianismos-kai-epistimi-feggos",
+   "image": "https://www.christianity.gr/images/joomlart/article/47b9371a5ec847a6416d19e09506ac86.jpg"
+  },
+  {
+   "id": 1758,
+   "title": "Τα έντομα φωνάζουν: Άνθρωποι οδηγείτε το πλανήτη (και) σε οικολογική καταστροφή",
+   "date": "2017-12-04",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1758-ta-entoma-fonazoun",
+   "image": "https://www.christianity.gr/images/joomlart/article/6cff81ed2fd5fd02c6bfe5986e55231b.jpg"
+  },
+  {
+   "id": 1752,
+   "title": "Ο Άνθρωπος το αντικείμενο της Αγάπης του Θεού",
+   "date": "2017-11-02",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1752-o-anthrwpos-antikeimeno-ths-agaphs-tou-theou",
+   "image": "https://www.christianity.gr/images/joomlart/article/0d1fd34f22c9730e91eb5170fbddc114.jpg"
+  },
+  {
+   "id": 1747,
+   "title": "Το κλίμα αλλάζει",
+   "date": "2017-09-27",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1747-to-klima-allazei",
+   "image": "https://www.christianity.gr/images/joomlart/article/ce7646a74c54cecf1c05442c71f02147.jpg"
+  },
+  {
+   "id": 1709,
+   "title": "Εξέλιξη ή δημιουργία; (Μέρος 3ο)",
+   "date": "2017-05-11",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1709-exeliksi-dhmiourgia-meros-3",
+   "image": "https://www.christianity.gr/images/joomlart/article/8da476f72f06a276b1f930cdb28c21f1.jpg"
+  },
+  {
+   "id": 1708,
+   "title": "Η Επίδραση της Μουσικής στον άνθρωπο και ο ρόλος της στη Χριστιανική ζωή (Μέρος 2ο)",
+   "date": "2017-05-11",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1708-h-epidrasi-ths-mousikhs-ston-anthrwpo",
+   "image": "https://www.christianity.gr/images/joomlart/article/f60a47f7792630a3a86bc14c0657e89c.jpg"
+  },
+  {
+   "id": 1687,
+   "title": "Η δημιουργία δείχνει τη Δύναμη του Δημιουργού",
+   "date": "2017-05-09",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1687-h-dhmiourgia-deixnei-thn-dynamh-tou-dhmiourgou",
+   "image": "https://www.christianity.gr/images/joomlart/article/938a195f8810cb9b31c6503221891897.jpg"
+  },
+  {
+   "id": 1686,
+   "title": "Κίνδυνοι για τα παιδιά από τη χρήση ηλεκτρονικών συσκευών",
+   "date": "2017-05-09",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1686-kindinoi-gia-ta-paidia-apo-th-xrhsh-hlektronikwn-shskevwn",
+   "image": "https://www.christianity.gr/images/joomlart/article/d6e7bc44feb1613d041d5385e5745b10.jpg"
+  },
+  {
+   "id": 1681,
+   "title": "Η Θεωρία της Εξέλιξης και οι (Ιλιγγιωδώς) αυξανόμενες Οικονομικές (και Κοινωνικές) Ανισότητες",
+   "date": "2017-02-09",
+   "url": "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/1681-h-theoria-ths-ekselixis",
+   "image": "https://www.christianity.gr/images/joomlart/article/c1011ef61ed9937904f4938c63d014ea.jpg"
+  }
+ ],
+ "archive": [
+  {
+   "title": "Ο πιο ζεστός Ιούλιος όλων των εποχών ο φετινός (2012)",
+   "path": "files/2012_11_WarmerJulyEver.pdf",
+   "date": "2012-11-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η μοναξιά κάνει πιο σύντομη τη ζωή",
+   "path": "files/2012_09_Monaksia_Syntomeyei_Zwh.pdf",
+   "date": "2012-09-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η απαγόρευση του καπνίσματος σε κλειστούς δημόσιους χώρους",
+   "path": "files/2010_10.pdf",
+   "date": "2010-10-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Άνθρωπος - Μια Νοήμονα Μηχανή;",
+   "path": "files/2010_02_Anthropos_Noimona_Mixani_(1).pdf",
+   "date": "2010-02-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Ο Εσωτερικός Άνθρωπος και η Σχέση του με το Σώμα του Ανθρώπου",
+   "path": "files/2010_01_Esoterikos_Anthropos_&_Soma.pdf",
+   "date": "2010-01-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η Σύγχρονη Ιατρική Προειδοποιεί για τους Κινδύνους των Παιδιών από την Τηλεθέαση",
+   "path": "files/2009_10.pdf",
+   "date": "2009-10-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Πού πηγαίνεις άνθρωπε του μέλλοντος;",
+   "path": "files/2009_02.pdf",
+   "date": "2009-02-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η Βιοποικιλότητα σε Άμεσο Κίνδυνο",
+   "path": "files/2007_07_Biopoikilotita_se_kindyno.pdf",
+   "date": "2007-07-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Τηλεόραση & Διαδίκτυο: Εργαλεία ή Μέσα Εξάρτησης; (Μέρος 2ο)",
+   "path": "files/2007_06.pdf",
+   "date": "2007-06-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Τηλεόραση & Διαδίκτυο: Εργαλεία ή Μέσα Εξάρτησης; (Μέρος 1ο)",
+   "path": "files/2007_05.pdf",
+   "date": "2007-05-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η Ατμόσφαιρα που μας περιβάλλει",
+   "path": "files/2006_10_Atmosphere_(1).pdf",
+   "date": "2006-10-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η επικείμενη αλλοτρίωση του ανθρώπου",
+   "path": "files/2005_06.pdf",
+   "date": "2005-06-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Κάπνισμα: Η μεγαλύτερη επιδημία στην ιστορία του πλανήτη και η αντιμετώπισή της",
+   "path": "files/2004_11.pdf",
+   "date": "2004-11-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Τα Ευρήματα της Σύγχρονης Ιατρικής Επιστήμης για τη Χρόνια Τηλεθέαση",
+   "path": "files/2004_10.pdf",
+   "date": "2004-10-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η Υπερθέρμανση του Πλανήτη και οι Συνέπειές της",
+   "path": "files/2004_07_Yperthermansi_(1).pdf",
+   "date": "2004-07-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Νέος τύπος οικονομικών συν-αλλαγών και ταυτοποίησης προσώπων",
+   "path": "files/2004_02.pdf",
+   "date": "2004-02-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η Κατάσταση στον Πλανήτη Σήμερα",
+   "path": "files/2002_11_Katastasi_Planhth_Shmera.pdf",
+   "date": "2002-11-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Ο Πολιτισμός των Χημικών ουσιών",
+   "path": "files/2002_09.pdf",
+   "date": "2002-09-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η Συνείδηση και η Σχέση της με το Σώμα του Ανθρώπου",
+   "path": "files/2002_04_Syneidisi_&_Swma.pdf",
+   "date": "2002-04-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η Διαχείριση του Νερού στη Γη",
+   "path": "files/2001_07_Diaxeirish_Nerou_(1).pdf",
+   "date": "2001-07-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Το Φυτικό Βασίλειο αποτέλεσμα Δημιουργικού Σχεδιασμού",
+   "path": "files/2001_05_Fytiko_Vasileio_(1).pdf",
+   "date": "2001-05-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η Μαρτυρία των Απολιθωμάτων",
+   "path": "files/2000_09_Fossils.pdf",
+   "date": "2000-09-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Το Ανθρώπινο Γονιδίωμα - Μερικές Σκέψεις με Βάση το Λόγο του Θεού",
+   "path": "files/2000_08_Anthropino_Gonidioma.pdf",
+   "date": "2000-08-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Το Πρόβλημα των Ενδιάμεσων, Μεταβατικών Μορφών",
+   "path": "files/2000_06_Metavatikes_Morfes.pdf",
+   "date": "2000-06-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Νεοδαρβινισμός: Οι Μεταλλάξεις Πηγή Νέων Ειδών;",
+   "path": "files/2000_03_Neodarvinismos_(1).pdf",
+   "date": "2000-03-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Εξέλιξη ή Δημιουργία; Το Ζωντανό Κύτταρο",
+   "path": "files/2000_02_Kyttaro.pdf",
+   "date": "2000-02-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η θεωρία της εξέλιξης ασυμβίβαστη με την κατά Θεόν αγάπη",
+   "path": "files/2000_01_Evolution_vs_GodLove.pdf",
+   "date": "2000-01-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Εξέλιξη ή Δημιουργία; Γενετικό Υλικό & Πρωτεΐνες",
+   "path": "files/1999_11&12_GenetikoYliko-Proteines.pdf",
+   "date": "1999-11-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Σχηματισμός Απλών Οργανικών Μορίων - Το Πείραμα του MIller",
+   "path": "files/1999_05_Peirama_Miller_(1).pdf",
+   "date": "1999-05-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Φύση της Αρχικής Ατμόσφαιρας & Σχηματισμός Απλών Οργανικών Μορίων",
+   "path": "files/1999_04_Arxikh_Atmosfaira_Organika_Moria.pdf",
+   "date": "1999-04-01",
+   "author": "Αλέκος Περάκης"
+  },
+  {
+   "title": "Η κατάρρευση ενός μύθου",
+   "path": "files/1998_08_Katarreysi_Mythou_1.pdf",
+   "date": "1998-08-01",
+   "author": "Αλέκος Περάκης"
+  }
+ ],
+ "review": []
+}

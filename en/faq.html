@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400;1,7..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="../css/site.css?v=52091469b0">
+  <link rel="stylesheet" href="../css/site.css?v=5611d6a56c">
 </head>
 <body>
   <a class="skip" href="#content">Skip to content</a>
@@ -185,6 +185,34 @@
           </details>
         </div>
         <p class="empty" id="filterEmpty" hidden>No question found. Try another word.</p>
+        <!-- ask -->
+        <section class="ask" aria-labelledby="askTitle">
+          <div class="ask__intro">
+            <h2 class="ask__title" id="askTitle">Ask your own question</h2>
+            <p class="ask__lede">Didn't find what you were looking for? Send us your question and we will reply to your e-mail.</p>
+          </div>
+          <form class="ask__form" id="askForm" novalidate data-to="science@christianity.gr" data-endpoint="">
+            <div class="field">
+              <label class="field__label" for="askQuestion">Your question</label>
+              <textarea class="field__input" id="askQuestion" name="question" rows="6" required minlength="10" placeholder="Write your question here…"></textarea>
+              <p class="field__error" id="askQuestionError" hidden>Please write your question (at least 10 characters).</p>
+            </div>
+            <div class="field field--short">
+              <label class="field__label" for="askEmail">E-mail</label>
+              <input class="field__input" id="askEmail" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="example@example.com">
+              <p class="field__hint" id="askEmailHint">Only so that we can reply. We never publish it.</p>
+              <p class="field__error" id="askEmailError" hidden>Please enter a valid e-mail address.</p>
+            </div>
+            <div class="ask__actions">
+              <button class="ask__submit" type="submit">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/></svg>
+                Send question
+              </button>
+              <p class="ask__status" id="askStatus" role="status" aria-live="polite"></p>
+            </div>
+          </form>
+        </section>
+        <!-- /ask -->
       </div>
     </div>
   </main>
@@ -193,7 +221,7 @@
     <div class="wrap footer__grid">
       <div>
         <p class="footer__brand">Christianity &amp; Science</p>
-        <p class="footer__txt">A radio broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener">Radio Christianity</a>, every second Thursday at 22:00 Greek time. <a href="about.html">Who we are</a></p>
+        <p class="footer__txt">A radio broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener">Radio Christianity</a>, every other Thursday at 22:00 Greek time. <a href="about.html">Who we are</a></p>
       </div>
       <nav class="footer__nav" aria-label="Secondary navigation">
         <a href="articles.html">Articles</a><a href="material.html">Topics</a><a href="faq.html">Questions</a><a href="media.html">Media</a><a href="links.html">Links</a><a href="contact.html">Contact</a>
@@ -201,6 +229,6 @@
     </div>
   </footer>
 
-  <script src="../js/page.js?v=7ac0de9920"></script>
+  <script src="../js/page.js?v=e319bd60a2"></script>
 </body>
 </html>

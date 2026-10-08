@@ -10,7 +10,7 @@ Greek attribute values (title, aria-label, placeholder, alt, meta content) are t
 import json, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PAGES = ["index.html", "about.html", "articles.html", "material.html", "faq.html", "media.html", "links.html", "contact.html"]
+PAGES = ["index.html", "about.html", "articles.html", "material.html", "faq.html", "media.html", "links.html", "contact.html", "column.html"]
 DICT_PATH = os.path.join(ROOT, "translation", "en.json")
 GREEK = re.compile(r"[Ͱ-Ͽἀ-῿]")
 UNIT = {"title", "p", "li", "h1", "h2", "h3", "h4", "summary", "label", "button", "a", "span", "small", "strong", "em", "kbd", "td", "th"}
@@ -65,9 +65,18 @@ def has_block(el):
     return any(k.tag in BLOCK for k in walk(el))
 
 
+def no_translate_ranges(src):
+    """Elements marked translate="no" (e.g. Greek article titles) are kept as they are."""
+    root, ranges = tree(src), []
+    for el in walk(root):
+        if el.inner_end is not None and 'translate="no"' in src[el.start:el.inner_start]:
+            ranges.append((el.start, el.inner_end))
+    return ranges
+
+
 def units(src):
     """(start, end, key) for every translatable piece of text, outermost-first, non-overlapping."""
-    root, out, taken = tree(src), [], []
+    root, out, taken = tree(src), [], list(no_translate_ranges(src))
     def inside(a, b):
         return any(s <= a and b <= e for s, e in taken)
     for el in walk(root):
@@ -101,13 +110,25 @@ def attr_units(src):
             yield m.start(2), m.end(2), norm(m.group(2))
 
 
+def lookup(d, key):
+    """Exact translation, or one where every number is written as # (counts that change over time)."""
+    if key in d:
+        return d[key]
+    generic = re.sub(r"\d+", "#", key)
+    if generic != key and generic in d:
+        nums = iter(re.findall(r"\d+", key))
+        return re.sub("#", lambda _: next(nums, "#"), d[generic])
+    return None
+
+
 def translate_page(src, d, missing):
     edits = []
     for a, b, key in list(units(src)) + list(attr_units(src)):
-        if key in d:
+        if lookup(d, key) is not None:
             # keep surrounding whitespace of the original slice
             lead = re.match(r"\s*", src[a:b]).group(0); trail = re.search(r"\s*$", src[a:b]).group(0)
-            edits.append((a, b, lead + d[key] + trail if src[a:b].strip() else d[key]))
+            t = lookup(d, key)
+            edits.append((a, b, lead + t + trail if src[a:b].strip() else t))
         else:
             missing.append(key)
     for a, b, rep in sorted(edits, reverse=True):
@@ -115,9 +136,16 @@ def translate_page(src, d, missing):
     return src
 
 
+MONTHS = dict(zip(["Ιανουάριος", "Φεβρουάριος", "Μάρτιος", "Απρίλιος", "Μάιος", "Ιούνιος", "Ιούλιος", "Αύγουστος",
+                   "Σεπτέμβριος", "Οκτώβριος", "Νοέμβριος", "Δεκέμβριος"],
+                  ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+                   "November", "December"]))
+
+
 def localise(src, page):
     """Paths, language, scripts and the language switch for a page that lives in en/."""
     src = src.replace('<html lang="el">', '<html lang="en">', 1)
+    src = re.sub(r"(<time\b[^>]*>)(\S+)", lambda m: m.group(1) + MONTHS.get(m.group(2), m.group(2)), src)
     # every relative URL now needs ../ (en/ is one level down), except links to the other English pages
     def fix(m):
         attr, url = m.group(1), m.group(2)

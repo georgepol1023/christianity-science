@@ -439,7 +439,7 @@ test("tools/stamp.py: stamps nested pages correctly and is idempotent", () => {
 /* =====================================================================
    7. English version (en/)
    ===================================================================== */
-const MAIN = ["index.html", "about.html", "articles.html", "material.html", "faq.html", "media.html", "links.html", "contact.html"];
+const MAIN = ["index.html", "about.html", "articles.html", "material.html", "faq.html", "media.html", "links.html", "contact.html", "column.html"];
 
 test("english: every main page has an English version and they point to each other", () => {
   for (const p of MAIN) {
@@ -459,7 +459,9 @@ test("english: every main page has an English version and they point to each oth
 test("english: no untranslated Greek text on the English pages", () => {
   const bad = [];
   for (const p of MAIN) {
-    const text = read("en/" + p).replace(/<(script|style)\b[\s\S]*?<\/\1>/g, " ").replace(/<[^>]+>/g, " ");
+    const text = read("en/" + p).replace(/<(script|style)\b[\s\S]*?<\/\1>/g, " ")
+      .replace(/<(\w+)\b[^>]*translate="no"[^>]*>[\s\S]*?<\/\1>/g, " ")      // Greek titles kept on purpose
+      .replace(/<[^>]+>/g, " ");
     const greek = (text.match(/[\u0370-\u03ff\u1f00-\u1fff][^\n]{0,40}/g) || []).filter((g) => !/^ΕΛ(\s|$)/.test(g));     // the language button itself (\b does not work with Greek letters)
     if (greek.length) bad.push(`en/${p}: ${greek.slice(0, 3).join(" | ")}`);
   }
@@ -542,4 +544,37 @@ test("share image is a 1200×630 PNG", () => {
   assert.equal(b.toString("ascii", 1, 4), "PNG");
   assert.equal(b.readUInt32BE(16), 1200);
   assert.equal(b.readUInt32BE(20), 630);
+});
+
+/* =====================================================================
+   9. The newspaper column (tools/update_column.py)
+   ===================================================================== */
+test("column: data holds only titles, dates and links, and no excluded pages", () => {
+  const d = JSON.parse(read("data/column.json"));
+  const exclude = (read("tools/update_column.py").match(/EXCLUDE = \{([^}]+)\}/) || [])[1].split(",").map(Number);
+  assert.ok(d.online.length >= 50, d.online.length + " online articles");
+  for (const e of d.online) {
+    assert.deepEqual(Object.keys(e).sort(), ["date", "id", "image", "title", "url"]);
+    assert.ok(e.image === "" || /^https:\/\/www\.christianity\.gr\/images\//.test(e.image), "image is the newspaper's own: " + e.image);
+    assert.match(e.date, /^\d{4}-\d{2}-\d{2}$/);
+    assert.match(e.url, /^https:\/\/www\.christianity\.gr\/ephemerida\/christianismos-kai-episteme\/\d+-/);
+    assert.ok(!exclude.includes(e.id), "excluded page listed: " + e.title);
+  }
+  for (const a of d.archive) assert.ok(fs.existsSync(path.join(ROOT, a.path)), a.path);
+  const dates = d.online.map((e) => e.date);
+  assert.deepEqual(dates, [...dates].sort().reverse(), "newest first");
+});
+
+test("column: page, Articles block and home page box all agree", () => {
+  const d = JSON.parse(read("data/column.json")), total = d.online.length + d.archive.length;
+  const col = read("column.html"), art = read("articles.html");
+  assert.equal((col.match(/<li class="ref[^"]*" data-filter>/g) || []).length, total);
+  assert.ok(col.includes(`${total} άρθρα`));
+  assert.ok(art.includes(`href="column.html">Όλα τα άρθρα της στήλης (${total}) →`));
+  const block = art.slice(art.indexOf("<!-- column -->"), art.indexOf("<!-- /column -->"));
+  assert.equal((block.match(/<li class="ref[^"]*">/g) || []).length, 4);
+  const ctx = { window: {} };
+  vm.runInNewContext(read("js/broadcasts.js"), ctx);
+  assert.equal(ctx.window.SITE_CONFIG.latestColumn.url, d.online[0].url, "home page box shows the newest article");
+  assert.ok(read("en/column.html").includes('<time datetime="' + d.online[0].date.slice(0, 7) + '">'));
 });

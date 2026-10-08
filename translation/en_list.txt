@@ -13,7 +13,7 @@
 12	John 8:32
 13	Through the latest discoveries and the wonders of Creation that modern science is uncovering, we show that the Bible is the Word of God. <a href="about.html">Read about us</a>
 14	Next live broadcast
-15	Every second Thursday, 22:00 Greek time
+15	Every other Thursday, 22:00 Greek time
 16	Add to calendar
 17	Broadcast archive
 18	Search the broadcasts
@@ -24,9 +24,9 @@
 23	<a href="files/rapture_before_tribulation.pdf">The Rapture before the Great Tribulation (PDF, in Greek)</a>
 24	Video
 25	Christianity &amp; Science
-26	A radio broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener">Radio Christianity</a>, every second Thursday at 22:00 Greek time.
+26	A radio broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener">Radio Christianity</a>, every other Thursday at 22:00 Greek time.
 27	Listen live
-28	The “Christianity & Science” broadcast, every second Thursday at 22:00 Greek time. Listen to the whole broadcast archive and read articles and studies.
+28	The “Christianity & Science” broadcast, every other Thursday at 22:00 Greek time. Listen to the whole broadcast archive and read articles and studies.
 29	Christianity & Science
 30	“And ye shall know the truth, and the truth shall make you free” (John 8:32)
 31	Christianity & Science, home
@@ -66,7 +66,7 @@
 65	We want to confirm and strengthen Christians' faith in the inerrancy of the Word of God, and that it is given by inspiration of God (2 Timothy 3:16).
 66	We want to give Christians, and especially Christian students, arguments so that they do not hesitate to take part in such discussions.
 67	We should point out, however, that we do not present ourselves as scientific authorities who can answer every question, but as people redeemed by Jesus Christ who, by talking and working together with you, will try to grow in knowledge and in faith in the Word of God and in the redeeming work of the Cross of Golgotha.<br><br>Finally, we would like to stress that scientific knowledge helps, but we always come to God by faith (Hebrews 11:3 &amp; 6). It is there that the Word of God is proved true and that God does His work in a person's life.<br><br>After all, the Word of God does not need the support of science to do the work for which God sent it. Yet the Christian faith has a foundation that also rests on reasoned arguments. Today, when knowledge has increased (Daniel 12:4), God calls us to love Him with all our mind as well.<br><br><em>“… The Lord our God is one Lord: and thou shalt love the Lord thy God with all thy <strong>heart</strong>, and with all thy <strong>soul</strong>, and with all thy <strong>mind</strong>, and with all thy <strong>strength</strong>: this is the first commandment.” (Mark 12:29–30)</em><br><br>We hope you enjoy exploring our website. We ask for your prayers and your involvement: send us questions on subjects that concern you, and any related material you may have. You can reach us by e-mail at <strong>science@christianity.gr</strong><br> <br><br>The Lord bless you,<br>The “Christianity & Science” team
-68	A radio broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener">Radio Christianity</a>, every second Thursday at 22:00 Greek time. <a href="about.html">Who we are</a>
+68	A radio broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener">Radio Christianity</a>, every other Thursday at 22:00 Greek time. <a href="about.html">Who we are</a>
 69	The purpose of the “Christianity &amp; Science” website.
 70	Articles — Christianity & Science
 71	Articles by category
@@ -301,7 +301,7 @@
 300	Useful links on apologetics, science and Christian publications.
 301	Contact — Christianity & Science
 302	Contact us
-303	A broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener" style="color:#fff">Radio Christianity</a>, every second Thursday at 22:00 Greek time.
+303	A broadcast on <a href="https://www.christianity.gr" target="_blank" rel="noopener" style="color:#fff">Radio Christianity</a>, every other Thursday at 22:00 Greek time.
 304	Telephone
 305	Only during the broadcast
 306	Contact the “Christianity &amp; Science” broadcast.

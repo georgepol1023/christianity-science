@@ -18,7 +18,7 @@ SITE_URL = "https://www.christianity-science.gr/"
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKIP_DIRS = {"mp3", "pictures", "tests", "tools", "translation", "docs", "node_modules", ".git"}
 SHARE_IMAGE = "pictures/share.png"
-MAIN = ["index.html", "about.html", "articles.html", "material.html", "faq.html", "media.html", "links.html", "contact.html"]
+MAIN = ["index.html", "about.html", "articles.html", "material.html", "faq.html", "media.html", "links.html", "contact.html", "column.html"]
 
 
 def pages():

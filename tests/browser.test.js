@@ -507,3 +507,56 @@ test("a missing address shows the site's own not-found page, at any folder depth
     await page.close2();
   }
 });
+
+test("column page: filter finds articles, links open the newspaper or the PDF", async () => {
+  const page = await open("column.html");
+  const visible = () => page.$$eval(".refs .ref", (e) => e.filter((x) => !x.hidden).length);
+  const all = await visible();
+  assert.ok(all > 80, all + " cards");
+  await page.type("#filter", "αναστασ");
+  const n = await visible();
+  assert.ok(n >= 1 && n < all, n + " cards for «αναστασ»");
+  const hrefs = await page.$$eval(".refs .ref__title a", (e) => e.map((a) => a.getAttribute("href")));
+  assert.ok(hrefs.every((h) => /^https:\/\/www\.christianity\.gr\//.test(h) || /^files\/.+\.pdf$/i.test(h)), "links go to the newspaper or a PDF");
+  const en = await open("en/column.html");
+  assert.match(await en.$eval(".refs .ref__desc time", (e) => e.textContent), /^[A-Z][a-z]+ \d{4}$/);
+  await en.close2();
+  await page.close2();
+});
+
+test("question form: checks the fields, then opens the e-mail app with the question ready", async () => {
+  const page = await open("faq.html");
+  await page.click(".ask__submit");
+  assert.equal(await page.$eval("#askQuestionError", (e) => e.hidden), false);
+  assert.equal(await page.$eval("#askEmailError", (e) => e.hidden), false);
+  assert.equal(await page.evaluate(() => document.activeElement.id), "askQuestion", "focus moves to the first problem");
+  await page.type("#askQuestion", "Πώς συμβιβάζεται η Μεγάλη Έκρηξη με τη Γένεση;");
+  await page.type("#askEmail", "listener@example.com");
+  // the browser will not let a test intercept the jump to the e-mail app, so read the link the form recorded
+  await page.click(".ask__submit");
+  await page.waitForFunction(() => document.querySelector("#askForm").hasAttribute("data-mailto"));
+  const href = await page.$eval("#askForm", (f) => f.getAttribute("data-mailto"));
+  assert.ok(href && href.startsWith("mailto:science@christianity.gr?"), "mailto link: " + href);
+  assert.ok(decodeURIComponent(href).includes("Μεγάλη Έκρηξη") && decodeURIComponent(href).includes("listener@example.com"));
+  assert.match(await page.$eval("#askStatus", (e) => e.textContent), /πρόγραμμα e-mail/);
+  await page.close2();
+});
+
+test("question form: with a form service configured it sends the question and thanks the visitor", async () => {
+  const page = await open("en/faq.html");
+  await page.evaluate(() => {
+    document.querySelector("#askForm").setAttribute("data-endpoint", "https://forms.example/submit");
+    window.__sent = null;
+    window.fetch = (url, opt) => { window.__sent = { url, body: JSON.parse(opt.body) }; return Promise.resolve({ ok: true }); };
+  });
+  await page.type("#askQuestion", "How do you reconcile the Big Bang with Genesis?");
+  await page.type("#askEmail", "listener@example.com");
+  await page.click(".ask__submit");
+  await page.waitForFunction(() => /Thank you/.test(document.querySelector("#askStatus").textContent));
+  const sent = await page.evaluate(() => window.__sent);
+  assert.equal(sent.url, "https://forms.example/submit");
+  assert.equal(sent.body.email, "listener@example.com");
+  assert.match(sent.body.question, /Big Bang/);
+  assert.equal(await page.$eval("#askQuestion", (e) => e.value), "", "form is cleared after sending");
+  await page.close2();
+});
