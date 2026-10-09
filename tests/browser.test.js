@@ -273,12 +273,20 @@ test("player: close button hides the player and stops audio", async () => {
   await page.close2();
 });
 
-test("player: download menu lists 4 existing mp3s and closes with Escape", async () => {
+test("player: download menu offers the whole broadcast and its 4 parts, all existing, and closes with Escape", async () => {
   const page = await open("index.html");
   await page.click('#e-2008_01_31 [data-dl]');
-  const links = await page.$$eval("#e-2008_01_31 .dlmenu a", (e) => e.map((a) => a.getAttribute("href")));
-  assert.equal(links.length, 4);
-  for (const l of links) assert.ok(fs.existsSync(path.join(ROOT, decodeURI(l))), l);
+  const links = await page.$$eval("#e-2008_01_31 .dlmenu a", (e) => e.map((a) => ({ href: a.getAttribute("href"), name: a.getAttribute("download"), text: a.textContent.trim() })));
+  assert.equal(links.length, 5);
+  assert.equal(links[0].href, "mp3/broadcasts/Season_01/2008_01_31/2008_01_31_full.mp3");
+  assert.equal(links[0].name, "Christianity-Science_2008-01-31.mp3", "saved under a readable name");
+  assert.match(links[0].text, /Ολόκληρη η εκπομπή/);
+  for (const l of links) assert.ok(fs.existsSync(path.join(ROOT, decodeURI(l.href))), l.href);
+  const en = await open("en/index.html");
+  await en.click('#e-2008_01_31 [data-dl]');
+  assert.match(await en.$eval("#e-2008_01_31 .dlmenu a", (a) => a.textContent), /The whole broadcast \(one mp3\)/);
+  assert.equal(await en.$eval("#e-2008_01_31 .dlmenu a", (a) => a.getAttribute("href")), "../mp3/broadcasts/Season_01/2008_01_31/2008_01_31_full.mp3");
+  await en.close2();
   assert.equal(await page.$eval('#e-2008_01_31 [data-dl]', (e) => e.getAttribute("aria-expanded")), "true");
   await page.keyboard.press("Escape");
   assert.equal(await page.$("#e-2008_01_31 .dlmenu"), null);
@@ -526,7 +534,7 @@ test("a missing address shows the site's own not-found page, at any folder depth
   }
 });
 
-test("column page: filter finds articles, links open the newspaper or the PDF", async () => {
+test("column page: filter finds articles, and each article opens on this site", async () => {
   const page = await open("column.html");
   const visible = () => page.$$eval(".refs .ref", (e) => e.filter((x) => !x.hidden).length);
   const all = await visible();
@@ -535,9 +543,24 @@ test("column page: filter finds articles, links open the newspaper or the PDF", 
   const n = await visible();
   assert.ok(n >= 1 && n < all, n + " cards for «αναστασ»");
   const hrefs = await page.$$eval(".refs .ref__title a", (e) => e.map((a) => a.getAttribute("href")));
-  assert.ok(hrefs.every((h) => /^https:\/\/www\.christianity\.gr\//.test(h) || /^files\/.+\.pdf$/i.test(h)), "links go to the newspaper or a PDF");
+  assert.ok(hrefs.every((h) => /^column\/\d+\.htm$/.test(h) || /^files\/.+\.pdf$/i.test(h)), "links go to our own article pages or PDFs");
+  const thumbs = await page.$$eval(".ref__thumb img", (e) => e.map((i) => ({ src: i.getAttribute("src"), ok: i.complete && i.naturalWidth > 0 })));
+  assert.ok(thumbs.length > 50 && thumbs.every((t) => t.src.startsWith("pictures/column/")), "pictures are kept on this site");
+  await page.$eval("#filter", (i) => { i.value = ""; i.dispatchEvent(new Event("input")); });
+  await Promise.all([page.waitForNavigation(), page.click(".refs .ref__title a[href^='column/']")]);
+  assert.match(page.url(), /\/column\/\d+\.htm$/);
+  assert.ok((await page.$eval(".colart__text", (e) => e.textContent.length)) > 500, "the article's text is on the page");
+  assert.equal(await page.$eval(".colart__figure img", (i) => i.complete && i.naturalWidth > 0), true, "its picture loads");
+  assert.match(await page.$eval(".colart__source", (e) => e.textContent), /εφημερίδα «Χριστιανισμός»/);
+  assert.equal(await page.$$eval("a[href*='christianity.gr/ephemerida']", (a) => a.length), 0, "no link to the newspaper's site");
+  await Promise.all([page.waitForNavigation(), page.click(".colart__prev")]);
+  assert.match(page.url(), /\/column\/\d+\.htm$/, "previous article opens");
   const en = await open("en/column.html");
   assert.match(await en.$eval(".refs .ref__desc time", (e) => e.textContent), /^[A-Z][a-z]+ \d{4}$/);
+  await Promise.all([en.waitForNavigation(), en.click(".refs .ref__title a[href^='column/']")]);
+  assert.match(en.url(), /\/en\/column\/\d+\.htm$/);
+  assert.match(await en.$eval(".pagehead__note", (e) => e.textContent), /in Greek/);
+  assert.match(await en.$eval(".colart__source", (e) => e.textContent), /Published in the team's column .* [A-Z][a-z]+ \d{4}\./);
   await en.close2();
   await page.close2();
 });

@@ -9,3 +9,4 @@ tests/node_modules/
 
 # Working files of the translation tools
 translation/_*
+__pycache__/

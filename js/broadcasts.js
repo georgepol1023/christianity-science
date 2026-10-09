@@ -27,11 +27,11 @@
     // Επόμενη ζωντανή εκπομπή (ώρα Ελλάδας). Αν περάσει, η σελίδα υπολογίζει αυτόματα +14 ημέρες.
     nextBroadcast: "2026-10-15T22:00:00+03:00",
     liveUrl: "https://www.christianity.gr/radiophono/akouste-zontana",
-    columnUrl: "https://www.christianity.gr/ephemerida/christianismos-kai-episteme",
+    columnUrl: "column.html",
     latestColumn: {
       month: "Σεπτεμβρίου 2026",
       title: "Ανάσταση ή Ψηφιακή αθανασία;",
-      url: "https://www.christianity.gr/ephemerida/christianismos-kai-episteme/2437-anastase-e-psephiake-athanasia"
+      url: "column/2437.htm"
     },
     youtubeId: "JW9gcjpt89o",
     mp3Base: "mp3/broadcasts/"

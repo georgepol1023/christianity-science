@@ -140,6 +140,19 @@ test("data: every broadcast mp3 exists in mp3/ (apart from the known missing rec
     if (fs.existsSync(path.join(ROOT, p))) assert.fail(p + " has been added — remove it from KNOWN_MISSING_MP3");
 });
 
+test("data: every broadcast with several parts also has its whole-broadcast mp3 (tools/join_broadcasts.py)", () => {
+  const { cfg, seasons } = loadData(), missing = [];
+  for (const s of seasons) for (const e of s.episodes) {
+    const parts = partPaths(cfg, s, e);
+    if (parts.length < 2 || parts.some((p) => KNOWN_MISSING_MP3.includes(p))) continue;
+    const full = parts[0].replace(/[^/]*$/, "") + e.date.replace(/-/g, "_") + "_full.mp3";
+    if (!fs.existsSync(path.join(ROOT, full))) { missing.push(full); continue; }
+    const size = fs.statSync(path.join(ROOT, full)).size, sum = parts.reduce((a, p) => a + fs.statSync(path.join(ROOT, p)).size, 0);
+    if (size < sum * 0.95) missing.push(full + " (too small)");
+  }
+  assert.deepEqual(missing.slice(0, 10), [], missing.length + " whole-broadcast files missing — run python tools/join_broadcasts.py");
+});
+
 test("data: 'Άρθρα & πηγές' links point to existing pages", () => {
   const { seasons } = loadData();
   for (const s of seasons) for (const e of s.episodes)
@@ -301,7 +314,7 @@ test("html: every content page has lang, charset, viewport, title and descriptio
     const s = read(p);
     if (/http-equiv="refresh"/.test(s)) continue;                      // redirect stubs
     const need = { lang: /<html lang="(el|en)"/, charset: /<meta charset="utf-8">/i, viewport: /name="viewport"/,
-      title: /<title>[^<]{3,}<\/title>/, description: /name="description" content="[^"]{10,}"/ };
+      title: /<title[^>]*>[^<]{3,}<\/title>/, description: /name="description" content="[^"]{10,}"/ };
     const miss = Object.entries(need).filter(([, re]) => !re.test(s)).map(([k]) => k);
     if (miss.length) bad.push(p + ": " + miss.join(", "));
   }
@@ -549,20 +562,31 @@ test("share image is a 1200×630 PNG", () => {
 /* =====================================================================
    9. The newspaper column (tools/update_column.py)
    ===================================================================== */
-test("column: data holds only titles, dates and links, and no excluded pages", () => {
+test("column: every article is kept on this site, with its text and picture", () => {
   const d = JSON.parse(read("data/column.json"));
   const exclude = (read("tools/update_column.py").match(/EXCLUDE = \{([^}]+)\}/) || [])[1].split(",").map(Number);
   assert.ok(d.online.length >= 50, d.online.length + " online articles");
   for (const e of d.online) {
-    assert.deepEqual(Object.keys(e).sort(), ["date", "id", "image", "title", "url"]);
-    assert.ok(e.image === "" || /^https:\/\/www\.christianity\.gr\/images\//.test(e.image), "image is the newspaper's own: " + e.image);
+    assert.deepEqual(Object.keys(e).sort(), ["body", "date", "id", "image", "picture", "title", "url"]);
     assert.match(e.date, /^\d{4}-\d{2}-\d{2}$/);
-    assert.match(e.url, /^https:\/\/www\.christianity\.gr\/ephemerida\/christianismos-kai-episteme\/\d+-/);
     assert.ok(!exclude.includes(e.id), "excluded page listed: " + e.title);
+    assert.ok(e.body.length > 200, "text kept for " + e.title);
+    assert.ok(!/christianity\.gr|<script|<style|style=/.test(e.body), "clean text, no newspaper links: " + e.title);
+    assert.ok(e.picture && fs.existsSync(path.join(ROOT, e.picture)), "picture copied: " + e.picture);
+    for (const p of [`column/${e.id}.htm`, `en/column/${e.id}.htm`]) assert.ok(fs.existsSync(path.join(ROOT, p)), p);
   }
   for (const a of d.archive) assert.ok(fs.existsSync(path.join(ROOT, a.path)), a.path);
   const dates = d.online.map((e) => e.date);
   assert.deepEqual(dates, [...dates].sort().reverse(), "newest first");
+  const pages = fs.readdirSync(path.join(ROOT, "column")).filter((f) => f.endsWith(".htm"));
+  assert.equal(pages.length, d.online.length, "one page per article, no leftovers");
+});
+
+test("column: nothing about the column links to the newspaper's website", () => {
+  const files = ["column.html", "articles.html", "index.html", "js/broadcasts.js", "en/column.html", "en/articles.html", "en/index.html",
+    ...fs.readdirSync(path.join(ROOT, "column")).map((f) => "column/" + f), ...fs.readdirSync(path.join(ROOT, "en/column")).map((f) => "en/column/" + f)];
+  const bad = files.filter((f) => /christianity\.gr\/(ephemerida|images)/.test(read(f)));
+  assert.deepEqual(bad, []);
 });
 
 test("column: page, Articles block and home page box all agree", () => {
@@ -575,6 +599,7 @@ test("column: page, Articles block and home page box all agree", () => {
   assert.equal((block.match(/<li class="ref[^"]*">/g) || []).length, 4);
   const ctx = { window: {} };
   vm.runInNewContext(read("js/broadcasts.js"), ctx);
-  assert.equal(ctx.window.SITE_CONFIG.latestColumn.url, d.online[0].url, "home page box shows the newest article");
+  assert.equal(ctx.window.SITE_CONFIG.latestColumn.url, `column/${d.online[0].id}.htm`, "home page box shows the newest article, on this site");
+  assert.equal(ctx.window.SITE_CONFIG.columnUrl, "column.html");
   assert.ok(read("en/column.html").includes('<time datetime="' + d.online[0].date.slice(0, 7) + '">'));
 });

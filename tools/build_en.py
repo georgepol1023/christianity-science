@@ -85,7 +85,8 @@ def units(src):
         inner = src[el.inner_start:el.inner_end]
         text = re.sub(r"<[^>]+>", "", inner)
         # elements holding an icon are not units: only their text is translated, the <svg> stays as it is
-        if el.tag in UNIT and GREEK.search(text) and not has_block(el) and "<svg" not in inner and not inside(el.inner_start, el.inner_end):
+        # nor are elements with a part kept in Greek (translate="no"): their other parts are translated on their own
+        if el.tag in UNIT and GREEK.search(text) and not has_block(el) and "<svg" not in inner and 'translate="no"' not in inner                 and not inside(el.inner_start, el.inner_end):
             out.append((el.inner_start, el.inner_end, norm(inner)))
             taken.append((el.inner_start, el.inner_end))
     # loose Greek text that sits directly in a block element
@@ -168,6 +169,8 @@ def localise(src, page, english):
     everything else (PDFs, pictures, audio, untranslated pages) gets one extra ../ to leave en/.
     """
     src = src.replace('<html lang="el">', '<html lang="en">', 1)
+    if page.startswith("column/"):     # the newspaper column's articles are kept in Greek, as published
+        src = src.replace("</h1>", '</h1>\n        <p class="pagehead__note">This article is in Greek, as it was published in the newspaper.</p>', 1)
     src = re.sub(r"(<time\b[^>]*>)(\S+)", lambda m: m.group(1) + MONTHS.get(m.group(2), m.group(2)), src)
 
     def fix(m):
@@ -207,7 +210,7 @@ def alternates(src, el_href, en_href):
 
 # Folders whose pages are translated too. A page gets its English version once ALL of its text is
 # translated; until then its EN button opens the English page of its section.
-DETAIL_FOLDERS = ["categories", "articles", "mp3", "material"]
+DETAIL_FOLDERS = ["categories", "articles", "mp3", "material", "column"]
 SECTION_EN = {"material": "material.html", "categories": "material.html", "articles": "articles.html",
               "files": "articles.html", "mp3": "media.html"}
 

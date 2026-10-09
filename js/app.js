@@ -37,7 +37,7 @@
       approx: function (q) { return "Δεν βρέθηκε ακριβής αντιστοιχία για «" + q + "». Δείτε τις πλησιέστερες εκπομπές."; },
       found: function (n, q) { return (n === 1 ? "Βρέθηκε 1 εκπομπή" : "Βρέθηκαν " + n + " εκπομπές") + " για «" + q + "»" + (n > 1 ? ", οι πιο σχετικές πρώτα." : "."); },
       copied: "Ο σύνδεσμος αντιγράφηκε.", copyPrompt: "Αντιγράψτε τον σύνδεσμο:",
-      dlItem: function (n) { return n + "ο ημίωρο (mp3)"; },
+      dlItem: function (n) { return n + "ο ημίωρο (mp3)"; }, dlAll: "Ολόκληρη η εκπομπή (ένα mp3)",
       meta: function (d, p, n) { return d + ", " + p + "ο από " + n + " ημίωρα"; },
       pause: "Παύση", play: "Αναπαραγωγή",
       next: function (n) { return "Συνέχεια με το " + n + "ο ημίωρο"; },
@@ -74,7 +74,7 @@
       approx: function (q) { return "No exact match for “" + q + "”. Here are the closest broadcasts."; },
       found: function (n, q) { return (n === 1 ? "Found 1 broadcast" : "Found " + n + " broadcasts") + " for “" + q + "”" + (n > 1 ? ", most relevant first." : "."); },
       copied: "Link copied.", copyPrompt: "Copy the link:",
-      dlItem: function (n) { return "Part " + n + " (mp3)"; },
+      dlItem: function (n) { return "Part " + n + " (mp3)"; }, dlAll: "The whole broadcast (one mp3)",
       meta: function (d, p, n) { return d + ", part " + p + " of " + n; },
       pause: "Pause", play: "Play",
       next: function (n) { return "Continuing with part " + n; },
@@ -141,6 +141,8 @@
       var d = e.date.split("-").map(Number);
       var ep = {
         id: id, season: s.n, span: s.span, parts: parts,
+        // the whole broadcast in one file, made by tools/join_broadcasts.py next to the parts
+        full: parts.length > 1 ? parts[0].replace(/[^\/]*$/, "") + id + "_full.mp3" : null,
         title: (LANG === "en" && EN_TITLES[e.date]) || e.title,
         link: e.link && !/^[a-z]+:/i.test(e.link) ? ROOT + e.link : e.link,
         y: d[0], m: d[1], d: d[2],
@@ -442,7 +444,9 @@
       if (open) return;
       var ep3 = BY_ID[t.dataset.dl], m = document.createElement("div");
       m.className = "dlmenu"; m.setAttribute("role", "menu");
-      m.innerHTML = ep3.parts.map(function (u, i) { return '<a role="menuitem" href="' + encodeURI(u) + '" download>' + I.dl + " " + T.dlItem(i + 1) + "</a>"; }).join("");
+      m.innerHTML = (ep3.full ? '<a role="menuitem" class="dlmenu__all" href="' + encodeURI(ep3.full) + '" download="Christianity-Science_' + ep3.id.replace(/_/g, "-") + '.mp3">' +
+          I.dl + " " + T.dlAll + '</a><span class="dlmenu__sep" role="separator"></span>' : "") +
+        ep3.parts.map(function (u, i) { return '<a role="menuitem" href="' + encodeURI(u) + '" download>' + I.dl + " " + T.dlItem(i + 1) + "</a>"; }).join("");
       wrap.appendChild(m); t.setAttribute("aria-expanded", "true");
       m.querySelector("a").focus();
       return;
