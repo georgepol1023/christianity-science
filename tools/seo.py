@@ -35,11 +35,9 @@ def url(rel):
 
 def counterpart(rel):
     """(greek, english) addresses for pages that exist in both languages, else None."""
-    if rel in MAIN:
-        return rel, "en/" + rel
-    if rel.startswith("en/") and rel[3:] in MAIN:
-        return rel[3:], rel
-    return None
+    if rel.startswith("en/"):
+        return (rel[3:], rel) if os.path.exists(os.path.join(ROOT, rel[3:])) else None
+    return (rel, "en/" + rel) if os.path.exists(os.path.join(ROOT, "en", rel)) else None
 
 
 def head_tags(rel, src):

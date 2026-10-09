@@ -493,8 +493,26 @@ test("language button switches between the Greek and English page and keeps the 
   assert.ok(page.url().endsWith("/faq.html") && !page.url().includes("/en/"));
   await page.goto(BASE + "material/2012_11_15.htm", { waitUntil: "load" });
   await Promise.all([page.waitForNavigation(), page.click("#langSwitch")]);
-  assert.ok(page.url().endsWith("/en/material.html"));
+  assert.ok(page.url().endsWith("/en/material/2012_11_15.htm"), "a translated study page opens its English copy");
+  assert.equal(await page.evaluate(() => document.documentElement.lang), "en");
+  await Promise.all([page.waitForNavigation(), page.click("#langSwitch")]);
+  assert.ok(page.url().endsWith("/material/2012_11_15.htm") && !page.url().includes("/en/"));
   await page.close2();
+});
+
+test("home: the Broadcasts tab is underlined only once the archive is reached", async () => {
+  for (const u of ["index.html", "en/index.html"]) {
+    const page = await open(u);
+    const cur = () => page.$eval('.nav a[href="#archive"]', (a) => a.getAttribute("aria-current"));
+    assert.equal(await cur(), null, u + ": not underlined at the top");
+    await page.click(".brand"); await new Promise((r) => setTimeout(r, 400));
+    assert.equal(await cur(), null, u + ": not underlined after clicking the logo");
+    await page.click('.nav a[href="#archive"]'); await new Promise((r) => setTimeout(r, 1000));
+    assert.equal(await cur(), "page", u + ": underlined after clicking Broadcasts");
+    await page.evaluate(() => window.scrollTo(0, 0)); await new Promise((r) => setTimeout(r, 300));
+    assert.equal(await cur(), null, u + ": cleared again back at the top");
+    await page.close2();
+  }
 });
 
 test("a missing address shows the site's own not-found page, at any folder depth", async () => {

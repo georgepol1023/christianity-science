@@ -22,7 +22,8 @@ bad, added = [], 0
 for line in lines:
     if not line.strip():
         continue
-    i, en = line.split("\t", 1)
+    i, _, en = line.partition("\t")  # "N" alone means an empty translation (e.g. a Greek ordinal suffix)
+    i = i.strip()
     el = todo[int(i)]
     if skeleton(el) != skeleton(en):
         bad.append((i, skeleton(el), skeleton(en)))

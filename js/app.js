@@ -686,6 +686,18 @@
   }
   window.addEventListener("hashchange", openHash);
 
+  /* ---------- nav: underline "Broadcasts" only once the archive is on screen ---------- */
+  var archLink = $('.nav a[href="#archive"]'), archive = $("#archive");
+  function markArchive() {
+    if (!archLink || !archive) return;
+    var on = archive.getBoundingClientRect().top < window.innerHeight * 0.5;
+    if (on) archLink.setAttribute("aria-current", "page"); else archLink.removeAttribute("aria-current");
+  }
+  window.addEventListener("scroll", markArchive, { passive: true });
+  window.addEventListener("resize", markArchive);
+  window.addEventListener("hashchange", markArchive);
+  markArchive();
+
   /* ---------- boot ---------- */
   renderLatest();
   renderList();

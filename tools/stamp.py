@@ -15,7 +15,7 @@ for a in ASSETS:
 
 changed = 0
 for d, dirs, files in os.walk(ROOT):
-    dirs[:] = [x for x in dirs if x not in SKIP]
+    dirs[:] = [x for x in dirs if not (d == ROOT and x in SKIP) and x != ".git"]  # en/mp3/ holds pages too
     for name in files:
         if not name.endswith((".html", ".htm")):
             continue
