@@ -25,7 +25,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Commissioner:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;1,7..72,400;1,7..72,500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/site.css?v=5611d6a56c">
+  <link rel="stylesheet" href="css/site.css?v=7ea19bbc81">
 </head>
 <body>
   <a class="skip" href="#content">Μετάβαση στο περιεχόμενο</a>
@@ -71,6 +71,7 @@
     </section>
     <div class="page">
       <div class="wrap">
+        <p class="ask-cta-wrap"><a class="ask-cta" href="#askTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>Κάντε τη δική σας ερώτηση</a></p>
         <div class="page__tools">
           <p class="page__count">8 ερωτήσεις</p>
           <label class="search">
@@ -190,27 +191,47 @@
           <div class="ask__intro">
             <h2 class="ask__title" id="askTitle">Κάντε τη δική σας ερώτηση</h2>
             <p class="ask__lede">Δεν βρήκατε αυτό που ψάχνετε; Στείλτε μας την ερώτησή σας και θα σας απαντήσουμε στο e-mail σας.</p>
+            <ol class="ask__steps">
+              <li><span class="ask__num" aria-hidden="true">1</span><span>Γράψτε την ερώτησή σας</span></li>
+              <li><span class="ask__num" aria-hidden="true">2</span><span>Τη διαβάζει η ομάδα της εκπομπής</span></li>
+              <li><span class="ask__num" aria-hidden="true">3</span><span>Σας απαντάμε με e-mail</span></li>
+            </ol>
+            <p class="ask__privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Τα στοιχεία σας χρησιμοποιούνται μόνο για την απάντηση και δεν δημοσιεύονται.</span></p>
           </div>
-          <form class="ask__form" id="askForm" novalidate data-to="science@christianity.gr" data-endpoint="">
-            <div class="field">
-              <label class="field__label" for="askQuestion">Η ερώτησή σας</label>
-              <textarea class="field__input" id="askQuestion" name="question" rows="6" required minlength="10" placeholder="Γράψτε εδώ την ερώτησή σας…"></textarea>
-              <p class="field__error" id="askQuestionError" hidden>Γράψτε την ερώτησή σας (τουλάχιστον 10 χαρακτήρες).</p>
+          <div class="ask__body">
+            <form class="ask__form" id="askForm" novalidate data-endpoint="" data-key="">
+              <div class="field">
+                <label class="field__label" for="askQuestion">Η ερώτησή σας</label>
+                <textarea class="field__input" id="askQuestion" name="question" rows="6" required minlength="10" maxlength="2000" placeholder="Γράψτε εδώ την ερώτησή σας…"></textarea>
+                <p class="field__meta"><span class="field__error" id="askQuestionError" hidden>Γράψτε την ερώτησή σας (τουλάχιστον 10 χαρακτήρες).</span><span class="field__count" id="askCount" aria-hidden="true">0 / 2000</span></p>
+              </div>
+              <div class="field__row">
+                <div class="field">
+                  <label class="field__label" for="askName">Όνομα <span class="field__opt">(προαιρετικό)</span></label>
+                  <input class="field__input" id="askName" name="name" type="text" autocomplete="name" maxlength="80" placeholder="Πώς να σας προσφωνήσουμε;">
+                </div>
+                <div class="field">
+                  <label class="field__label" for="askEmail">E-mail</label>
+                  <input class="field__input" id="askEmail" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="example@example.com">
+                  <p class="field__error" id="askEmailError" hidden>Γράψτε ένα έγκυρο e-mail.</p>
+                </div>
+              </div>
+              <label class="ask__trap" aria-hidden="true">Αν είστε άνθρωπος, μην το επιλέξετε <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off"></label>
+              <div class="ask__actions">
+                <button class="ask__submit" type="submit">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/></svg>
+                  Αποστολή ερώτησης
+                </button>
+                <p class="ask__status" id="askStatus" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+            <div class="ask__done" id="askDone" hidden tabindex="-1">
+              <span class="ask__check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+              <h3 class="ask__doneTitle">Ευχαριστούμε!</h3>
+              <p class="ask__doneText">Η ερώτησή σας στάλθηκε στην ομάδα «Χριστιανισμός &amp; Επιστήμη». Θα σας απαντήσουμε στο e-mail σας.</p>
+              <button class="ask__again" type="button" id="askAgain">Νέα ερώτηση</button>
             </div>
-            <div class="field field--short">
-              <label class="field__label" for="askEmail">E-mail</label>
-              <input class="field__input" id="askEmail" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="example@example.com">
-              <p class="field__hint" id="askEmailHint">Μόνο για να σας απαντήσουμε. Δεν το δημοσιεύουμε.</p>
-              <p class="field__error" id="askEmailError" hidden>Γράψτε ένα έγκυρο e-mail.</p>
-            </div>
-            <div class="ask__actions">
-              <button class="ask__submit" type="submit">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/></svg>
-                Αποστολή ερώτησης
-              </button>
-              <p class="ask__status" id="askStatus" role="status" aria-live="polite"></p>
-            </div>
-          </form>
+          </div>
         </section>
         <!-- /ask -->
       </div>
@@ -229,6 +250,6 @@
     </div>
   </footer>
 
-  <script src="js/page.js?v=e319bd60a2"></script>
+  <script src="js/page.js?v=b9679a5544"></script>
 </body>
 </html>

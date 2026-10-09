@@ -60,23 +60,25 @@
   openFromHash();
 
   /* ---------- "ask your own question" form (Ερωτήσεις) ----------
-   * With data-endpoint set (e.g. a Formspree address) the question is posted there;
-   * without it, the visitor's e-mail app opens with the question ready to send to data-to. */
+   * The question is posted from the page itself (no e-mail app opens) to the form service in
+   * data-endpoint; data-key is that service's public access key (e.g. Web3Forms), if it needs one.
+   * The service forwards each question by e-mail to the team's inbox. Until data-endpoint is
+   * filled in, the form shows a calm "coming soon" note and keeps what the visitor wrote. */
   var form = $("#askForm");
   if (form) {
     var EN = document.documentElement.lang === "en";
     var MSG = EN ? {
-      subject: "Question from the website", from: "Reply to: ",
-      mailOpened: "Your e-mail app has opened with your question ready. Press “Send” there to send it.",
-      sending: "Sending…", sent: "Thank you! Your question has been sent. We will reply by e-mail.",
-      failed: "Sending did not work. Please e-mail us at "
+      subject: "Question from the website",
+      sending: "Sending…", failed: "Sending did not work. Please try again in a moment.",
+      soon: "Sending questions from the website will be switched on very soon. Thank you for your patience."
     } : {
-      subject: "Ερώτηση από την ιστοσελίδα", from: "Απάντηση στο: ",
-      mailOpened: "Άνοιξε το πρόγραμμα e-mail σας με την ερώτηση έτοιμη. Πατήστε «Αποστολή» εκεί για να σταλεί.",
-      sending: "Αποστολή…", sent: "Ευχαριστούμε! Η ερώτησή σας στάλθηκε. Θα σας απαντήσουμε με e-mail.",
-      failed: "Η αποστολή δεν έγινε. Στείλτε μας e-mail στο "
+      subject: "Ερώτηση από την ιστοσελίδα",
+      sending: "Αποστολή…", failed: "Η αποστολή δεν έγινε. Δοκιμάστε ξανά σε λίγο.",
+      soon: "Η αποστολή ερωτήσεων από την ιστοσελίδα ενεργοποιείται πολύ σύντομα. Ευχαριστούμε για την υπομονή σας."
     };
-    var q = $("#askQuestion"), mail = $("#askEmail"), status = $("#askStatus"), btn = form.querySelector("button[type=submit]");
+    var q = $("#askQuestion"), mail = $("#askEmail"), nameIn = $("#askName"), status = $("#askStatus"),
+        btn = form.querySelector("button[type=submit]"), count = $("#askCount"), done = $("#askDone"), again = $("#askAgain");
+    var max = +q.getAttribute("maxlength") || 2000;
     var setError = function (input, errorEl, bad) {
       input.setAttribute("aria-invalid", bad ? "true" : "false");
       errorEl.hidden = !bad;
@@ -84,29 +86,43 @@
       return bad;
     };
     var say = function (text, kind) { status.textContent = text; status.className = "ask__status" + (kind ? " is-" + kind : ""); };
+    var showCount = function () {
+      if (!count) return;
+      var n = q.value.length;
+      count.textContent = n + " / " + max;
+      count.classList.toggle("is-near", n > max * 0.9);
+    };
+    q.addEventListener("input", showCount); showCount();
     [q, mail].forEach(function (el) {
       el.addEventListener("input", function () { if (el.getAttribute("aria-invalid") === "true") el.setAttribute("aria-invalid", "false"); });
     });
+    var finish = function () {
+      form.reset(); showCount(); say("");
+      form.hidden = true; done.hidden = false; done.focus();
+    };
+    if (again) again.addEventListener("click", function () { done.hidden = true; form.hidden = false; q.focus(); });
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var question = q.value.trim(), email = mail.value.trim();
+      var question = q.value.trim(), email = mail.value.trim(), name = nameIn ? nameIn.value.trim() : "";
       var badQ = setError(q, $("#askQuestionError"), question.length < 10);
       var badM = setError(mail, $("#askEmailError"), !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email));
       if (badQ || badM) { (badQ ? q : mail).focus(); say(""); return; }
-      var to = form.getAttribute("data-to"), endpoint = form.getAttribute("data-endpoint");
-      if (!endpoint) {
-        var mailto = "mailto:" + to + "?subject=" + encodeURIComponent(MSG.subject) +
-          "&body=" + encodeURIComponent(question + "\n\n" + MSG.from + email);
-        form.setAttribute("data-mailto", mailto);          // the link that was opened (also used by the tests)
-        location.href = mailto;
-        say(MSG.mailOpened, "ok");
-        return;
-      }
+      var trap = form.querySelector("[name=botcheck]");
+      if (trap && trap.checked) { finish(); return; }                 // spam bot: pretend it worked, send nothing
+      var endpoint = form.getAttribute("data-endpoint"), key = form.getAttribute("data-key");
+      if (!endpoint) { say(MSG.soon, "info"); return; }               // not connected yet: keep the text, explain
+      var body = { question: question, name: name, email: email, replyto: email, subject: MSG.subject,
+                   from_name: name || "christianity-science.gr", page: location.href };
+      if (key) body.access_key = key;
       btn.disabled = true; say(MSG.sending);
-      fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({ question: question, email: email, _subject: MSG.subject, page: location.href }) })
-        .then(function (r) { if (!r.ok) throw new Error(r.status); form.reset(); say(MSG.sent, "ok"); })
-        .catch(function () { say(MSG.failed + to, "error"); })
+      fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json", "Accept": "application/json" }, body: JSON.stringify(body) })
+        .then(function (r) {
+          return r.json().catch(function () { return {}; }).then(function (d) {
+            if (!r.ok || d.success === false) throw new Error(d.message || r.status);
+          });
+        })
+        .then(finish)
+        .catch(function () { say(MSG.failed, "error"); })
         .then(function () { btn.disabled = false; });
     });
   }

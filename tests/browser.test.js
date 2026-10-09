@@ -542,39 +542,92 @@ test("column page: filter finds articles, links open the newspaper or the PDF", 
   await page.close2();
 });
 
-test("question form: checks the fields, then opens the e-mail app with the question ready", async () => {
+test("question form: checks the fields and never leaves the page or opens an e-mail app", async () => {
   const page = await open("faq.html");
+  const start = page.url();
   await page.click(".ask__submit");
   assert.equal(await page.$eval("#askQuestionError", (e) => e.hidden), false);
   assert.equal(await page.$eval("#askEmailError", (e) => e.hidden), false);
   assert.equal(await page.evaluate(() => document.activeElement.id), "askQuestion", "focus moves to the first problem");
   await page.type("#askQuestion", "Πώς συμβιβάζεται η Μεγάλη Έκρηξη με τη Γένεση;");
   await page.type("#askEmail", "listener@example.com");
-  // the browser will not let a test intercept the jump to the e-mail app, so read the link the form recorded
+  await page.evaluate(() => document.querySelector("#askForm").setAttribute("data-endpoint", ""));
   await page.click(".ask__submit");
-  await page.waitForFunction(() => document.querySelector("#askForm").hasAttribute("data-mailto"));
-  const href = await page.$eval("#askForm", (f) => f.getAttribute("data-mailto"));
-  assert.ok(href && href.startsWith("mailto:science@christianity.gr?"), "mailto link: " + href);
-  assert.ok(decodeURIComponent(href).includes("Μεγάλη Έκρηξη") && decodeURIComponent(href).includes("listener@example.com"));
-  assert.match(await page.$eval("#askStatus", (e) => e.textContent), /πρόγραμμα e-mail/);
+  await page.waitForFunction(() => document.querySelector("#askStatus").textContent.length > 0);
+  assert.match(await page.$eval("#askStatus", (e) => e.textContent), /πολύ σύντομα/, "not connected yet: a calm note on the page");
+  assert.equal(await page.$eval("#askStatus", (e) => e.className), "ask__status is-info");
+  assert.match(await page.$eval("#askQuestion", (e) => e.value), /Μεγάλη Έκρηξη/, "what the visitor wrote is kept");
+  assert.equal(await page.$eval("#askDone", (e) => getComputedStyle(e).display), "none", "no thank-you card");
+  assert.equal(await page.$eval("#askCount", (e) => e.textContent), "46 / 2000", "character counter follows the text");
+  assert.equal(page.url(), start, "still on the same page");
+  assert.ok(!(await page.content()).includes("mailto:"), "no mailto link anywhere on the page");
   await page.close2();
 });
 
-test("question form: with a form service configured it sends the question and thanks the visitor", async () => {
-  const page = await open("en/faq.html");
-  await page.evaluate(() => {
-    document.querySelector("#askForm").setAttribute("data-endpoint", "https://forms.example/submit");
-    window.__sent = null;
-    window.fetch = (url, opt) => { window.__sent = { url, body: JSON.parse(opt.body) }; return Promise.resolve({ ok: true }); };
+async function formPage(path, reply) {
+  const page = await open(path);
+  const sent = [];
+  await page.setRequestInterception(true);
+  page.on("request", (req) => {
+    if (req.url() === "https://api.web3forms.com/submit") {
+      if (req.method() === "OPTIONS") return req.respond({ status: 204, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*", "Access-Control-Allow-Methods": "POST" } });
+      sent.push(JSON.parse(req.postData()));
+      return req.respond({ status: reply.status, contentType: "application/json", headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify(reply.body) });
+    }
+    req.continue();
   });
+  await page.evaluate(() => {
+    const f = document.querySelector("#askForm");
+    f.setAttribute("data-endpoint", "https://api.web3forms.com/submit");
+    f.setAttribute("data-key", "test-key");
+  });
+  return { page, sent };
+}
+
+test("question form: sends the question from the page itself and thanks the visitor", async () => {
+  const { page, sent } = await formPage("en/faq.html", { status: 200, body: { success: true } });
+  const start = page.url();
   await page.type("#askQuestion", "How do you reconcile the Big Bang with Genesis?");
+  await page.type("#askName", "Maria");
   await page.type("#askEmail", "listener@example.com");
   await page.click(".ask__submit");
-  await page.waitForFunction(() => /Thank you/.test(document.querySelector("#askStatus").textContent));
-  const sent = await page.evaluate(() => window.__sent);
-  assert.equal(sent.url, "https://forms.example/submit");
-  assert.equal(sent.body.email, "listener@example.com");
-  assert.match(sent.body.question, /Big Bang/);
+  await page.waitForFunction(() => !document.querySelector("#askDone").hidden);
+  assert.equal(await page.$eval("#askForm", (e) => getComputedStyle(e).display), "none", "the form makes way for the thank-you card");
+  assert.match(await page.$eval("#askDone", (e) => e.textContent), /Thank you/);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].name, "Maria");
+  assert.equal(sent[0].access_key, "test-key");
+  assert.equal(sent[0].email, "listener@example.com");
+  assert.equal(sent[0].replyto, "listener@example.com", "replies go straight to the listener");
+  assert.match(sent[0].question, /Big Bang/);
   assert.equal(await page.$eval("#askQuestion", (e) => e.value), "", "form is cleared after sending");
+  assert.equal(page.url(), start, "still on the same page");
+  await page.click("#askAgain");
+  assert.equal(await page.$eval("#askForm", (e) => getComputedStyle(e).display), "grid", "“New question” brings the form back");
+  assert.equal(await page.evaluate(() => document.activeElement.id), "askQuestion");
+  await page.close2();
+});
+
+test("question form: a failed send keeps the question and says so on the page", async () => {
+  const { page, sent } = await formPage("faq.html", { status: 400, body: { success: false, message: "bad key" } });
+  await page.type("#askQuestion", "Μια ερώτηση που δεν θα σταλεί σωστά.");
+  await page.type("#askEmail", "listener@example.com");
+  await page.click(".ask__submit");
+  await page.waitForFunction(() => /δεν έγινε/.test(document.querySelector("#askStatus").textContent));
+  assert.equal(sent.length, 1);
+  assert.match(await page.$eval("#askQuestion", (e) => e.value), /δεν θα σταλεί/, "the question is kept so it can be resent");
+  assert.equal(await page.$eval(".ask__submit", (b) => b.disabled), false, "button usable again");
+  await page.close2();
+});
+
+test("question form: the hidden spam trap is invisible to people and silently drops bot posts", async () => {
+  const { page, sent } = await formPage("faq.html", { status: 200, body: { success: true } });
+  assert.equal(await page.$eval(".ask__trap", (e) => e.getBoundingClientRect().left < -1000), true, "trap is off-screen");
+  await page.type("#askQuestion", "Spam spam spam spam spam.");
+  await page.type("#askEmail", "bot@example.com");
+  await page.$eval("[name=botcheck]", (c) => { c.checked = true; });
+  await page.click(".ask__submit");
+  await page.waitForFunction(() => !document.querySelector("#askDone").hidden);
+  assert.equal(sent.length, 0, "nothing is sent");
   await page.close2();
 });
