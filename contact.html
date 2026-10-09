@@ -73,11 +73,6 @@
       <div class="wrap">
         <div class="contact">
           <div class="contact__card">
-            <h2>Ερωτήσεις</h2>
-            <p class="contact__big"><a href="faq.html#askTitle">Κάντε τη δική σας ερώτηση →</a></p>
-            <p class="contact__small">Γράψτε την ερώτησή σας και θα σας απαντήσουμε με e-mail.</p>
-          </div>
-          <div class="contact__card">
             <h2>Τηλέφωνο</h2>
             <p class="contact__big"><a href="tel:+302152158888">215 215 88 88</a></p>
             <p class="contact__small">Μόνο κατά τη διάρκεια της εκπομπής</p>
@@ -91,6 +86,54 @@
             <p class="contact__big"><a href="https://www.youtube.com/christianityscience" target="_blank" rel="noopener">christianityscience</a></p>
           </div>
         </div>
+        <!-- ask -->
+        <section class="ask" aria-labelledby="askTitle">
+          <div class="ask__intro">
+            <h2 class="ask__title" id="askTitle">Κάντε τη δική σας ερώτηση</h2>
+            <p class="ask__lede">Δεν βρήκατε αυτό που ψάχνετε; Στείλτε μας την ερώτησή σας και θα σας απαντήσουμε στο e-mail σας.</p>
+            <ol class="ask__steps">
+              <li><span class="ask__num" aria-hidden="true">1</span><span>Γράψτε την ερώτησή σας</span></li>
+              <li><span class="ask__num" aria-hidden="true">2</span><span>Τη διαβάζει η ομάδα της εκπομπής</span></li>
+              <li><span class="ask__num" aria-hidden="true">3</span><span>Σας απαντάμε με e-mail</span></li>
+            </ol>
+            <p class="ask__privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Τα στοιχεία σας χρησιμοποιούνται μόνο για την απάντηση και δεν δημοσιεύονται.</span></p>
+          </div>
+          <div class="ask__body">
+            <form class="ask__form" id="askForm" novalidate data-endpoint="" data-key="">
+              <div class="field">
+                <label class="field__label" for="askQuestion">Η ερώτησή σας</label>
+                <textarea class="field__input" id="askQuestion" name="question" rows="6" required minlength="10" maxlength="2000" placeholder="Γράψτε εδώ την ερώτησή σας…"></textarea>
+                <p class="field__meta"><span class="field__error" id="askQuestionError" hidden>Γράψτε την ερώτησή σας (τουλάχιστον 10 χαρακτήρες).</span><span class="field__count" id="askCount" aria-hidden="true">0 / 2000</span></p>
+              </div>
+              <div class="field__row">
+                <div class="field">
+                  <label class="field__label" for="askName">Όνομα <span class="field__opt">(προαιρετικό)</span></label>
+                  <input class="field__input" id="askName" name="name" type="text" autocomplete="name" maxlength="80" placeholder="Πώς να σας προσφωνήσουμε;">
+                </div>
+                <div class="field">
+                  <label class="field__label" for="askEmail">E-mail</label>
+                  <input class="field__input" id="askEmail" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="example@example.com">
+                  <p class="field__error" id="askEmailError" hidden>Γράψτε ένα έγκυρο e-mail.</p>
+                </div>
+              </div>
+              <label class="ask__trap" aria-hidden="true">Αν είστε άνθρωπος, μην το επιλέξετε <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off"></label>
+              <div class="ask__actions">
+                <button class="ask__submit" type="submit">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/></svg>
+                  Αποστολή ερώτησης
+                </button>
+                <p class="ask__status" id="askStatus" role="status" aria-live="polite"></p>
+              </div>
+            </form>
+            <div class="ask__done" id="askDone" hidden tabindex="-1">
+              <span class="ask__check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
+              <h3 class="ask__doneTitle">Ευχαριστούμε!</h3>
+              <p class="ask__doneText">Η ερώτησή σας στάλθηκε στην ομάδα «Χριστιανισμός &amp; Επιστήμη». Θα σας απαντήσουμε στο e-mail σας.</p>
+              <button class="ask__again" type="button" id="askAgain">Νέα ερώτηση</button>
+            </div>
+          </div>
+        </section>
+        <!-- /ask -->
       </div>
     </div>
   </main>

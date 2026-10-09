@@ -71,7 +71,7 @@
     </section>
     <div class="page">
       <div class="wrap">
-        <p class="ask-cta-wrap"><a class="ask-cta" href="#askTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>Ask your own question</a></p>
+        <p class="ask-cta-wrap"><a class="ask-cta" href="contact.html#askTitle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></svg>Ask your own question</a></p>
         <div class="page__tools">
           <p class="page__count">8 questions</p>
           <label class="search">
@@ -186,54 +186,6 @@
           </details>
         </div>
         <p class="empty" id="filterEmpty" hidden>No question found. Try another word.</p>
-        <!-- ask -->
-        <section class="ask" aria-labelledby="askTitle">
-          <div class="ask__intro">
-            <h2 class="ask__title" id="askTitle">Ask your own question</h2>
-            <p class="ask__lede">Didn't find what you were looking for? Send us your question and we will reply to your e-mail.</p>
-            <ol class="ask__steps">
-              <li><span class="ask__num" aria-hidden="true">1</span><span>Write your question</span></li>
-              <li><span class="ask__num" aria-hidden="true">2</span><span>The broadcast team reads it</span></li>
-              <li><span class="ask__num" aria-hidden="true">3</span><span>We reply by e-mail</span></li>
-            </ol>
-            <p class="ask__privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><span>Your details are used only to reply to you and are never published.</span></p>
-          </div>
-          <div class="ask__body">
-            <form class="ask__form" id="askForm" novalidate data-endpoint="" data-key="">
-              <div class="field">
-                <label class="field__label" for="askQuestion">Your question</label>
-                <textarea class="field__input" id="askQuestion" name="question" rows="6" required minlength="10" maxlength="2000" placeholder="Write your question here…"></textarea>
-                <p class="field__meta"><span class="field__error" id="askQuestionError" hidden>Please write your question (at least 10 characters).</span><span class="field__count" id="askCount" aria-hidden="true">0 / 2000</span></p>
-              </div>
-              <div class="field__row">
-                <div class="field">
-                  <label class="field__label" for="askName">Name <span class="field__opt">(optional)</span></label>
-                  <input class="field__input" id="askName" name="name" type="text" autocomplete="name" maxlength="80" placeholder="How should we address you?">
-                </div>
-                <div class="field">
-                  <label class="field__label" for="askEmail">E-mail</label>
-                  <input class="field__input" id="askEmail" name="email" type="email" required autocomplete="email" inputmode="email" placeholder="example@example.com">
-                  <p class="field__error" id="askEmailError" hidden>Please enter a valid e-mail address.</p>
-                </div>
-              </div>
-              <label class="ask__trap" aria-hidden="true">If you are human, leave this unticked <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off"></label>
-              <div class="ask__actions">
-                <button class="ask__submit" type="submit">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/></svg>
-                  Send question
-                </button>
-                <p class="ask__status" id="askStatus" role="status" aria-live="polite"></p>
-              </div>
-            </form>
-            <div class="ask__done" id="askDone" hidden tabindex="-1">
-              <span class="ask__check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span>
-              <h3 class="ask__doneTitle">Thank you!</h3>
-              <p class="ask__doneText">Your question has been sent to the “Christianity &amp; Science” team. We will reply to your e-mail.</p>
-              <button class="ask__again" type="button" id="askAgain">New question</button>
-            </div>
-          </div>
-        </section>
-        <!-- /ask -->
       </div>
     </div>
   </main>

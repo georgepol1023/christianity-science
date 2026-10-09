@@ -542,8 +542,21 @@ test("column page: filter finds articles, links open the newspaper or the PDF", 
   await page.close2();
 });
 
+test("question form lives on Contact; the button on Questions links to it", async () => {
+  const faq = await open("faq.html");
+  assert.equal(await faq.$("#askForm"), null, "no form on the Questions page");
+  await Promise.all([faq.waitForNavigation(), faq.click(".ask-cta")]);
+  assert.ok(faq.url().endsWith("/contact.html#askTitle"));
+  assert.notEqual(await faq.$("#askForm"), null);
+  await faq.close2();
+  const en = await open("en/faq.html");
+  await Promise.all([en.waitForNavigation(), en.click(".ask-cta")]);
+  assert.ok(en.url().endsWith("/en/contact.html#askTitle"), en.url());
+  await en.close2();
+});
+
 test("question form: checks the fields and never leaves the page or opens an e-mail app", async () => {
-  const page = await open("faq.html");
+  const page = await open("contact.html");
   const start = page.url();
   await page.click(".ask__submit");
   assert.equal(await page.$eval("#askQuestionError", (e) => e.hidden), false);
@@ -560,7 +573,8 @@ test("question form: checks the fields and never leaves the page or opens an e-m
   assert.equal(await page.$eval("#askDone", (e) => getComputedStyle(e).display), "none", "no thank-you card");
   assert.equal(await page.$eval("#askCount", (e) => e.textContent), "46 / 2000", "character counter follows the text");
   assert.equal(page.url(), start, "still on the same page");
-  assert.ok(!(await page.content()).includes("mailto:"), "no mailto link anywhere on the page");
+  assert.ok(!(await page.$eval("#askForm", (f) => f.outerHTML)).includes("mailto:"), "the form never uses a mailto link");
+  assert.equal(await page.$eval("#askForm", (f) => f.hasAttribute("data-mailto")), false);
   await page.close2();
 });
 
@@ -585,7 +599,7 @@ async function formPage(path, reply) {
 }
 
 test("question form: sends the question from the page itself and thanks the visitor", async () => {
-  const { page, sent } = await formPage("en/faq.html", { status: 200, body: { success: true } });
+  const { page, sent } = await formPage("en/contact.html", { status: 200, body: { success: true } });
   const start = page.url();
   await page.type("#askQuestion", "How do you reconcile the Big Bang with Genesis?");
   await page.type("#askName", "Maria");
@@ -609,7 +623,7 @@ test("question form: sends the question from the page itself and thanks the visi
 });
 
 test("question form: a failed send keeps the question and says so on the page", async () => {
-  const { page, sent } = await formPage("faq.html", { status: 400, body: { success: false, message: "bad key" } });
+  const { page, sent } = await formPage("contact.html", { status: 400, body: { success: false, message: "bad key" } });
   await page.type("#askQuestion", "Μια ερώτηση που δεν θα σταλεί σωστά.");
   await page.type("#askEmail", "listener@example.com");
   await page.click(".ask__submit");
@@ -621,7 +635,7 @@ test("question form: a failed send keeps the question and says so on the page", 
 });
 
 test("question form: the hidden spam trap is invisible to people and silently drops bot posts", async () => {
-  const { page, sent } = await formPage("faq.html", { status: 200, body: { success: true } });
+  const { page, sent } = await formPage("contact.html", { status: 200, body: { success: true } });
   assert.equal(await page.$eval(".ask__trap", (e) => e.getBoundingClientRect().left < -1000), true, "trap is off-screen");
   await page.type("#askQuestion", "Spam spam spam spam spam.");
   await page.type("#askEmail", "bot@example.com");
