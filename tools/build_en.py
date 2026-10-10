@@ -256,20 +256,35 @@ def column_note(src, page, col):
 
 
 def column_list(src, col):
-    """English titles in the list of column articles (column.html)."""
-    def title(m):
-        o = col.get(m.group(1))
-        if o and o["fresh"]:
-            return '<p class="ref__title"><a href="column/%s.htm">%s</a></p>' % (m.group(1), o["title"])
-        return '<p class="ref__title" translate="no" lang="el"><a href="column/%s.htm">%s</a></p>' % (m.group(1), m.group(2))
-    def keys(m):                       # the search box also finds a translated article by its Greek title
-        t = re.search(r'<a href="column/(\d+)\.htm">(.*?)</a>', m.group(0))
-        if not (t and col.get(t.group(1), {}).get("fresh")):
-            return m.group(0)
-        greek = re.sub(r"<[^>]+>", "", t.group(2)).replace('"', "&quot;")
-        return m.group(0).replace(" data-filter>", ' data-filter data-keys="%s">' % greek, 1)
-    src = re.sub(r'<li class="ref[^"]*" data-filter>.*?</li>', keys, src, flags=re.S)
-    return re.sub(r'<p class="ref__title" translate="no"><a href="column/(\d+)\.htm">(.*?)</a></p>', title, src)
+    """English titles in the lists of column articles (column.html, and the block in articles.html).
+
+    Articles kept on this site take their title from translation/column/<id>.html; the older ones
+    kept as PDFs take it from translation/column/archive.json (Greek title -> English title).
+    The Greek title is kept in data-keys, so Greek words still find the article in the search box."""
+    import html as _h
+    path = os.path.join(COLUMN_DIR, "archive.json")
+    archive = json.load(open(path, encoding="utf-8")) if os.path.exists(path) else {}
+
+    def english(href, greek):
+        m = re.match(r"column/(\d+)\.htm$", href)
+        if m:
+            o = col.get(m.group(1))
+            return o["title"] if o and o["fresh"] else None
+        t = archive.get(norm(_h.unescape(re.sub(r"<[^>]+>", "", greek))))
+        return _h.escape(t, quote=False) if t else None
+
+    def item(m):
+        block = m.group(0)
+        t = re.search(r'<p class="ref__title" translate="no"><a href="([^"]+)"([^>]*)>(.*?)</a></p>', block, re.S)
+        if not t:
+            return block
+        en = english(t.group(1), t.group(3))
+        if not en:
+            return block.replace(t.group(0), t.group(0).replace('translate="no"', 'translate="no" lang="el"', 1))
+        block = block.replace(t.group(0), '<p class="ref__title"><a href="%s"%s>%s</a></p>' % (t.group(1), t.group(2), en))
+        greek = re.sub(r"<[^>]+>", "", t.group(3)).replace('"', "&quot;")
+        return re.sub(r" data-filter>", ' data-filter data-keys="%s">' % greek, block, count=1)
+    return re.sub(r'<li class="ref[^"]*"[^>]*>.*?</li>', item, src, flags=re.S)
 
 
 def column_latest(col):
@@ -366,7 +381,7 @@ def main():
             if page.startswith("column/"):
                 en = column_note(localise(column_page(en, page, col), page, english), page, col)
             else:
-                en = localise(column_list(en, col) if page == "column.html" else en, page, english)
+                en = localise(column_list(en, col) if page in ("column.html", "articles.html") else en, page, english)
             en = lang_switch(en, "../" * (depth + 1) + page, "ΕΛ", "el", "Ελληνικά")
             if not extract:
                 out = os.path.join(ROOT, "en", page)

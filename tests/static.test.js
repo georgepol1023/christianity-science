@@ -607,6 +607,15 @@ test("column: each English translation still matches the Greek it was made from"
   if (missing.length) console.log("# column articles not yet translated (shown in Greek): " + missing.join(", "));
 });
 
+test("column: the English lists show every article title in English", () => {
+  for (const f of ["en/column.html", "en/articles.html"]) {
+    const titles = [...read(f).matchAll(/<p class="ref__title"[^>]*>(?:<a[^>]*>)?([^<]*)/g)].map((m) => m[1]);
+    assert.ok(titles.length > 0, f + ": has article titles");
+    const greek = titles.filter((t) => /[Α-Ωα-ωά-ώ]/.test(t));
+    assert.deepEqual(greek, [], f + ": titles still in Greek (translation/column/ or translation/column/archive.json)");
+  }
+});
+
 test("column: page, Articles block and home page box all agree", () => {
   const d = JSON.parse(read("data/column.json")), total = d.online.length + d.archive.length;
   const col = read("column.html"), art = read("articles.html");
