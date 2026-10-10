@@ -435,7 +435,7 @@ test("tools/stamp.py: stamps nested pages correctly and is idempotent", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-"));
   fs.mkdirSync(path.join(tmp, "tools")); fs.mkdirSync(path.join(tmp, "css")); fs.mkdirSync(path.join(tmp, "js")); fs.mkdirSync(path.join(tmp, "material"));
   fs.copyFileSync(path.join(ROOT, "tools/stamp.py"), path.join(tmp, "tools/stamp.py"));
-  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/search.js", "js/related.js", "js/broadcasts.js", "js/broadcasts-en.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
+  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/search.js", "js/related.js", "js/sitesearch.js", "js/search-index.js", "js/broadcasts.js", "js/broadcasts-en.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
   fs.writeFileSync(path.join(tmp, "a.html"), '<link href="css/site.css"><script src="js/page.js?v=0000000000"></script>');
   fs.writeFileSync(path.join(tmp, "material/b.htm"), '<link href="../css/site.css">');
   const py = process.env.PYTHON || "python";
@@ -644,6 +644,28 @@ test("related: articles, topics and questions link to related content that exist
       assert.ok(fs.existsSync(path.join(ROOT, url.split("#")[0])), id + ": " + url + " exists");
     }
   }
+});
+
+test("site search: every page has the search button, and everything in the index exists", () => {
+  const missing = [];
+  for (const p of allPages()) {
+    const s = read(p);
+    if (!s.includes('<div class="topbar__tools">') || !/js\/(page|app)\.js/.test(s) || s.includes('http-equiv="refresh"')) continue;   // redirects
+    if (!s.includes('id="siteSearch"') || !/<script src="[^"]*js\/sitesearch\.js[^"]*" data-index="\w+"><\/script>/.test(s)) missing.push(p);
+  }
+  assert.deepEqual(missing, [], "pages without the site-wide search");
+  const ctx = { window: {} };
+  vm.runInNewContext(read("js/search-index.js"), ctx);
+  const index = ctx.window.SITE_INDEX;
+  const kinds = new Set(index.map((r) => r.k));
+  for (const k of ["B", "C", "T", "M", "Q", "A"]) assert.ok(kinds.has(k), "index has kind " + k);
+  assert.ok(index.length > 600, index.length + " items");
+  for (const r of index) {
+    assert.ok(r.t, "title for " + r.u);
+    assert.ok(fs.existsSync(path.join(ROOT, r.u.split("#")[0])), r.u + " exists");
+    if (r.h) assert.ok(fs.existsSync(path.join(ROOT, "en", r.u.split("#")[0])), "en/" + r.u + " exists");
+  }
+  assert.ok(index.filter((r) => r.k === "C").every((r) => r.e), "every column article has an English title");
 });
 
 test("column: page, Articles block and home page box all agree", () => {

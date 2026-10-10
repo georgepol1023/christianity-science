@@ -318,7 +318,6 @@
     $$(".chip", seasonBar).forEach(function (c) { c.setAttribute("aria-pressed", c.dataset.season === "all"); });
     renderList(); qIn.focus();
   });
-  $("#searchJump").addEventListener("click", function () { $("#archive").scrollIntoView({ behavior: "smooth" }); setTimeout(function () { qIn.focus({ preventScroll: true }); }, 350); });
 
   /* ---------- delegated clicks ---------- */
   document.addEventListener("click", function (e) {
@@ -499,7 +498,6 @@
     var tag = (e.target.tagName || "").toLowerCase(), typing = tag === "input" || tag === "textarea";
     if (e.key === "Escape") { closeMenus(); if (nav.classList.contains("is-open")) { closeNav(); menuBtn.focus(); } if (typing) e.target.blur(); return; }
     if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
-    if (e.key === "/") { e.preventDefault(); $("#searchJump").click(); }
     if (!player.ep) return;
     if (e.key === " " && tag !== "button" && tag !== "a") { e.preventDefault(); player.toggle(); }
     if (e.key === "ArrowLeft" && tag !== "input") player.skip(-15);

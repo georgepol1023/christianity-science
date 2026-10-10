@@ -184,12 +184,13 @@ test("home: season chips filter the list", async () => {
   await page.close2();
 });
 
-test("home: '/' jumps to search; Escape leaves it", async () => {
+test("home: '/' opens the site-wide search; Escape closes it", async () => {
   const page = await open("index.html");
   await page.keyboard.press("/");
-  await page.waitForFunction(() => document.activeElement && document.activeElement.id === "q", { timeout: 2000 });
+  await page.waitForFunction(() => document.activeElement && document.activeElement.classList.contains("ssearch__input"), { timeout: 2000 });
   await page.keyboard.press("Escape");
-  assert.notEqual(await page.evaluate(() => document.activeElement.id), "q");
+  assert.equal(await page.$eval(".ssearch", (e) => e.hidden), true);
+  assert.equal(await page.evaluate(() => document.activeElement.classList.contains("ssearch__input")), false);
   await page.close2();
 });
 
@@ -312,6 +313,41 @@ test("home: «Σχετικά» lists related column articles, topics and questio
   await en.click("#e-2013_10_17 [data-rel]");
   const enItems = await en.$$eval("#e-2013_10_17 .dlmenu--rel a", (e) => e.map((a) => ({ href: a.getAttribute("href"), text: a.textContent })));
   assert.ok(enItems.some((i) => /The Flood \(Part \d\)/.test(i.text) && /^\.\.\/column\//.test(i.href)), "English titles, links inside the English site");
+  await en.close2();
+  await page.close2();
+});
+
+test("site search: the top-bar button searches the whole site, grouped by kind, in both languages", async () => {
+  const page = await open("column/2437.htm");
+  await page.click("#siteSearch");
+  await page.waitForSelector(".ssearch:not([hidden]) .ssearch__input");
+  assert.equal(await page.evaluate(() => document.activeElement.classList.contains("ssearch__input")), true, "the box gets the cursor");
+  await page.type(".ssearch__input", "kataklismos");                // Greeklish with a typo
+  await page.waitForSelector(".ssearch__group");
+  const groups = await page.$$eval(".ssearch__group", (gs) => gs.map((g) => ({ head: g.querySelector(".ssearch__head").textContent, first: g.querySelector(".ssearch__title").textContent, href: g.querySelector("a").getAttribute("href") })));
+  const heads = groups.map((g) => g.head);
+  assert.ok(heads.includes("Εκπομπές") && heads.includes("Από τη στήλη μας στην εφημερίδα"), heads.join(", "));
+  for (const g of groups) assert.match(g.first, /Κατακλυσμός/, g.head + " starts with the Flood");
+  await page.keyboard.press("ArrowDown");
+  assert.equal(await page.evaluate(() => document.activeElement.classList.contains("ssearch__item")), true, "arrow keys move into the results");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.$eval(".ssearch", (e) => e.hidden), true, "Escape closes it");
+  // "/" opens it too; a broadcast result opens the broadcast in the archive
+  await page.keyboard.press("/");
+  await page.waitForSelector(".ssearch:not([hidden])");
+  await page.$eval(".ssearch__input", (i) => { i.value = "νηστεία"; i.dispatchEvent(new Event("input")); });
+  await page.waitForSelector(".ssearch__group a[href*='index.html#e-']");
+  await Promise.all([page.waitForNavigation(), page.click(".ssearch__group a[href*='index.html#e-']")]);
+  assert.match(page.url(), /\/index\.html#e-\d{4}_\d\d_\d\d$/);
+  const en = await open("en/articles.html");
+  await en.click("#siteSearch");
+  await en.waitForSelector(".ssearch:not([hidden]) .ssearch__input");
+  await en.type(".ssearch__input", "κατακλυσμός");
+  await en.waitForSelector(".ssearch__group");
+  const enFirst = await en.$eval(".ssearch__group", (g) => ({ head: g.querySelector(".ssearch__head").textContent, title: g.querySelector(".ssearch__title").textContent, href: g.querySelector("a").href }));
+  assert.equal(enFirst.head, "Broadcasts");
+  assert.match(enFirst.title, /The Flood/, "English titles for Greek words");
+  assert.match(enFirst.href, /\/en\/index\.html#e-/, "links stay in the English site");
   await en.close2();
   await page.close2();
 });
