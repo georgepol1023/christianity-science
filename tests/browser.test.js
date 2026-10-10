@@ -293,6 +293,29 @@ test("player: download menu offers the whole broadcast and its 4 parts, all exis
   await page.close2();
 });
 
+test("home: «Σχετικά» lists related column articles, topics and questions, and they open", async () => {
+  const page = await open("index.html#e-2013_10_17");             // «Κατακλυσμός – Μέρος 1ο»
+  await page.waitForSelector("#e-2013_10_17 [data-rel]");
+  await page.click("#e-2013_10_17 [data-rel]");
+  const items = await page.$$eval("#e-2013_10_17 .dlmenu--rel a", (e) => e.map((a) => ({ href: a.getAttribute("href"), text: a.textContent })));
+  assert.ok(items.length >= 3, items.length + " related items");
+  assert.ok(items.some((i) => /Κατακλυσμός \(Μέρος \d/.test(i.text) && /^column\/\d+\.htm$/.test(i.href)), "the column's Flood articles");
+  for (const i of items) assert.ok(fs.existsSync(path.join(ROOT, i.href.split("#")[0])), i.href);
+  await page.keyboard.press("Escape");
+  assert.equal(await page.$("#e-2013_10_17 .dlmenu"), null, "closes with Escape");
+  await page.click("#e-2013_10_17 [data-rel]");
+  await Promise.all([page.waitForNavigation(), page.click("#e-2013_10_17 .dlmenu--rel a[href^='column/']")]);
+  assert.match(page.url(), /\/column\/\d+\.htm$/);
+  assert.ok(await page.$(".related .related__list a[href^='../index.html#e-']"), "the article links back to related broadcasts");
+  const en = await open("en/index.html#e-2013_10_17");
+  await en.waitForSelector("#e-2013_10_17 [data-rel]");
+  await en.click("#e-2013_10_17 [data-rel]");
+  const enItems = await en.$$eval("#e-2013_10_17 .dlmenu--rel a", (e) => e.map((a) => ({ href: a.getAttribute("href"), text: a.textContent })));
+  assert.ok(enItems.some((i) => /The Flood \(Part \d\)/.test(i.text) && /^\.\.\/column\//.test(i.href)), "English titles, links inside the English site");
+  await en.close2();
+  await page.close2();
+});
+
 test("home: 'Αντιγραφή συνδέσμου' copies the broadcast link", async () => {
   const page = await open("index.html");
   await browser.defaultBrowserContext().overridePermissions(BASE, ["clipboard-read", "clipboard-write", "clipboard-sanitized-write"]);

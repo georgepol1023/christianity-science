@@ -595,3 +595,23 @@ textarea.field__input { resize: vertical; min-height: 9rem; }
 .pagehead__note { display: inline-block; margin: .9rem 0 0; padding: .35rem .8rem; border-radius: 999px; background: rgba(255,255,255,.1); color: #D8DDF5; font-size: .88rem; }
 .dlmenu .dlmenu__all { font-weight: 600; white-space: nowrap; }
 .dlmenu__sep { display: block; height: 1px; margin: .3rem .4rem; background: var(--line); }
+
+/* «Σχετικά»: related broadcasts, column articles, topics and questions (made by tools/related.py) */
+.related { max-width: 70ch; margin: 3rem 0 0; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+.colart + .related { margin-left: auto; margin-right: auto; }
+.related__title { font: 600 .82rem/1.3 var(--sans); text-transform: uppercase; letter-spacing: .06em; color: var(--gold-ink); margin: 0 0 1rem; }
+.related__group { min-width: 0; }
+.related__groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.4rem 2rem; }
+.related__head { font: 600 1rem/1.3 var(--sans); color: var(--ink); margin: 0 0 .6rem; }
+.related__list { list-style: none; margin: 0; padding: 0; display: grid; gap: .65rem; }
+:root .related__list a { font: 500 1rem/1.35 var(--serif); color: var(--ink); text-decoration: none; }
+:root .related__list a:hover, :root .related__list a:focus-visible { text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+.related__meta { display: block; margin-top: .15rem; font: 400 .8rem/1.3 var(--sans); color: var(--slate); }
+.related--small { margin-top: 1.5rem; padding-top: 1rem; }
+.related--small .related__groups { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem 1.5rem; }
+.related--small .related__head { font-size: .88rem; color: var(--slate); }
+:root .related--small .related__list a { font-size: .95rem; }
+.ep__rel { position: relative; }
+.dlmenu--rel { left: 0; right: auto; min-width: 260px; max-width: min(420px, 86vw); }
+.dlmenu--rel a { display: block; line-height: 1.35; }
+.dlmenu__kind { display: block; font: 600 .7rem/1.3 var(--sans); text-transform: uppercase; letter-spacing: .05em; color: var(--gold-ink); margin-bottom: .15rem; }

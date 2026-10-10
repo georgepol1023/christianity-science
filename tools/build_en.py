@@ -301,6 +301,14 @@ def column_latest(col):
         open(path, "w", encoding="utf-8", newline="\n").write(s2)
 
 
+def related_en(src, page, related):
+    """Put the English «Related» blocks (made by tools/related.py) in place of the Greek ones."""
+    blocks = related.get(page, {})
+    def swap(m):
+        return blocks.get(m.group(1), m.group(0))
+    return re.sub(r"(?s)<!-- related:([\w-]+) -->.*?<!-- /related:\1 -->", swap, src)
+
+
 def html_unescape(s):
     import html as _h
     return _h.unescape(s)
@@ -349,6 +357,8 @@ def main():
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)   # e.g. --only=categories/
     d = json.load(open(DICT_PATH, encoding="utf-8")) if os.path.exists(DICT_PATH) else {}
     col = column_translations()
+    rpath = os.path.join(ROOT, "data", "related.json")
+    related = json.load(open(rpath, encoding="utf-8")) if os.path.exists(rpath) else {}
     if "--column-todo" in sys.argv:    # Greek of every column article without an up-to-date translation
         out_dir = os.path.join(ROOT, "translation", "_batches", "column")
         os.makedirs(out_dir, exist_ok=True)
@@ -377,7 +387,7 @@ def main():
         depth = page.count("/")
         if page in english:
             el_src = lang_switch(src, "../" * depth + "en/" + page, "EN", "en", "English")
-            en = translate_page(strip_seo(el_src), d, [])
+            en = translate_page(related_en(strip_seo(el_src), page, related), d, [])
             if page.startswith("column/"):
                 en = column_note(localise(column_page(en, page, col), page, english), page, col)
             else:

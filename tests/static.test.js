@@ -435,7 +435,7 @@ test("tools/stamp.py: stamps nested pages correctly and is idempotent", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-"));
   fs.mkdirSync(path.join(tmp, "tools")); fs.mkdirSync(path.join(tmp, "css")); fs.mkdirSync(path.join(tmp, "js")); fs.mkdirSync(path.join(tmp, "material"));
   fs.copyFileSync(path.join(ROOT, "tools/stamp.py"), path.join(tmp, "tools/stamp.py"));
-  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/search.js", "js/broadcasts.js", "js/broadcasts-en.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
+  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/search.js", "js/related.js", "js/broadcasts.js", "js/broadcasts-en.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
   fs.writeFileSync(path.join(tmp, "a.html"), '<link href="css/site.css"><script src="js/page.js?v=0000000000"></script>');
   fs.writeFileSync(path.join(tmp, "material/b.htm"), '<link href="../css/site.css">');
   const py = process.env.PYTHON || "python";
@@ -613,6 +613,36 @@ test("column: the English lists show every article title in English", () => {
     assert.ok(titles.length > 0, f + ": has article titles");
     const greek = titles.filter((t) => /[Α-Ωα-ωά-ώ]/.test(t));
     assert.deepEqual(greek, [], f + ": titles still in Greek (translation/column/ or translation/column/archive.json)");
+  }
+});
+
+test("related: articles, topics and questions link to related content that exists", () => {
+  const online = JSON.parse(read("data/column.json")).online;
+  let withBroadcasts = 0;
+  for (const e of online) {
+    const el = read("column/" + e.id + ".htm");
+    assert.match(el, /<!-- related:page -->[\s\S]*<!-- \/related:page -->/, e.id + ": «Σχετικά» block");
+    if (/<!-- related:page -->[\s\S]*<a href="\.\.\/index\.html#e-\d{4}_\d\d_\d\d"/.test(el)) withBroadcasts++;
+    const en = read("en/column/" + e.id + ".htm");
+    assert.match(en, /<h2 class="related__title">Related<\/h2>/, e.id + ": English «Related» block");
+    assert.doesNotMatch(en, /Ακούστε σχετικές εκπομπές/, e.id + ": no Greek block on the English page");
+  }
+  assert.ok(withBroadcasts > online.length * 0.9, withBroadcasts + " of " + online.length + " articles link to related broadcasts");
+  assert.ok((read("faq.html").match(/<!-- related:q-\d+ -->/g) || []).length >= 6, "most questions have related items");
+  // the archive menu's data: every address exists, and every broadcast id is a real broadcast
+  const ctx = { window: {} };
+  vm.runInNewContext(read("js/related.js"), ctx);
+  const { seasons } = loadData();
+  const ids = new Set(seasons.flatMap((s) => s.episodes.map((e) => e.date.replace(/-/g, "_"))));
+  const rel = ctx.window.RELATED;
+  assert.ok(Object.keys(rel).length > 250, Object.keys(rel).length + " broadcasts with related items");
+  for (const [id, list] of Object.entries(rel)) {
+    assert.ok(ids.has(id), id + " is a broadcast");
+    for (const [kind, url, el] of list) {
+      assert.match(kind, /^[CTMQ]$/);
+      assert.ok(el, id + ": has a title");
+      assert.ok(fs.existsSync(path.join(ROOT, url.split("#")[0])), id + ": " + url + " exists");
+    }
   }
 });
 

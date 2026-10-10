@@ -11,6 +11,7 @@
   var LANG = document.documentElement.lang === "en" ? "en" : "el";
   var ROOT = LANG === "en" ? "../" : "";                 // path from this page to the site root
   var EN_TITLES = window.BROADCAST_TITLES_EN || {};
+  var RELATED = window.RELATED || {};                    // «Σχετικά» per broadcast, from js/related.js
   var T = {
     el: {
       locale: "el-GR", site: "Χριστιανισμός & Επιστήμη",
@@ -30,7 +31,8 @@
       resume: "Συνέχεια", hide: "Απόκρυψη",
       allSeasons: "Όλοι οι κύκλοι",
       stats: function (e, n, h) { return e + " εκπομπές σε " + n + " κύκλους, περίπου " + h + " ώρες ακρόασης."; },
-      sources: "Άρθρα &amp; πηγές", copyLink: "Αντιγραφή συνδέσμου",
+      sources: "Άρθρα &amp; πηγές", copyLink: "Αντιγραφή συνδέσμου", related: "Σχετικά",
+      relKind: { C: "Από τη στήλη μας", T: "Θέμα", M: "Πολυμέσα", Q: "Ερώτηση" },
       listen: function (t) { return "Ακούστε: " + t; }, download: "Λήψη mp3",
       searchAria: "Αποτελέσματα αναζήτησης", results: "Αποτελέσματα", closest: "Πλησιέστερες εκπομπές", byRelevance: "κατά συνάφεια",
       count: function (n) { return n + (n === 1 ? " εκπομπή" : " εκπομπές"); },
@@ -67,7 +69,8 @@
       resume: "Continue", hide: "Hide",
       allSeasons: "All seasons",
       stats: function (e, n, h) { return e + " broadcasts in " + n + " seasons, about " + h + " hours of listening. Audio in Greek."; },
-      sources: "Articles &amp; sources (in Greek)", copyLink: "Copy link",
+      sources: "Articles &amp; sources (in Greek)", copyLink: "Copy link", related: "Related",
+      relKind: { C: "From our column", T: "Topic", M: "Media", Q: "Question" },
       listen: function (t) { return "Listen: " + t; }, download: "Download mp3",
       searchAria: "Search results", results: "Results", closest: "Closest broadcasts", byRelevance: "most relevant first",
       count: function (n) { return n + (n === 1 ? " broadcast" : " broadcasts"); },
@@ -267,6 +270,7 @@
       '<div><h4 class="ep__title">' + highlight(e.title, hits) + "</h4>" +
       '<p class="ep__links">' + (showSeason ? '<span class="ep__season">' + T.season(e.season) + "</span>" : "") +
       (e.link ? '<a href="' + esc(e.link) + '">' + T.sources + "</a>" : "") +
+      (RELATED[e.id] ? '<span class="ep__rel"><button data-rel="' + e.id + '" aria-haspopup="true" aria-expanded="false">' + T.related + "</button></span>" : "") +
       '<button data-share="' + e.id + '">' + T.copyLink + "</button></p></div>" +
       partsHTML(e) +
       '<div class="ep__actions"><button class="ep__play" data-play="' + e.id + '" aria-label="' + esc(T.listen(e.title)) + '">' + (active && player.playing ? I.pause : I.play) + "</button>" +
@@ -350,6 +354,21 @@
         ep3.parts.map(function (u, i) { return '<a role="menuitem" href="' + encodeURI(u) + '" download>' + I.dl + " " + T.dlItem(i + 1) + "</a>"; }).join("");
       wrap.appendChild(m); t.setAttribute("aria-expanded", "true");
       m.querySelector("a").focus();
+      return;
+    }
+    if ((t = e.target.closest("[data-rel]"))) {             // «Σχετικά»: related articles, topics, questions
+      var wrapR = t.parentNode, openR = wrapR.querySelector(".dlmenu");
+      closeMenus();
+      if (openR) return;
+      var mr = document.createElement("div");
+      mr.className = "dlmenu dlmenu--rel"; mr.setAttribute("role", "menu");
+      mr.innerHTML = RELATED[t.dataset.rel].map(function (r) {
+        var en = LANG === "en" && r[3], title = en ? r[3] : r[2];
+        return '<a role="menuitem" href="' + ROOT + r[1] + '"' + (LANG === "en" && !en ? ' lang="el"' : "") + '><span class="dlmenu__kind">' +
+          T.relKind[r[0]] + "</span>" + title + "</a>";
+      }).join("");
+      wrapR.appendChild(mr); t.setAttribute("aria-expanded", "true");
+      mr.querySelector("a").focus();
       return;
     }
     if (!e.target.closest(".dlmenu")) closeMenus();
