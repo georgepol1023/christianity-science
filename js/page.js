@@ -34,20 +34,49 @@
     if (e.key === "Escape" && nav.classList.contains("is-open")) { closeNav(); menuBtn.focus(); }
   });
 
-  /* ---------- filter (άρθρα, ερωτήσεις) — χωρίς τόνους, τελικό σίγμα ---------- */
+  /* ---------- filter (άρθρα, στήλη εφημερίδας, ερωτήσεις) ----------
+   * The same forgiving search as the broadcast archive (js/search.js): typos, word forms, Greeklish,
+   * partial words; best matches first. data-keys="…" on an item adds words to search (e.g. the Greek
+   * title on the English page). Without js/search.js it falls back to plain matching. */
   function norm(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/ς/g, "σ"); }
   var input = $("#filter");
   if (input) {
-    var items = $$("[data-filter]");
+    var SS = window.SiteSearch;
+    var items = $$("[data-filter]").map(function (el, i) {
+      var text = el.textContent + " " + (el.getAttribute("data-keys") || "");
+      var it = SS ? SS.prepare(text) : { norm: norm(text) };
+      it.el = el; it.id = -i; it.parent = el.parentNode;     // id: ties keep the page's own order
+      return it;
+    });
+    var groups = items.map(function (it) { return it.parent; }).filter(function (p, i, a) { return a.indexOf(p) === i; });
     var empty = $("#filterEmpty");
-    items.forEach(function (el) { el._norm = norm(el.textContent); });
+    var near = document.createElement("p");
+    near.className = "empty"; near.hidden = true;
+    near.textContent = document.documentElement.lang === "en" ? "No exact match – these are the closest:" : "Δεν βρέθηκε ακριβές αποτέλεσμα – τα πλησιέστερα:";
+    var anchor = empty || input.closest("label") || input;
+    anchor.parentNode.insertBefore(near, anchor);
+
     input.addEventListener("input", function () {
-      var tokens = norm(input.value.trim()).split(/\s+/).filter(Boolean), shown = 0;
-      items.forEach(function (el) {
-        var ok = tokens.every(function (t) { return el._norm.indexOf(t) !== -1; });
-        el.hidden = !ok; if (ok) shown++;
+      var q = input.value.trim(), res;
+      if (!q) {
+        res = { list: items.map(function (it) { return { ep: it }; }), approx: false };
+      } else if (SS) {
+        res = SS.search(items, q);
+      } else {
+        var tokens = norm(q).split(/\s+/).filter(Boolean);
+        res = { list: items.filter(function (it) { return tokens.every(function (t) { return it.norm.indexOf(t) !== -1; }); })
+                           .map(function (it) { return { ep: it }; }), approx: false };
+      }
+      items.forEach(function (it) { it.el.hidden = true; });
+      res.list.forEach(function (r) { r.ep.el.hidden = false; r.ep.parent.appendChild(r.ep.el); });   // in ranked order
+      if (!q) items.forEach(function (it) { it.parent.appendChild(it.el); });                         // back to the page's order
+      groups.forEach(function (g) {                // a list with no matches hides, with its heading (column: one per year)
+        var none = !g.querySelector(":scope > [data-filter]:not([hidden])"), head = g.previousElementSibling;
+        g.hidden = none;
+        if (head && /^H[2-4]$/.test(head.tagName)) head.hidden = none;
       });
-      if (empty) empty.hidden = shown > 0;
+      near.hidden = !res.approx;
+      if (empty) empty.hidden = res.list.length > 0;
     });
   }
 

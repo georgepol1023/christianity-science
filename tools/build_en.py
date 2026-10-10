@@ -2,6 +2,8 @@
 
     python tools/build_en.py            build en/ pages; fails if any Greek text has no translation
     python tools/build_en.py --extract  write translation/_todo.json with every Greek unit still untranslated
+    python tools/build_en.py --column-todo  write the Greek of each column article still needing an English
+                                          translation to translation/_batches/column/ (English goes in translation/column/)
 
 Each paragraph, heading, list item, button, label etc. is one translation unit, keyed by its Greek
 inner HTML (whitespace collapsed), so links and bold text inside it are translated together.
@@ -169,8 +171,6 @@ def localise(src, page, english):
     everything else (PDFs, pictures, audio, untranslated pages) gets one extra ../ to leave en/.
     """
     src = src.replace('<html lang="el">', '<html lang="en">', 1)
-    if page.startswith("column/"):     # the newspaper column's articles are kept in Greek, as published
-        src = src.replace("</h1>", '</h1>\n        <p class="pagehead__note">This article is in Greek, as it was published in the newspaper.</p>', 1)
     src = re.sub(r"(<time\b[^>]*>)(\S+)", lambda m: m.group(1) + MONTHS.get(m.group(2), m.group(2)), src)
 
     def fix(m):
@@ -187,6 +187,103 @@ def localise(src, page, english):
     if page == "index.html":
         src = src.replace('<script src="../js/app.js', '<script src="../js/broadcasts-en.js"></script>\n  <script src="../js/app.js', 1)
     return src
+
+
+# ---------- the newspaper column: one translation file per article ----------
+# translation/column/<id>.html holds the English title (<h1>) and text of column/<id>.htm, and a
+# "source" stamp of the Greek it was translated from. If the Greek changes later, the stamp no longer
+# matches: the English page shows the Greek again until the translation is checked (tests list these).
+COLUMN_DIR = os.path.join(ROOT, "translation", "column")
+SITE_EL, SITE_EN = "Χριστιανισμός & Επιστήμη", "Christianity & Science"
+
+
+def column_source(e):
+    import hashlib
+    return hashlib.sha1((e["title"] + "\n" + e["body"]).encode("utf-8")).hexdigest()[:12]
+
+
+def column_translations():
+    """{id: {"title", "body", "fresh"}} for every article that has a translation file."""
+    path = os.path.join(ROOT, "data", "column.json")
+    greek = {str(e["id"]): e for e in json.load(open(path, encoding="utf-8"))["online"]} if os.path.exists(path) else {}
+    out = {}
+    if not os.path.isdir(COLUMN_DIR):
+        return out
+    for f in sorted(os.listdir(COLUMN_DIR)):
+        if not f.endswith(".html"):
+            continue
+        i = f[:-5]
+        s = open(os.path.join(COLUMN_DIR, f), encoding="utf-8").read()
+        stamp = re.search(r"<!-- source: (\w+)", s)
+        title = re.search(r"<h1>(.*?)</h1>", s, re.S)
+        body = s[title.end():].strip() if title else ""
+        out[i] = {"title": norm(title.group(1)) if title else "", "body": body,
+                  "fresh": bool(i in greek and stamp and title and stamp.group(1) == column_source(greek[i]))}
+    return out
+
+
+def column_page(src, page, col):
+    """Put the English title and text into the English copy of column/<id>.htm (before localise())."""
+    i = page.split("/")[1].split(".")[0]
+    t = col.get(i)
+    if t and t["fresh"]:
+        src = re.sub(r'<title translate="no">.*?</title>', lambda _: "<title>%s — %s</title>" % (t["title"], SITE_EN), src, count=1, flags=re.S)
+        src = re.sub(r'<h1 class="pagehead__title" translate="no">.*?</h1>', lambda _: '<h1 class="pagehead__title">%s</h1>' % t["title"], src, count=1, flags=re.S)
+        src = re.sub(r'(<div class="colart__text") translate="no" lang="el">.*?\n        </div>',
+                     lambda m: m.group(1) + ">\n" + t["body"] + "\n        </div>", src, count=1, flags=re.S)
+    else:
+        src = src.replace('<h1 class="pagehead__title" translate="no">', '<h1 class="pagehead__title" translate="no" lang="el">', 1)
+        src = src.replace('<title translate="no">', '<title translate="no" lang="el">', 1).replace(" — " + SITE_EL + "</title>", " — " + SITE_EN + "</title>", 1)
+
+    def nav(m):                        # the previous/next article's title
+        o = col.get(m.group(2))
+        if o and o["fresh"]:
+            return m.group(1) + '<span class="colart__navtitle">' + o["title"] + "</span>"
+        return m.group(1) + '<span class="colart__navtitle" translate="no" lang="el">' + m.group(3) + "</span>"
+    return re.sub(r'(<a class="colart__(?:prev|next)" href="(\d+)\.htm">.*?</span>)<span class="colart__navtitle" translate="no">(.*?)</span>', nav, src)
+
+
+def column_note(src, page, col):
+    """The line under the title: translated (with a link to the Greek page), or still in Greek.
+    Added after localise(), which would otherwise rewrite the link to the Greek page."""
+    i = page.split("/")[1].split(".")[0]
+    if col.get(i, {}).get("fresh"):
+        note = ('Translated from the Greek original in the newspaper “Christianity”. '
+                '<a href="../../column/%s.htm" hreflang="el">Read it in Greek</a>' % i)
+    else:
+        note = "This article is in Greek, as it was published in the newspaper."
+    return src.replace("</h1>", '</h1>\n        <p class="pagehead__note">%s</p>' % note, 1)
+
+
+def column_list(src, col):
+    """English titles in the list of column articles (column.html)."""
+    def title(m):
+        o = col.get(m.group(1))
+        if o and o["fresh"]:
+            return '<p class="ref__title"><a href="column/%s.htm">%s</a></p>' % (m.group(1), o["title"])
+        return '<p class="ref__title" translate="no" lang="el"><a href="column/%s.htm">%s</a></p>' % (m.group(1), m.group(2))
+    def keys(m):                       # the search box also finds a translated article by its Greek title
+        t = re.search(r'<a href="column/(\d+)\.htm">(.*?)</a>', m.group(0))
+        if not (t and col.get(t.group(1), {}).get("fresh")):
+            return m.group(0)
+        greek = re.sub(r"<[^>]+>", "", t.group(2)).replace('"', "&quot;")
+        return m.group(0).replace(" data-filter>", ' data-filter data-keys="%s">' % greek, 1)
+    src = re.sub(r'<li class="ref[^"]*" data-filter>.*?</li>', keys, src, flags=re.S)
+    return re.sub(r'<p class="ref__title" translate="no"><a href="column/(\d+)\.htm">(.*?)</a></p>', title, src)
+
+
+def column_latest(col):
+    """English title of the latest article for the home page box (js/broadcasts-en.js)."""
+    s = open(os.path.join(ROOT, "js", "broadcasts.js"), encoding="utf-8").read()
+    m = re.search(r'latestColumn: \{.*?url: "column/(\d+)\.htm"', s, re.S)
+    t = col.get(m.group(1)) if m else None
+    line = ("window.COLUMN_TITLES_EN = %s;   // made by tools/build_en.py from translation/column/"
+            % json.dumps({"column/%s.htm" % m.group(1): t["title"]} if t and t["fresh"] else {}, ensure_ascii=False))
+    path = os.path.join(ROOT, "js", "broadcasts-en.js")
+    s = open(path, encoding="utf-8").read()
+    s2 = re.sub(r"window\.COLUMN_TITLES_EN = .*", lambda _: line, s) if "window.COLUMN_TITLES_EN" in s else s.rstrip("\n") + "\n\n" + line + "\n"
+    if s2 != s:
+        open(path, "w", encoding="utf-8", newline="\n").write(s2)
 
 
 def html_unescape(s):
@@ -236,6 +333,19 @@ def main():
     extract = "--extract" in sys.argv
     only = next((a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")), None)   # e.g. --only=categories/
     d = json.load(open(DICT_PATH, encoding="utf-8")) if os.path.exists(DICT_PATH) else {}
+    col = column_translations()
+    if "--column-todo" in sys.argv:    # Greek of every column article without an up-to-date translation
+        out_dir = os.path.join(ROOT, "translation", "_batches", "column")
+        os.makedirs(out_dir, exist_ok=True)
+        todo = [e for e in json.load(open(os.path.join(ROOT, "data", "column.json"), encoding="utf-8"))["online"]
+                if not col.get(str(e["id"]), {}).get("fresh")]
+        for e in todo:
+            open(os.path.join(out_dir, "%s.html" % e["id"]), "w", encoding="utf-8", newline="\n").write(
+                "<!-- source: %s -->\n<h1>%s</h1>\n%s\n" % (column_source(e), e["title"], e["body"]))
+        print("%d column articles to translate -> translation/_batches/column/ (put the English in translation/column/)" % len(todo))
+        return
+    if not extract:
+        column_latest(col)
 
     # pass 1: which pages can be fully translated?
     pages = PAGES + detail_pages()
@@ -252,7 +362,11 @@ def main():
         depth = page.count("/")
         if page in english:
             el_src = lang_switch(src, "../" * depth + "en/" + page, "EN", "en", "English")
-            en = localise(translate_page(strip_seo(el_src), d, []), page, english)
+            en = translate_page(strip_seo(el_src), d, [])
+            if page.startswith("column/"):
+                en = column_note(localise(column_page(en, page, col), page, english), page, col)
+            else:
+                en = localise(column_list(en, col) if page == "column.html" else en, page, english)
             en = lang_switch(en, "../" * (depth + 1) + page, "ΕΛ", "el", "Ελληνικά")
             if not extract:
                 out = os.path.join(ROOT, "en", page)
@@ -301,6 +415,9 @@ def main():
         sys.exit(1)
     waiting = len(pages) - len(english)
     print("built %d English pages in en/ (%d pages still waiting for translation)" % (len(english), waiting))
+    stale = sorted(i for i, t in col.items() if not t["fresh"])
+    print("column: %d articles translated%s" % (len(col) - len(stale),
+          "; Greek changed since translating (shown in Greek until checked): " + ", ".join(stale) if stale else ""))
 
 
 if __name__ == "__main__":

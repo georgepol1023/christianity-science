@@ -10,6 +10,10 @@ website; each page names the newspaper and the month in plain text.
 Older columns that were published in the newspaper and are kept as PDFs on this site are added too
 (articles whose description says "από την εφημερίδα «Χριστιανισμός»").
 Afterwards run  python tools/build_all.py  (English pages, search tags, version stamps).
+
+English: each article's translation is translation/column/<id>.html (see tools/build_en.py).
+A new article appears in Greek on the English site until it is translated;
+python tools/build_en.py --column-todo  lists the Greek still to translate.
 """
 import html, json, os, re, subprocess, sys, urllib.parse
 

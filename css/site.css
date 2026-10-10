@@ -524,6 +524,7 @@ textarea.field__input { resize: vertical; min-height: 9rem; }
 :root[data-theme="dark"] .ask__check { color: #7FD1A4; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ask__check { color: #7FD1A4; } }
 .ask__form[hidden], .ask__done[hidden], .field__error[hidden] { display: none; }
+[data-filter][hidden], .refs[hidden], .refs__year[hidden], .linklist[hidden], .faq[hidden], .empty[hidden] { display: none; }
 .ask__trap { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
 @media (max-width: 760px) { .field__row { grid-template-columns: 1fr; } .ask__steps { margin-top: 1.1rem; } }
 @media (max-width: 760px) { .ask { grid-template-columns: 1fr; } .field--short { max-width: none; } .ask__submit { width: 100%; justify-content: center; } }

@@ -47,7 +47,7 @@ function allPages() {
   const out = [];
   (function walk(dir) {
     for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (dir === ROOT && ["mp3", "pictures", "tests", "tools", "node_modules"].includes(f.name)) continue;
+      if (dir === ROOT && ["mp3", "pictures", "tests", "tools", "translation", "node_modules"].includes(f.name)) continue;
       const p = path.join(dir, f.name);
       if (f.isDirectory()) walk(p);
       else if (/\.html?$/.test(f.name)) out.push(path.relative(ROOT, p).replace(/\\/g, "/"));
@@ -561,6 +561,27 @@ test("column page: filter finds articles, and each article opens on this site", 
   assert.match(en.url(), /\/en\/column\/\d+\.htm$/);
   assert.match(await en.$eval(".pagehead__note", (e) => e.textContent), /in Greek/);
   assert.match(await en.$eval(".colart__source", (e) => e.textContent), /Published in the team's column .* [A-Z][a-z]+ \d{4}\./);
+  await en.close2();
+  await page.close2();
+});
+
+test("column page: the search box is as forgiving as the broadcast search, and hides empty years", async () => {
+  const page = await open("column.html");
+  const shown = () => page.$$eval(".refs .ref", (e) => e.filter((x) => !x.hidden).map((x) => x.querySelector(".ref__title").textContent));
+  const years = () => page.$$eval(".refs__year", (e) => e.filter((h) => getComputedStyle(h).display !== "none").length);
+  const search = async (q) => { await page.$eval("#filter", (i, v) => { i.value = v; i.dispatchEvent(new Event("input")); }, q); return shown(); };
+  for (const q of ["κατακλυσμός", "κατακλισμος", "kataklysmos"]) {        // exact, typo, Greeklish
+    const r = await search(q);
+    assert.ok(r.length >= 4 && /Κατακλυσμός/.test(r[0]), q + " → " + r.slice(0, 2).join(" | "));
+  }
+  const allYears = (await search(""), await years());
+  await search("κατακλυσμός");
+  assert.ok((await years()) < allYears, "years with no match are hidden, with their heading");
+  await search("");
+  assert.equal(await years(), allYears, "clearing the box brings every year back");
+  const en = await open("en/column.html");
+  await en.$eval("#filter", (i) => { i.value = "κατακλυσμός"; i.dispatchEvent(new Event("input")); });
+  assert.match(await en.$eval(".refs .ref:not([hidden]) .ref__title", (e) => e.textContent), /The Flood/, "Greek words find English titles");
   await en.close2();
   await page.close2();
 });

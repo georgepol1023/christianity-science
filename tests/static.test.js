@@ -33,12 +33,12 @@ function partPaths(cfg, s, e) {
 }
 
 // Pull named functions out of app.js so they can be unit-tested without a DOM.
-function appFunctions(names, extra) {
-  const src = read("js/app.js");
+function appFunctions(names, extra, file) {
+  const src = read(file || "js/app.js");
   let code = (extra || "") + "\n";
   for (const name of names) {
     const start = src.indexOf("function " + name + "(");
-    assert.ok(start >= 0, "app.js should define " + name);
+    assert.ok(start >= 0, (file || "js/app.js") + " should define " + name);
     let i = src.indexOf("{", start), depth = 0;
     for (; i < src.length; i++) {
       if (src[i] === "{") depth++;
@@ -53,7 +53,7 @@ function allPages() {
   const out = [];
   (function walk(dir) {
     for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
-      if (["mp3", "pictures", "tests", "tools", "node_modules", ".git"].includes(f.name) && dir === ROOT) continue;
+      if (["mp3", "pictures", "tests", "tools", "translation", "node_modules", ".git"].includes(f.name) && dir === ROOT) continue;
       const p = path.join(dir, f.name);
       if (f.isDirectory()) walk(p);
       else if (/\.html?$/.test(f.name)) out.push(path.relative(ROOT, p).replace(/\\/g, "/"));
@@ -174,9 +174,9 @@ test("data: SITE_CONFIG is complete and the next broadcast is a Thursday 22:00 (
 /* =====================================================================
    2. app.js helper functions
    ===================================================================== */
-test("app.js: Greek search normalisation ignores accents, case and final sigma", () => {
+test("search.js: Greek search normalisation ignores accents, case and final sigma", () => {
   const ctx = {};
-  vm.runInNewContext(appFunctions(["normChar", "norm"]), ctx);
+  vm.runInNewContext(appFunctions(["norm"], "", "js/search.js"), ctx);
   assert.equal(ctx.norm("Γένεση"), "γενεση");
   assert.equal(ctx.norm("ΓΕΝΕΣΗΣ"), "γενεσησ");
   assert.equal(ctx.norm("Κόσμος"), "κοσμοσ");
@@ -193,7 +193,8 @@ test("app.js: esc() escapes HTML special characters", () => {
 
 test("app.js: highlight() marks accent-insensitive matches and stays safe", () => {
   const ctx = {};
-  vm.runInNewContext(appFunctions(["normChar", "esc", "highlight"]), ctx);
+  // app.js's normChar() calls the shared norm() from js/search.js
+  vm.runInNewContext(appFunctions(["norm"], "", "js/search.js") + appFunctions(["normChar", "esc", "highlight"]), ctx);
   assert.equal(ctx.highlight("Η Γένεση", ["γενεση"]), "Η <mark>Γένεση</mark>");
   assert.equal(ctx.highlight("Ερωτήσεις από τη Γένεση", ["γεν", "ερω"]), "<mark>Ερω</mark>τήσεις από τη <mark>Γέν</mark>εση");
   assert.equal(ctx.highlight("a <b> & c", []), "a &lt;b&gt; &amp; c");
@@ -201,9 +202,9 @@ test("app.js: highlight() marks accent-insensitive matches and stays safe", () =
   assert.equal(ctx.highlight("αα", ["α"]), "<mark>αα</mark>");
 });
 
-test("app.js: editDist() counts typos, including swapped letters, and stops early", () => {
+test("search.js: editDist() counts typos, including swapped letters, and stops early", () => {
   const ctx = {};
-  vm.runInNewContext(appFunctions(["editDist"]), ctx);
+  vm.runInNewContext(appFunctions(["editDist"], "", "js/search.js"), ctx);
   assert.equal(ctx.editDist("γενεση", "γενεση", 2), 0);
   assert.equal(ctx.editDist("γενσεη", "γενεση", 2), 1);          // swapped letters count once
   assert.equal(ctx.editDist("εγκεφαλσ", "εγκεφαλοσ", 2), 1);      // inputs are normalised (ς → σ) before comparing
@@ -211,9 +212,9 @@ test("app.js: editDist() counts typos, including swapped letters, and stops earl
   assert.equal(ctx.editDist("α", "αβγδεζ", 2), 3);
 });
 
-test("app.js: greeklish() turns Latin typing into Greek", () => {
+test("search.js: greeklish() turns Latin typing into Greek", () => {
   const ctx = {};
-  vm.runInNewContext("var GL = " + read("js/app.js").match(/var GL = (\[[\s\S]*?\]\]);/)[1] + ";\n" + appFunctions(["greeklish"]), ctx);
+  vm.runInNewContext("var GL = " + read("js/search.js").match(/var GL = (\[[\s\S]*?\]\]);/)[1] + ";\n" + appFunctions(["greeklish"], "", "js/search.js"), ctx);
   assert.equal(ctx.greeklish("genesi"), "γενεσι");
   assert.equal(ctx.greeklish("theos"), "θεοσ");
   assert.equal(ctx.greeklish("psychi"), "ψυχι");
@@ -434,7 +435,7 @@ test("tools/stamp.py: stamps nested pages correctly and is idempotent", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-"));
   fs.mkdirSync(path.join(tmp, "tools")); fs.mkdirSync(path.join(tmp, "css")); fs.mkdirSync(path.join(tmp, "js")); fs.mkdirSync(path.join(tmp, "material"));
   fs.copyFileSync(path.join(ROOT, "tools/stamp.py"), path.join(tmp, "tools/stamp.py"));
-  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/broadcasts.js", "js/broadcasts-en.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
+  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/search.js", "js/broadcasts.js", "js/broadcasts-en.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
   fs.writeFileSync(path.join(tmp, "a.html"), '<link href="css/site.css"><script src="js/page.js?v=0000000000"></script>');
   fs.writeFileSync(path.join(tmp, "material/b.htm"), '<link href="../css/site.css">');
   const py = process.env.PYTHON || "python";
@@ -587,6 +588,23 @@ test("column: nothing about the column links to the newspaper's website", () => 
     ...fs.readdirSync(path.join(ROOT, "column")).map((f) => "column/" + f), ...fs.readdirSync(path.join(ROOT, "en/column")).map((f) => "en/column/" + f)];
   const bad = files.filter((f) => /christianity\.gr\/(ephemerida|images)/.test(read(f)));
   assert.deepEqual(bad, []);
+});
+
+test("column: each English translation still matches the Greek it was made from", () => {
+  // translation/column/<id>.html records a stamp of the Greek; if the Greek article changes, the
+  // English page falls back to Greek until someone checks the translation and updates the stamp
+  const online = JSON.parse(read("data/column.json")).online;
+  const stale = [], missing = [];
+  for (const e of online) {
+    const file = path.join(ROOT, "translation/column", e.id + ".html");
+    if (!fs.existsSync(file)) { missing.push(e.id); continue; }
+    const stamp = (fs.readFileSync(file, "utf8").match(/<!-- source: (\w+)/) || [])[1];
+    const now = crypto.createHash("sha1").update(e.title + "\n" + e.body).digest("hex").slice(0, 12);
+    if (stamp !== now) stale.push(e.id);
+    else assert.match(read("en/column/" + e.id + ".htm"), /<div class="colart__text">/, e.id + ": English page shows the translation");
+  }
+  assert.deepEqual(stale, [], "Greek changed since translating – check these translations: python tools/build_en.py --column-todo");
+  if (missing.length) console.log("# column articles not yet translated (shown in Greek): " + missing.join(", "));
 });
 
 test("column: page, Articles block and home page box all agree", () => {

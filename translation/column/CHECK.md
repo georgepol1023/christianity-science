@@ -1,0 +1,67 @@
+# Column translations: passages to check
+
+Each line names the article number (translation/column/<number>.html, Greek page column/<number>.htm).
+Bible quotations are KJV throughout. Where the Greek gave a wrong verse number, the English gives the right one.
+
+- 2423 Artemis II: the Greek says Artemis IV will be "the first crewed landing since Apollo 11"; the last landing was Apollo 17. Translated as written.
+- 2423: the John Glenn and James Irwin quotes use their own English words (Irwin: "Jesus walking on the earth is more important than man walking on the moon"), not a back-translation of the Greek.
+- 2428: Dawkins quote uses his English wording "blind, pitiless indifference".
+- 2397: «Κανών Λίντον» rendered as "Canon Liddon" (H. P. Liddon, to whom the "332 prophecies" figure is usually credited).
+- 2391/2397: the Greek has three one-item numbered lists, so each heading shows as "1."; kept as in the Greek page.
+- 2386: two claims to check (translated as written): the Gila monster research was "in Mexico" (it was done by John Eng in New York), and exenatide-type biomimetics is "used in 90% of medicines for diabetes and obesity".
+- 2382 Pascal: the quoted sentence ("I did all I could to find God through reason…") is not in Pascal's Memorial; translated as written. The Pasteur sayings are commonly attributed but hard to source. Pasteur's vaccines were for rabies and anthrax (and chicken cholera), not leptospirosis; translated as written.
+- 2377: Newton's quotes use his own English wording (General Scholium; "shoulders of giants").
+- 2317: "the Galápagos sharks have not a single bacterium on their skin" is an overstatement in the Greek; translated as written.
+- 2309: the Greek says melatonin is secreted by the pituitary gland (it is the pineal gland); translated as written.
+- 2304: Kathimerini headline translated freely ("The gang has rules that the family and the school are unable to set"); the original article is in Greek.
+- 2293: the Greek says the brain's satisfaction comes from acetaldehyde; mainstream science attributes it to ethanol itself. Translated as written.
+- Corrected Bible references (the Greek has a wrong one; the English gives the right one): 2289 "Colossians 3:16-17" → Colossians 1:16–17; 2281 "Psalm 119:14" → Psalm 139:14. Worth fixing in the Greek too.
+- 2281: Augustine quote uses the standard English of Confessions X.8 (Pusey).
+- 2254: the Greek title plays on «μαθητής» (student and disciple); English title "The good student – and disciple!" with a one-line explanation added in the text.
+- 2242: the Greek page repeats its last two paragraphs (Romans 8:25, "So the call of the Gospel…", 1 Peter 1:13) – a copy-paste slip. The English gives them once. Worth fixing in the Greek.
+- 2249: added a short note that the Greek word for planet means "wanderer", so the "wandering stars" (Jude 13) point carries over.
+- 2213: «φιλότιμο» kept as "philotimo (the Greek sense of honour and generosity)". 2210: «διάκονος» (Phebe) given as KJV "servant".
+- 2193: 1 Corinthians 13 quoted in KJV ("Charity") with "[love]" added, since the article is about love. 2197: added a note that the Greek for "worlds" (Hebrews 1:2) also means "ages". 2200: «Κύριος των δυνάμεων» = KJV "Lord of hosts", with the literal "Lord of powers" in brackets.
+- 2188: reference corrected: «Ψαλ. 94:4» → Psalm 91:4 ("his truth shall be thy shield and buckler").
+- 2181: title «Η απάτη της πιθανολογίας» → "The deception of 'probably'". The Greek plays on «πιθανολογία» (Colossians 2:4, KJV "enticing words"); the pun doesn't carry into English.
+- 2117: «αγιασμός στο σχολείο» explained as "the blessing with holy water at the start of the school year".
+- 2113: "about 350,000 abortions a year in Greece (officially declared)" – a figure worth checking; translated as written.
+- 2098: the source link in the Greek is broken ("https://www. gr/world/561594421/…" – the site name is missing); kept as is.
+- 2100: the Greek title has a typo («Ποσοχή» for «Προσοχή»).
+- 2078: the claim that barcodes "work on the basis of 666" is a popular claim, not a technical fact; translated as written. «Αμερικανική Ένωση Επιστημών» rendered as the American Scientific Affiliation (which reviewed Stoner's *Science Speaks*).
+- 2077: «στρέμματα» converted to hectares (10 million stremmata = 1 million ha; 40 million = 4 million ha). The 2020 California figure was about 1.7 million ha, so the Greek number looks high.
+- 2071: reference corrected: "Matthew 10:35" → Matthew 10:32 (whosoever shall confess me before men).
+- 2045: Ps 119:73 reference fixed from Greek numbering «ριθ’ 73» (same verse). 2029: Hoyle and Rees/Gribbin quotes given in their usual English wording.
+- References corrected: 2019 "Proverbs 30:15" → 30:5; 2011 "2 Corinthians 10:4-7" → 10:4–6 and "Joel 2:24" → 2:24–25 (the quote runs into verse 25). 2011: the Greek quotes Deuteronomy 6:1–7 but skips verse 3; marked with "…".
+- 2019: footnote gives Blanchard's English title (*Does Atheism Make Sense?*) – please confirm this is the book the Greek edition translates.
+- 2027: Gamow described in the Greek as "Russian physicist"; rendered "Russian-born".
+- 2000, 1990, 1984 are about Greek words (‑τήρας/‑της, φθόνος/άφθονος, βοηθός, ωδίνη/οδύνη). The English keeps the Greek words in Latin letters with their meanings, so the point still comes across. Worth a read by someone who knows both languages.
+- 1996: reference corrected: "1 Timothy 1:10" → 2 Timothy 1:10.
+- 1984: the Greek page repeats part of Luke 16 (copy-paste slip) and cites 16:19–26; the English quotes it once as Luke 16:22–25. Worth fixing in the Greek.
+- References corrected: 1974 "(24:1)" → Matthew 24:3 and "Colossians 1:16-18" → 1:16–17; 1937 "Philippians 2:5-11" → 2:5–8 (where the quote ends); 1931 "Corinthians 1:20-22" → 1 Corinthians 1:20–21 and "James 3 7-18" → 3:17–18.
+- 1937: Kurzweil quote uses his own English wording from The Age of Spiritual Machines.
+- 1918: "the Amazon produces 20% of the oxygen" is a widely repeated but disputed figure; translated as written. Also cites Isaiah 9:18 for the earth "enjoying her sabbaths" (the phrase is from Leviticus 26:34); kept as in the Greek.
+- 1911: references corrected: "2 Peter 1:3" → 1:4 and "2 Corinthians 10:3" → 10:4–5.
+- 1904: the phone-radiation claims (80% reaches 5 cm into the brain; links to Alzheimer's) and "Gerard Hyland, twice nominated for the Nobel Prize" are contested; translated as written.
+- 1879: reference corrected: "Jeremiah 2:30" → 2:13 ("the fountain of living waters"). 1886: 1 Peter quote ends at verse 4, so "1:3–5" → 1:3–4.
+- 1893 (1997 article by L. Fengos): says Homo sapiens is "a few thousand years old" and that school books give 20,000 years; translated as written.
+- 1846: reference corrected: "Acts 2:38" → 2:40. IPCC quotes (Debra Roberts, Jim Skea) given in their published English wording.
+- 1854: marks a footnote "(1)" but the Greek page has no footnote text.
+- 1860: «ταλμουδιστές» kept as "Talmudists" (the Masoretes might be more accurate).
+- 1837: date typo corrected: Wittgenstein "1989–1951" → 1889–1951. Colossians "1:15–16" → 1:16 (where the quote is).
+- 1828: dates corrected (Kepler 1571–1630, Galileo 1564–1642). The Greek credits Kepler with the heliocentric system (it was Copernicus; Kepler refined it) and says Galileo supported "Kepler's" system; kept as written. Also "Daniel 12:6" → 12:4 and "1 Corinthians 1:20–25" → 1:21–25. The 1764 picture "by Diderot" is the frontispiece of the Encyclopédie (drawn by Cochin); worded as "associated with Diderot".
+- 1817: the Greek page lost its superscripts (it shows "109 m" for 10⁹ m and "10100.000.000.000" for 10^100,000,000,000); the English restores them. The Greek also says the Moon's orbit is at "100 million km"; 10⁹ m is one million km (the Moon is about 384,000 km away), so the English says "a million kilometres". Colossians "2:16–17" → 1:16–17.
+- 1809, 1886: the same closing section appears in both (as in the Greek).
+- 1780: reference corrected: "Revelation 22:22" → 22:20.
+- 1772: marks a source "[1]" but the Greek page has no footnote; reference corrected "John 10:67" → 6:67.
+- 1770: personal memoir of how the column began (1998), mentioning "brother Louis" and family names (Stella, Christoforos, Dimitris); names kept as in the Greek.
+- 1752: reference corrected "Proverbs 8:31-32" → 8:30–31.
+- 1747: reference corrected "2 Peter 3:3-8" → 3:3–7 (where the quote ends).
+- 1741: dates corrected: Thales "5th century BC" → 6th; Pierre Perrault "16th century" → 17th (his study was 1674). Worth fixing in the Greek.
+- 1728: says salmon return "the next year" and also spawn once; kept as in the Greek.
+- 1720: says the list of human "vestigial organs" fell "from 180 (by 1890) to 0 in 1999" – a strong claim; translated as written. (The Greek also misspells "vestigial" as "vegistial" – the same misspelling is in the old article file name Vegistial-Homologue_Organs.htm.)
+- 1709: says Haeckel "publicly admitted" falsifying his drawings; that is disputed. Translated as written.
+- 1687: "the Sun converts 5,000,000 tonnes of matter a second" (the usual figure is about 4 million); kept as written.
+- 1684: the Greek page lost its superscripts (sand grains "1020 and 1024"); the English gives 10²⁰–10²⁴. Psalm 119:160 in the KJV reads differently from the Greek ("Thy word is true from the beginning…" rather than "the sum of thy word is truth").
+- 1682: the Latin is garbled in the Greek page («οmneνiνumexνiνο» = omne vivum ex vivo); fixed in the English. "1 in 1060" restored as 1 in 10⁶⁰.
+- 1681: references corrected: "Colossians 3:16-17" → 1:16–17, "Philippians 2:58" → 2:5–8, "Romans 15:12" → 15:1–3.
