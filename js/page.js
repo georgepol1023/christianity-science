@@ -155,4 +155,20 @@
         .then(function () { btn.disabled = false; });
     });
   }
+
+  /* ---------- shown in the home page's frame while a broadcast plays (js/app.js) ----------
+   * Links back to the home page return to it (the broadcast keeps playing there); links to other
+   * websites open in a new tab, so they do not replace the frame. */
+  var SHELL = null;
+  try { if (window.parent !== window && window.parent.SiteShell) SHELL = window.parent.SiteShell; } catch (e) {}
+  if (SHELL) {
+    document.documentElement.classList.add("in-shell");
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest("a[href]");
+      if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var u = new URL(a.href, location.href);
+      if (u.origin !== location.origin) { if (!a.target) { a.target = "_blank"; a.rel = "noopener"; } return; }
+      if (SHELL.isHome(u)) { e.preventDefault(); SHELL.home(u.hash); }
+    });
+  }
 })();

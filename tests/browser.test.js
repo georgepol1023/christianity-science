@@ -217,7 +217,7 @@ test("player: play button loads part 1 from the local mp3 folder and plays", asy
   await page.click('#e-2008_01_31 .ep__play');
   await page.waitForFunction(() => document.querySelector("#audio").readyState >= 1, { timeout: 15000 });
   const s = await audioState(page);
-  assert.equal(s.src, "mp3/broadcasts/Season_01/2008_01_31/CS_2008_01_31_(1)_Eisagogiki.mp3");
+  assert.equal(s.src, BASE + "mp3/broadcasts/Season_01/2008_01_31/CS_2008_01_31_(1)_Eisagogiki.mp3");
   assert.equal(await page.$eval("#player", (e) => e.hidden), false);
   assert.match(await page.$eval("#pTitle", (e) => e.textContent), /Εισαγωγική/);
   assert.deepEqual(page.problems, []);
@@ -271,6 +271,61 @@ test("player: close button hides the player and stops audio", async () => {
   await page.click("#pClose");
   assert.equal(await page.$eval("#player", (e) => e.hidden), true);
   assert.equal((await audioState(page)).src, "");
+  await page.close2();
+});
+
+test("player: keeps playing while browsing other pages, which open over the home page", async () => {
+  const page = await open("index.html");
+  await page.click('#e-2008_01_31 .ep__play');
+  await page.waitForFunction(() => !document.querySelector("#audio").paused, { timeout: 15000 });
+  const frame = async () => (await page.waitForSelector("#shell")).contentFrame();
+  const shown = (p) => page.waitForFunction((p) => { const f = document.querySelector("#shell");
+    try { return f && f.contentWindow.location.pathname.endsWith(p) && f.contentDocument.readyState === "complete"; } catch (e) { return false; } }, {}, p);
+  // a top-bar link opens the page in the frame; the address and title follow it
+  await page.click('.nav a[href="articles.html"]');
+  await shown("/articles.html");
+  assert.match(page.url(), /\/articles\.html$/);
+  assert.match(await page.title(), /Άρθρα/);
+  // from page to page inside the frame, then the English version
+  let f = await frame();
+  await f.click('.nav a[href="faq.html"]');
+  await shown("/faq.html");
+  assert.match(page.url(), /\/faq\.html$/);
+  f = await frame();
+  await f.click("#langSwitch");
+  await shown("/en/faq.html");
+  // the English home page in the frame shows the playing broadcast and plays others on the one player
+  f = await frame();
+  await f.click('.nav a[href="index.html#archive"]');
+  await shown("/en/index.html");
+  f = await frame();
+  assert.equal(await f.$eval("#player", (e) => e.hidden), true, "no second player in the frame");
+  assert.equal(await f.$eval("#e-2008_01_31", (e) => e.classList.contains("is-active")), true);
+  await f.click("#e-2008_02_14 .ep__play");
+  await page.waitForFunction(() => /2008_02_14/.test(document.querySelector("#audio").src) && !document.querySelector("#audio").paused, { timeout: 15000 });
+  // Back goes back inside the frame; back to the home page closes it
+  const back = () => page.evaluate(() => history.back());
+  await back();
+  await shown("/en/faq.html");
+  await back(); await shown("/faq.html");
+  await back(); await shown("/articles.html");
+  await back();
+  await page.waitForFunction(() => !document.querySelector("#shell"));
+  assert.match(page.url(), /\/index\.html$/);
+  // «Εκπομπές» from a page in the frame returns to the archive on the home page
+  await page.click('.nav a[href="faq.html"]');
+  f = await frame();
+  await f.click('.nav a[href="index.html#archive"]');
+  await page.waitForFunction(() => !document.querySelector("#shell") && location.hash === "#archive");
+  const s = await audioState(page);
+  assert.equal(s.paused, false, "the broadcast never stopped");
+  assert.match(s.src, /2008_02_14/);
+  // without a broadcast playing, links are ordinary links
+  const quiet = await open("index.html");
+  await Promise.all([quiet.waitForNavigation(), quiet.click('.nav a[href="faq.html"]')]);
+  assert.equal(await quiet.$("#shell"), null);
+  assert.deepEqual(page.problems, []);
+  await quiet.close2();
   await page.close2();
 });
 
@@ -530,7 +585,7 @@ test("english home: interface, titles and dates are in English; audio plays from
   assert.match(await page.$eval("#list .ep__title", (e) => e.textContent), /^[\x00-\u024f“”‘’–—…·]+$/);   // Latin text only
   await page.click("#list .ep .ep__play");
   await page.waitForFunction(() => document.querySelector("#audio").readyState >= 1, { timeout: 15000 });
-  assert.match(await page.$eval("#audio", (a) => decodeURI(a.getAttribute("src"))), /^\.\.\/mp3\/broadcasts\//);
+  assert.ok((await page.$eval("#audio", (a) => decodeURI(a.getAttribute("src")))).startsWith(BASE + "mp3/broadcasts/"), "the shared mp3 folder, not en/mp3");
   assert.match(await page.$eval("#pMeta", (e) => e.textContent), /, part 1 of \d$/);
   assert.deepEqual(page.problems, []);
   await page.close2();

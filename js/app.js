@@ -10,6 +10,10 @@
   /* ---------- language: pages in en/ have <html lang="en"> ---------- */
   var LANG = document.documentElement.lang === "en" ? "en" : "el";
   var ROOT = LANG === "en" ? "../" : "";                 // path from this page to the site root
+  // a full address for an mp3: while another page is open in the frame (SiteShell below) this page's
+  // address shows that page's, so a relative path would point to the wrong folder
+  var PAGE = location.href;
+  var fileURL = function (u) { return new URL(encodeURI(u), PAGE).href; };
   var EN_TITLES = window.BROADCAST_TITLES_EN || {};
   var RELATED = window.RELATED || {};                    // «Σχετικά» per broadcast, from js/related.js
   var T = {
@@ -383,7 +387,7 @@
       this.ep = ep; this.part = part;
       bar.hidden = false; setPlayerH();
       bar.classList.add("is-loading");
-      audio.src = encodeURI(ep.parts[part]);
+      audio.src = fileURL(ep.parts[part]);
       audio.playbackRate = this.speed;
       // drop the pending seek of a previous load, or it would apply to this file
       if (this.pendingSeek) audio.removeEventListener("loadedmetadata", this.pendingSeek);
@@ -396,7 +400,7 @@
       if (autoplay) audio.play().catch(function () {});
       $("#pTitle").textContent = ep.title;
       $("#pMeta").textContent = T.meta(ep.dateLong, part + 1, ep.parts.length);
-      $("#pDownload").href = encodeURI(ep.parts[part]);
+      $("#pDownload").href = fileURL(ep.parts[part]);
       $("#pParts").innerHTML = partsHTML(ep);
       $("#resume").hidden = true;
       $$(".ep.is-active").forEach(function (el) { el.classList.remove("is-active"); });
@@ -628,6 +632,115 @@
   window.addEventListener("resize", markArchive);
   window.addEventListener("hashchange", markArchive);
   markArchive();
+
+  /* ---------- keep playing while browsing the site ----------
+   * While a broadcast is loaded, a link to another page of the site opens that page in a frame over
+   * this one (#shell); this page – and the player bar with its <audio> – stays alive underneath, so
+   * the broadcast does not stop. The address bar, title and Back button follow the page in the frame.
+   * Links back to this page close the frame. Pages in the frame use this page's player (SitePlayer). */
+  var PARENT = null;
+  try { if (window.parent !== window && window.parent.SitePlayer) PARENT = window.parent.SitePlayer; } catch (e) {}
+
+  if (!PARENT) {
+    var listeners = [], shell = null, shellScroll = 0;
+    var notify = function () {
+      var s = player.ep ? { id: player.ep.id, part: player.part, playing: player.playing } : null;
+      listeners = listeners.filter(function (fn) { try { fn(s); return true; } catch (e) { return false; } });
+    };
+    var oldSync = syncParts;
+    syncParts = function () { oldSync(); notify(); };
+    window.SitePlayer = {
+      load: function (id, part, start, autoplay) { if (BY_ID[id]) player.load(BY_ID[id], part, start, autoplay); },
+      toggle: function () { player.toggle(); },
+      skip: function (s) { player.skip(s); },
+      state: function () { return player.ep ? { id: player.ep.id, part: player.part, playing: player.playing } : null; },
+      subscribe: function (fn) { listeners.push(fn); }
+    };
+    var HOME = location.pathname;                              // this page's address (the frame changes location)
+    var here = function (u) { return u.pathname.replace(/index\.html$/, "") === HOME.replace(/index\.html$/, ""); };
+    var pageLink = function (a, e) {                           // a link to another page of this site?
+      if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return null;
+      if (a.hasAttribute("download") || (a.target && a.target !== "_self")) return null;
+      var u = new URL(a.href, location.href);
+      if (u.origin !== location.origin || here(u)) return null;
+      return /\.html?$|\/$/.test(u.pathname) ? u : null;     // pages only, not mp3 or pdf
+    };
+    var closeShell = function (hash) {
+      if (!shell) return;
+      shell.remove(); shell = null;
+      document.documentElement.classList.remove("shell-on");
+      document.title = shell0;
+      history.replaceState(null, "", HOME + (hash || ""));
+      if (hash && /^#e-/.test(hash)) openHash();
+      else if (hash) { var t = document.getElementById(hash.slice(1)); if (t) t.scrollIntoView(); }
+      else scrollTo(0, shellScroll);
+      markArchive();
+    };
+    var shell0 = document.title;
+    var openShell = function (url) {
+      if (!shell) {
+        shellScroll = scrollY;
+        shell = document.createElement("iframe");
+        shell.id = "shell"; shell.title = T.site;
+        shell.addEventListener("load", function () {
+          try {
+            var w = shell.contentWindow, u = new URL(w.location.href);
+            if (u.protocol === "about:") return;                // the empty frame before the page loads
+            if (here(u)) { closeShell(u.hash); return; }       // came back to this page inside the frame
+            document.title = w.document.title;
+            history.replaceState({ shell: true }, "", u.href);
+          } catch (err) {}
+        });
+        document.body.appendChild(shell);
+        history.pushState({ shell: true }, "", url);
+        document.documentElement.classList.add("shell-on");
+      }
+      shell.src = url;
+    };
+    window.SiteShell = {
+      isHome: here,
+      home: function (hash) { closeShell(hash || ""); }
+    };
+    document.addEventListener("click", function (e) {
+      if (!player.ep) return;                                  // nothing playing: links work as usual
+      var u = pageLink(e.target.closest("a[href]"), e);
+      if (!u) return;
+      e.preventDefault();
+      openShell(u.href);
+    });
+    window.addEventListener("popstate", function (e) { if (shell && !(e.state && e.state.shell)) closeShell(location.hash); });
+    // closing the player: leave the frame for the real page, so the site behaves as usual again
+    $("#pClose").addEventListener("click", function () {
+      notify();
+      if (shell) { try { location.href = shell.contentWindow.location.href; } catch (err) { closeShell(""); } }
+    });
+    // light/dark chosen inside the frame applies here too
+    window.addEventListener("storage", function (e) {
+      if (e.key === "cs-theme") { var v = store.get("cs-theme", null); if (v) document.documentElement.setAttribute("data-theme", v); }
+    });
+  } else {
+    // this page is shown in the frame: use the main player instead of a second one
+    document.documentElement.classList.add("in-shell");
+    bar.hidden = true;
+    player.load = function (ep, part, start, autoplay) { PARENT.load(ep.id, part, start, autoplay); };
+    player.toggle = function () { PARENT.toggle(); };
+    player.skip = function (s) { PARENT.skip(s); };
+    var follow = function (s) {
+      player.ep = s ? BY_ID[s.id] || null : null; player.part = s ? s.part : 0; player.playing = !!(s && s.playing);
+      $$(".ep.is-active").forEach(function (el) { el.classList.remove("is-active"); });
+      if (player.ep) { var row = $("#e-" + player.ep.id); if (row) row.classList.add("is-active"); }
+      syncParts();
+    };
+    PARENT.subscribe(follow);
+    follow(PARENT.state());
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest("a[href]");
+      if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      var u = new URL(a.href, location.href);
+      if (u.origin !== location.origin) { if (!a.target) { a.target = "_blank"; a.rel = "noopener"; } return; }
+      if (window.parent.SiteShell && window.parent.SiteShell.isHome(u)) { e.preventDefault(); window.parent.SiteShell.home(u.hash); }
+    });
+  }
 
   /* ---------- boot ---------- */
   renderLatest();
