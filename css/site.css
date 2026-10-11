@@ -177,7 +177,7 @@ svg[viewBox="0 0 24 24"] { width: 22px; height: 22px; fill: none; stroke: curren
 .resume__x { flex-shrink: 0; }
 
 /* ---------- Archive ---------- */
-.archive { padding: clamp(2.5rem, 5vw, 4rem) 0 3rem; }
+.archive { padding: clamp(2.5rem, 5vw, 4rem) 0 3rem; scroll-margin-top: calc(14px - clamp(2.5rem, 5vw, 4rem)); }   /* «Εκπομπές» lands with the title just under the top bar */
 .archive__head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 1.25rem 2rem; }
 .archive__sub { margin: .4rem 0 0; color: var(--slate); }
 .search { position: relative; flex: 1 1 360px; max-width: 520px; }
