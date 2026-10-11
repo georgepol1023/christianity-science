@@ -604,9 +604,18 @@
   function openHash() {
     var m = location.hash.match(/^#e-(\d{4}_\d{2}_\d{2})$/); if (!m || !BY_ID[m[1]]) return;
     var row = $("#e-" + m[1]); if (!row) { state.season = "all"; state.q = ""; qIn.value = ""; renderList(); row = $("#e-" + m[1]); }
-    row.scrollIntoView({ block: "center" }); row.classList.remove("is-target"); void row.offsetWidth; row.classList.add("is-target");
+    land(row); row.classList.remove("is-target"); void row.offsetWidth; row.classList.add("is-target");
+  }
+  // put the broadcast a little below the middle of the free space under the top bar and the season chips
+  function land(row) {
+    var bar = $("#seasonBar"), top = 70;                          // where the sticky bars end once they stick
+    if (bar) top = (parseFloat(getComputedStyle(bar).top) || 0) + bar.offsetHeight;
+    var free = innerHeight - top, r = row.getBoundingClientRect();
+    scrollTo({ top: scrollY + r.top - top - Math.max(24, (free - r.height) * 0.4), behavior: "auto" });
   }
   window.addEventListener("hashchange", openHash);
+  // the browser also jumps to #e-… by itself once the page has loaded; land the broadcast again after it
+  window.addEventListener("load", function () { setTimeout(function () { if (/^#e-/.test(location.hash)) openHash(); }, 0); });
 
   /* ---------- nav: underline "Broadcasts" only once the archive is on screen ---------- */
   var archLink = $('.nav a[href="#archive"]'), archive = $("#archive");

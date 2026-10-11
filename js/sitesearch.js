@@ -83,7 +83,7 @@
         '<div class="ssearch__bar">' +
           '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg>' +
           '<input type="search" class="ssearch__input" autocomplete="off" spellcheck="false" aria-label="' + esc(T.label) + '" placeholder="' + esc(T.placeholder) + '">' +
-          '<button type="button" class="ssearch__close" aria-label="' + esc(T.close) + '"><span class="ssearch__esc" aria-hidden="true">Esc</span><span class="ssearch__x" aria-hidden="true">✕</span></button>' +
+          '<button type="button" class="ssearch__close" aria-label="' + esc(T.close) + '"><span aria-hidden="true">✕</span></button>' +
         "</div>" +
         '<div class="ssearch__results" aria-live="polite"><p class="ssearch__hint">' + esc(T.hint) + "</p></div>" +
       "</div>";

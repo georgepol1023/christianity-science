@@ -323,7 +323,7 @@ test("site search: the top-bar button searches the whole site, grouped by kind, 
   await page.waitForSelector(".ssearch:not([hidden]) .ssearch__input");
   assert.equal(await page.evaluate(() => document.activeElement.classList.contains("ssearch__input")), true, "the box gets the cursor");
   await page.type(".ssearch__input", "kataklismos");                // Greeklish with a typo
-  await page.waitForSelector(".ssearch__group");
+  await page.waitForFunction(() => /Κατακλυσμός/.test((document.querySelector(".ssearch__group .ssearch__title") || {}).textContent || ""), { timeout: 3000 });
   const groups = await page.$$eval(".ssearch__group", (gs) => gs.map((g) => ({ head: g.querySelector(".ssearch__head").textContent, first: g.querySelector(".ssearch__title").textContent, href: g.querySelector("a").getAttribute("href") })));
   const heads = groups.map((g) => g.head);
   assert.ok(heads.includes("Εκπομπές") && heads.includes("Από τη στήλη μας στην εφημερίδα"), heads.join(", "));
@@ -343,7 +343,7 @@ test("site search: the top-bar button searches the whole site, grouped by kind, 
   await en.click("#siteSearch");
   await en.waitForSelector(".ssearch:not([hidden]) .ssearch__input");
   await en.type(".ssearch__input", "κατακλυσμός");
-  await en.waitForSelector(".ssearch__group");
+  await en.waitForFunction(() => /The Flood/.test((document.querySelector(".ssearch__group .ssearch__title") || {}).textContent || ""), { timeout: 3000 });  // results for the whole word
   const enFirst = await en.$eval(".ssearch__group", (g) => ({ head: g.querySelector(".ssearch__head").textContent, title: g.querySelector(".ssearch__title").textContent, href: g.querySelector("a").href }));
   assert.equal(enFirst.head, "Broadcasts");
   assert.match(enFirst.title, /The Flood/, "English titles for Greek words");
