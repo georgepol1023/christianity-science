@@ -329,6 +329,28 @@ test("player: keeps playing while browsing other pages, which open over the home
   await page.close2();
 });
 
+test("player: keeps playing while browsing also when the site is opened from its folder (file://)", async () => {
+  const ctx = await browser.createBrowserContext();
+  try {
+    const page = await ctx.newPage();
+    await page.setViewport({ width: 1280, height: 900 });
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(require("url").pathToFileURL(path.join(ROOT, "index.html")).href, { waitUntil: "load" });
+    await page.click("#e-2008_01_31 .ep__play");
+    await page.waitForFunction(() => !document.querySelector("#audio").paused, { timeout: 15000 });
+    await page.click('.nav a[href="articles.html"]');
+    const f = await (await page.waitForSelector("#shell")).contentFrame();
+    await f.waitForFunction(() => document.documentElement.classList.contains("in-shell"));
+    await f.click(".brand");                                 // the logo returns to the home page
+    await page.waitForFunction(() => !document.querySelector("#shell"));
+    assert.equal(await page.$eval("#audio", (a) => a.paused), false, "the broadcast never stopped");
+    assert.deepEqual(errors, []);
+  } finally {
+    await ctx.close();
+  }
+});
+
 test("player: download menu offers the whole broadcast and its 4 parts, all existing, and closes with Escape", async () => {
   const page = await open("index.html");
   await page.click('#e-2008_01_31 [data-dl]');
@@ -472,10 +494,17 @@ test("calendar file: valid iCalendar that repeats every 2 weeks at 22:00 Athens 
 test("theme: toggle switches dark/light and is remembered on other pages", async () => {
   const page = await open("faq.html", { before: (p) => p.emulateMediaFeatures([{ name: "prefers-color-scheme", value: "light" }]) });
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const icon = () => page.evaluate(() => [".theme-moon", ".theme-sun"].map((c) => getComputedStyle(document.querySelector("#themeToggle " + c)).opacity));
   const light = await bg();
+  // the two icons turn and fade into each other; wait until that has finished
+  const settled = () => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  await settled();
+  assert.deepEqual(await icon(), ["1", "0"], "light mode shows the moon");
   await page.click("#themeToggle");
   assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark");
   assert.notEqual(await bg(), light);
+  await settled();
+  assert.deepEqual(await icon(), ["0", "1"], "dark mode shows the sun");
   await page.goto(BASE + "material/2012_11_15.htm", { waitUntil: "load" });
   assert.equal(await page.evaluate(() => document.documentElement.getAttribute("data-theme")), "dark");
   await page.goto(BASE + "index.html", { waitUntil: "load" });

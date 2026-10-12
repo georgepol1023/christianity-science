@@ -637,70 +637,73 @@
    * While a broadcast is loaded, a link to another page of the site opens that page in a frame over
    * this one (#shell); this page – and the player bar with its <audio> – stays alive underneath, so
    * the broadcast does not stop. The address bar, title and Back button follow the page in the frame.
-   * Links back to this page close the frame. Pages in the frame use this page's player (SitePlayer). */
-  var PARENT = null;
-  try { if (window.parent !== window && window.parent.SitePlayer) PARENT = window.parent.SitePlayer; } catch (e) {}
+   * Links back to this page close the frame. The page in the frame talks to this one with messages
+   * ({cs: …}), which also work when the site is opened from a folder (file://), and uses this page's
+   * player instead of its own. */
+  var sameSite = function (u) { return u.protocol === location.protocol && u.host === location.host; };
+  var homePath = function (p) { return p.replace(/index\.html$/, ""); };
 
-  if (!PARENT) {
-    var listeners = [], shell = null, shellScroll = 0;
-    var notify = function () {
-      var s = player.ep ? { id: player.ep.id, part: player.part, playing: player.playing } : null;
-      listeners = listeners.filter(function (fn) { try { fn(s); return true; } catch (e) { return false; } });
+  if (window.parent === window) {
+    var shell = null, shellScroll = 0, shellHref = "", shell0 = document.title;
+    var HOME = location.pathname;                              // this page's address (the frame changes location)
+    var here = function (u) { return sameSite(u) && homePath(u.pathname) === homePath(HOME); };
+    var playState = function () { return player.ep ? { id: player.ep.id, part: player.part, playing: player.playing } : null; };
+    var tell = function (msg) {
+      if (shell && shell.contentWindow) shell.contentWindow.postMessage(msg, location.protocol === "file:" ? "*" : location.origin);
     };
     var oldSync = syncParts;
-    syncParts = function () { oldSync(); notify(); };
-    window.SitePlayer = {
-      load: function (id, part, start, autoplay) { if (BY_ID[id]) player.load(BY_ID[id], part, start, autoplay); },
-      toggle: function () { player.toggle(); },
-      skip: function (s) { player.skip(s); },
-      state: function () { return player.ep ? { id: player.ep.id, part: player.part, playing: player.playing } : null; },
-      subscribe: function (fn) { listeners.push(fn); }
-    };
-    var HOME = location.pathname;                              // this page's address (the frame changes location)
-    var here = function (u) { return u.pathname.replace(/index\.html$/, "") === HOME.replace(/index\.html$/, ""); };
+    syncParts = function () { oldSync(); tell({ cs: "state", state: playState() }); };
+    // the address bar cannot be changed for pages opened from a folder; the frame still works
+    var setURL = function (push, st, url) { try { history[push ? "pushState" : "replaceState"](st, "", url); } catch (e) {} };
     var pageLink = function (a, e) {                           // a link to another page of this site?
       if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return null;
       if (a.hasAttribute("download") || (a.target && a.target !== "_self")) return null;
       var u = new URL(a.href, location.href);
-      if (u.origin !== location.origin || here(u)) return null;
+      if (!sameSite(u) || here(u)) return null;
       return /\.html?$|\/$/.test(u.pathname) ? u : null;     // pages only, not mp3 or pdf
     };
     var closeShell = function (hash) {
       if (!shell) return;
-      shell.remove(); shell = null;
+      shell.remove(); shell = null; shellHref = "";
       document.documentElement.classList.remove("shell-on");
       document.title = shell0;
-      history.replaceState(null, "", HOME + (hash || ""));
+      setURL(false, null, HOME + (hash || ""));
       if (hash && /^#e-/.test(hash)) openHash();
       else if (hash) { var t = document.getElementById(hash.slice(1)); if (t) t.scrollIntoView(); }
       else scrollTo(0, shellScroll);
       markArchive();
     };
-    var shell0 = document.title;
+    var pageShown = function (href, title) {                       // a page has opened in the frame
+      var u = new URL(href);
+      if (u.protocol === "about:") return;                     // the empty frame before the page loads
+      if (here(u)) { closeShell(u.hash); return; }             // came back to this page inside the frame
+      shellHref = u.href;
+      if (title) document.title = title;
+      setURL(false, { shell: true }, u.href);
+    };
     var openShell = function (url) {
       if (!shell) {
         shellScroll = scrollY;
         shell = document.createElement("iframe");
         shell.id = "shell"; shell.title = T.site;
-        shell.addEventListener("load", function () {
-          try {
-            var w = shell.contentWindow, u = new URL(w.location.href);
-            if (u.protocol === "about:") return;                // the empty frame before the page loads
-            if (here(u)) { closeShell(u.hash); return; }       // came back to this page inside the frame
-            document.title = w.document.title;
-            history.replaceState({ shell: true }, "", u.href);
-          } catch (err) {}
+        shell.addEventListener("load", function () {           // also for pages without the site's scripts
+          try { var w = shell.contentWindow; pageShown(w.location.href, w.document.title); } catch (err) {}
         });
         document.body.appendChild(shell);
-        history.pushState({ shell: true }, "", url);
+        setURL(true, { shell: true }, url);
         document.documentElement.classList.add("shell-on");
       }
       shell.src = url;
     };
-    window.SiteShell = {
-      isHome: here,
-      home: function (hash) { closeShell(hash || ""); }
-    };
+    window.addEventListener("message", function (e) {
+      var m = e.data;
+      if (!shell || e.source !== shell.contentWindow || !m || typeof m.cs !== "string") return;
+      if (m.cs === "hello") { tell({ cs: "shell", home: HOME, state: playState() }); if (m.href) pageShown(m.href, m.title); }
+      else if (m.cs === "home") closeShell(m.hash || "");
+      else if (m.cs === "load") { if (BY_ID[m.id]) player.load(BY_ID[m.id], m.part, m.start, m.autoplay); }
+      else if (m.cs === "toggle") player.toggle();
+      else if (m.cs === "skip") player.skip(m.s);
+    });
     document.addEventListener("click", function (e) {
       if (!player.ep) return;                                  // nothing playing: links work as usual
       var u = pageLink(e.target.closest("a[href]"), e);
@@ -711,35 +714,44 @@
     window.addEventListener("popstate", function (e) { if (shell && !(e.state && e.state.shell)) closeShell(location.hash); });
     // closing the player: leave the frame for the real page, so the site behaves as usual again
     $("#pClose").addEventListener("click", function () {
-      notify();
-      if (shell) { try { location.href = shell.contentWindow.location.href; } catch (err) { closeShell(""); } }
+      if (shell) { if (shellHref) location.href = shellHref; else closeShell(""); }
     });
     // light/dark chosen inside the frame applies here too
     window.addEventListener("storage", function (e) {
       if (e.key === "cs-theme") { var v = store.get("cs-theme", null); if (v) document.documentElement.setAttribute("data-theme", v); }
     });
   } else {
-    // this page is shown in the frame: use the main player instead of a second one
-    document.documentElement.classList.add("in-shell");
-    bar.hidden = true;
-    player.load = function (ep, part, start, autoplay) { PARENT.load(ep.id, part, start, autoplay); };
-    player.toggle = function () { PARENT.toggle(); };
-    player.skip = function (s) { PARENT.skip(s); };
+    // perhaps shown in the home page's frame: ask; if so, use the main player instead of a second one
+    var HOME_IN = null;
+    var up = function (msg) { window.parent.postMessage(msg, "*"); };
     var follow = function (s) {
       player.ep = s ? BY_ID[s.id] || null : null; player.part = s ? s.part : 0; player.playing = !!(s && s.playing);
       $$(".ep.is-active").forEach(function (el) { el.classList.remove("is-active"); });
       if (player.ep) { var row = $("#e-" + player.ep.id); if (row) row.classList.add("is-active"); }
       syncParts();
     };
-    PARENT.subscribe(follow);
-    follow(PARENT.state());
+    window.addEventListener("message", function (e) {
+      var m = e.data;
+      if (e.source !== window.parent || !m || (e.origin !== location.origin && location.protocol !== "file:")) return;
+      if (m.cs === "shell" && !HOME_IN) {
+        HOME_IN = m.home;
+        document.documentElement.classList.add("in-shell");
+        audio.pause(); bar.hidden = true;
+        player.load = function (ep, part, start, autoplay) { up({ cs: "load", id: ep.id, part: part, start: start, autoplay: autoplay }); };
+        player.toggle = function () { up({ cs: "toggle" }); };
+        player.skip = function (s) { up({ cs: "skip", s: s }); };
+      }
+      if ((m.cs === "shell" || m.cs === "state") && HOME_IN) follow(m.state);
+    });
     document.addEventListener("click", function (e) {
+      if (!HOME_IN) return;
       var a = e.target.closest("a[href]");
       if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var u = new URL(a.href, location.href);
-      if (u.origin !== location.origin) { if (!a.target) { a.target = "_blank"; a.rel = "noopener"; } return; }
-      if (window.parent.SiteShell && window.parent.SiteShell.isHome(u)) { e.preventDefault(); window.parent.SiteShell.home(u.hash); }
+      if (!sameSite(u)) { if (!a.target) { a.target = "_blank"; a.rel = "noopener"; } return; }
+      if (homePath(u.pathname) === homePath(HOME_IN)) { e.preventDefault(); up({ cs: "home", hash: u.hash }); }
     });
+    up({ cs: "hello", href: location.href, title: document.title });
   }
 
   /* ---------- boot ---------- */

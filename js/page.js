@@ -157,18 +157,26 @@
   }
 
   /* ---------- shown in the home page's frame while a broadcast plays (js/app.js) ----------
-   * Links back to the home page return to it (the broadcast keeps playing there); links to other
-   * websites open in a new tab, so they do not replace the frame. */
-  var SHELL = null;
-  try { if (window.parent !== window && window.parent.SiteShell) SHELL = window.parent.SiteShell; } catch (e) {}
-  if (SHELL) {
-    document.documentElement.classList.add("in-shell");
+   * The home page answers this page's "hello" if it holds the frame. Then links back to the home page
+   * return to it (the broadcast keeps playing there), and links to other websites open in a new tab,
+   * so they do not replace the frame. Messages also work for the site opened from a folder (file://). */
+  if (window.parent !== window) {
+    var HOME_IN = null;
+    var homePath = function (p) { return p.replace(/index\.html$/, ""); };
+    window.addEventListener("message", function (e) {
+      var m = e.data;
+      if (e.source !== window.parent || !m || m.cs !== "shell" || (e.origin !== location.origin && location.protocol !== "file:")) return;
+      HOME_IN = m.home;
+      document.documentElement.classList.add("in-shell");
+    });
     document.addEventListener("click", function (e) {
+      if (!HOME_IN) return;
       var a = e.target.closest("a[href]");
       if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       var u = new URL(a.href, location.href);
-      if (u.origin !== location.origin) { if (!a.target) { a.target = "_blank"; a.rel = "noopener"; } return; }
-      if (SHELL.isHome(u)) { e.preventDefault(); SHELL.home(u.hash); }
+      if (u.protocol !== location.protocol || u.host !== location.host) { if (!a.target) { a.target = "_blank"; a.rel = "noopener"; } return; }
+      if (homePath(u.pathname) === homePath(HOME_IN)) { e.preventDefault(); window.parent.postMessage({ cs: "home", hash: u.hash }, "*"); }
     });
+    window.parent.postMessage({ cs: "hello", href: location.href, title: document.title }, "*");
   }
 })();

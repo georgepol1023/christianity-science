@@ -281,6 +281,7 @@ test("inner pages: every element page.js needs exists", () => {
     const html = read(p);
     if (!/js\/page\.js/.test(html)) continue;
     for (const id of ["themeToggle", "menuToggle", "nav"]) assert.ok(html.includes(`id="${id}"`), `${p} lacks #${id}`);
+    assert.ok(/id="themeToggle"[^>]*>\s*<svg class="theme-moon"[^]*?<svg class="theme-sun"/.test(html), p + ": the light/dark button needs its moon and sun");
     if (html.includes('id="filter"')) assert.ok(html.includes("data-filter"), p + " has a filter box but nothing to filter");
   }
 });
