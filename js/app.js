@@ -43,7 +43,7 @@
       tagShow: function (t) { return "Όλες οι εκπομπές με θέμα «" + t + "»"; },
       stats: function (e, n, h) { return e + " εκπομπές σε " + n + " κύκλους, περίπου " + h + " ώρες ακρόασης."; },
       sources: "Άρθρα &amp; πηγές", copyLink: "Αντιγραφή συνδέσμου", related: "Σχετικά",
-      relKind: { C: "Από τη στήλη μας", T: "Θέμα", M: "Πολυμέσα", Q: "Ερώτηση" },
+      relKind: { B: "Εκπομπή", C: "Από τη στήλη μας", T: "Θέμα", M: "Πολυμέσα", Q: "Ερώτηση" }, share: "Κοινοποίηση",
       listen: function (t) { return "Ακούστε: " + t; }, download: "Λήψη mp3",
       searchAria: "Αποτελέσματα αναζήτησης", results: "Αποτελέσματα", closest: "Πλησιέστερες εκπομπές", byRelevance: "κατά συνάφεια",
       count: function (n) { return n + (n === 1 ? " εκπομπή" : " εκπομπές"); },
@@ -83,7 +83,7 @@
       tagShow: function (t) { return "All broadcasts on “" + t + "”"; },
       stats: function (e, n, h) { return e + " broadcasts in " + n + " seasons, about " + h + " hours of listening. Audio in Greek."; },
       sources: "Articles &amp; sources (in Greek)", copyLink: "Copy link", related: "Related",
-      relKind: { C: "From our column", T: "Topic", M: "Media", Q: "Question" },
+      relKind: { B: "Broadcast", C: "From our column", T: "Topic", M: "Media", Q: "Question" }, share: "Share",
       listen: function (t) { return "Listen: " + t; }, download: "Download mp3",
       searchAria: "Search results", results: "Results", closest: "Closest broadcasts", byRelevance: "most relevant first",
       count: function (n) { return n + (n === 1 ? " broadcast" : " broadcasts"); },
@@ -224,8 +224,12 @@
   var I = {
     play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
     pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>',
-    dl: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>'
+    dl: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+    link: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>',
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></svg>'
   };
+  // phones and tablets share through their own menu (WhatsApp, Viber, e-mail…); computers copy the link
+  var SHARE = !!navigator.share && matchMedia("(pointer: coarse)").matches;
 
   function partsHTML(ep) {
     var h = '<div class="parts" style="--n:' + ep.parts.length + '" role="group" aria-label="' + T.partsAria + '">';
@@ -338,7 +342,8 @@
       '<p class="ep__links">' + (showSeason ? '<span class="ep__season">' + T.season(e.season) + "</span>" : "") +
       (e.link ? '<a href="' + esc(e.link) + '">' + T.sources + "</a>" : "") +
       (RELATED[e.id] ? '<span class="ep__rel"><button data-rel="' + e.id + '" aria-haspopup="true" aria-expanded="false">' + T.related + "</button></span>" : "") +
-      '<button data-share="' + e.id + '">' + T.copyLink + "</button></p></div>" +
+      '<button class="ep__share" data-share="' + e.id + '" aria-label="' + (SHARE ? T.share : T.copyLink) + '" title="' + (SHARE ? T.share : T.copyLink) + '">' +
+      (SHARE ? I.share : I.link) + "</button></p></div>" +
       partsHTML(e) +
       '<div class="ep__actions"><button class="ep__play" data-play="' + e.id + '" aria-label="' + esc(T.listen(e.title)) + '">' + (active && player.playing ? I.pause : I.play) + "</button>" +
       '<div class="ep__dl"><button class="iconbtn" data-dl="' + e.id + '" aria-haspopup="true" aria-expanded="false" aria-label="' + T.download + '">' + I.dl + "</button></div></div>" +
@@ -410,8 +415,15 @@
       var top = $("#archive"); if (top) top.scrollIntoView({ behavior: "smooth" });
       return;
     }
+    if ((t = e.target.closest('.dlmenu a[href^="#e-"]'))) {
+      e.preventDefault(); closeMenus();
+      var h = t.getAttribute("href");
+      if (location.hash === h) openHash(); else location.hash = h;
+      return;
+    }
     if ((t = e.target.closest("[data-share]"))) {
-      var url = location.href.split("#")[0] + "#e-" + t.dataset.share;
+      var url = PAGE.split("#")[0] + "#e-" + t.dataset.share;
+      if (SHARE) { navigator.share({ title: BY_ID[t.dataset.share].title + " – " + T.site, url: url }).catch(function () {}); return; }
       (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(
         function () { toast(T.copied); },
         function () { prompt(T.copyPrompt, url); });
@@ -438,6 +450,11 @@
       mr.className = "dlmenu dlmenu--rel"; mr.setAttribute("role", "menu");
       mr.innerHTML = RELATED[t.dataset.rel].map(function (r) {
         var en = LANG === "en" && r[3], title = en ? r[3] : r[2];
+        if (r[0] === "B") {                                      // another broadcast: go to it in this archive
+          var b = BY_ID[r[1].split("#e-")[1]]; if (!b) return "";
+          return '<a role="menuitem" href="#e-' + b.id + '"><span class="dlmenu__kind">' + T.relKind.B + " · " +
+            b.d + " " + T.monthsShort[b.m - 1] + " " + b.y + "</span>" + esc(b.title) + "</a>";
+        }
         return '<a role="menuitem" href="' + ROOT + r[1] + '"' + (LANG === "en" && !en ? ' lang="el"' : "") + '><span class="dlmenu__kind">' +
           T.relKind[r[0]] + "</span>" + title + "</a>";
       }).join("");
@@ -682,7 +699,12 @@
   /* ---------- deep link #e-YYYY_MM_DD ---------- */
   function openHash() {
     var m = location.hash.match(/^#e-(\d{4}_\d{2}_\d{2})$/); if (!m || !BY_ID[m[1]]) return;
-    var row = $("#e-" + m[1]); if (!row) { state.season = "all"; state.q = ""; qIn.value = ""; renderList(); row = $("#e-" + m[1]); }
+    var row = $("#e-" + m[1]);
+    if (!row) {
+      state.season = "all"; state.q = ""; qIn.value = ""; setTag("all");
+      $$(".chip[data-season]", seasonBar).forEach(function (c) { c.setAttribute("aria-pressed", c.dataset.season === "all"); });
+      renderList(); row = $("#e-" + m[1]);
+    }
     land(row); row.classList.remove("is-target"); void row.offsetWidth; row.classList.add("is-target");
   }
   // put the broadcast a little below the middle of the free space under the top bar and the season chips

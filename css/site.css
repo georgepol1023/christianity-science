@@ -261,6 +261,9 @@ svg[viewBox="0 0 24 24"] { width: 22px; height: 22px; fill: none; stroke: curren
 .ep__links { margin: .3rem 0 0; font-size: .86rem; color: var(--slate); display: flex; flex-wrap: wrap; gap: .25rem 1rem; }
 .ep__links a, .ep__links button { color: var(--slate); background: none; border: 0; padding: 0; cursor: pointer; font-size: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
 .ep__links a:hover, .ep__links button:hover { color: var(--ink); text-decoration-color: currentColor; }
+.ep__links .ep__share { display: inline-grid; place-items: center; width: 28px; height: 22px; margin: -2px 0 -2px -.35rem; border-radius: 6px; text-decoration: none; }
+.ep__links .ep__share:hover { background: color-mix(in srgb, currentColor 10%, transparent); }
+.ep__share svg { width: 16px; height: 16px; }
 .ep__play { width: 48px; height: 48px; border-radius: 50%; border: 1.5px solid var(--lapis); background: transparent; color: var(--lapis); display: grid; place-items: center; cursor: pointer; transition: background .15s, color .15s; }
 :root[data-theme="dark"] .ep__play { border-color: var(--gold); color: var(--gold); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ep__play { border-color: var(--gold); color: var(--gold); } }

@@ -504,7 +504,50 @@ test("site search: the top-bar button searches the whole site, grouped by kind, 
   await page.close2();
 });
 
-test("home: 'Αντιγραφή συνδέσμου' copies the broadcast link", async () => {
+test("home: «Σχετικά» starts with related broadcasts (with dates) that jump to the broadcast, past any filter", async () => {
+  const page = await open("index.html");
+  await page.click("#tagOpen");
+  await page.click('.tagdlg [data-tag="bioethics"]');
+  await page.click("#e-2012_02_23 [data-rel]");
+  const first = await page.$eval("#e-2012_02_23 .dlmenu--rel a", (a) => [a.getAttribute("href"), a.textContent]);
+  assert.equal(first[0], "#e-2018_05_24");
+  assert.equal(first[1], "Εκπομπή · 24 Μαΐ 2018Ευθανασία");
+  await page.click('#seasonBar [data-season="15"]');                        // now Euthanasia 2018 is filtered out
+  await page.click("#e-2022_02_24 [data-rel]");
+  const target = await page.$eval("#e-2022_02_24 .dlmenu--rel a", (a) => a.getAttribute("href"));
+  await page.click(`#e-2022_02_24 .dlmenu--rel a[href="${target}"]`);
+  await page.waitForFunction((h) => location.hash === h && !document.querySelector(".dlmenu"), {}, target);
+  const top = await page.$eval(target, (e) => e.getBoundingClientRect().top);
+  assert.ok(top > 60 && top < 900, `the broadcast is shown and on screen (${top})`);
+  // a series' other parts are left out: they are right next to it
+  await page.click("#e-2020_10_08 [data-rel]");
+  assert.equal(await page.$$eval("#e-2020_10_08 .dlmenu--rel a", (a) => a.some((x) => x.getAttribute("href") === "#e-2020_10_22")), false);
+  assert.deepEqual(page.problems, []);
+  await page.close2();
+});
+
+test("home: the link icon has the «Αντιγραφή συνδέσμου» tooltip; on phones it opens the phone's share menu", async () => {
+  const page = await open("index.html");
+  assert.equal(await page.$eval("#e-2008_01_31 .ep__share", (b) => [b.title, b.getAttribute("aria-label"), !!b.querySelector("svg"), b.textContent.trim()].join("|")),
+    "Αντιγραφή συνδέσμου|Αντιγραφή συνδέσμου|true|");
+  await page.close2();
+  const phone = await open("index.html", { width: 390, height: 844, before: async (p) => {
+    await p.emulate({ viewport: { width: 390, height: 844, isMobile: true, hasTouch: true }, userAgent: "Mozilla/5.0 (Linux; Android 14) Mobile" });
+    await p.evaluateOnNewDocument(() => {
+      navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };
+      const mm = window.matchMedia.bind(window);
+      window.matchMedia = (q) => (q === "(pointer: coarse)" ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q));
+    });
+  } });
+  assert.equal(await phone.$eval("#e-2008_01_31 .ep__share", (b) => b.getAttribute("aria-label")), "Κοινοποίηση");
+  await phone.$eval("#e-2008_01_31 .ep__share", (b) => b.click());
+  const shared = await phone.evaluate(() => window.__shared);
+  assert.equal(shared.url, BASE + "index.html#e-2008_01_31");
+  assert.match(shared.title, /Εισαγωγική Εκπομπή/);
+  await phone.close2();
+});
+
+test("home: the link icon copies the broadcast link", async () => {
   const page = await open("index.html");
   await browser.defaultBrowserContext().overridePermissions(BASE, ["clipboard-read", "clipboard-write", "clipboard-sanitized-write"]);
   await page.evaluate(() => { window.__copied = null; navigator.clipboard.writeText = (t) => { window.__copied = t; return Promise.resolve(); }; });

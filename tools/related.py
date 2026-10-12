@@ -24,6 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE_EL, SITE_EN = "Χριστιανισμός & Επιστήμη", "Christianity & Science"
 
 MIN_SCORE = 0.09          # below this two items are not considered related
+MIN_SCORE_BB = 0.15       # two broadcasts: a higher bar (one shared word like «σύγχρονος» is not enough)
 MONTHS_EL = ["Ιαν", "Φεβ", "Μαρ", "Απρ", "Μαΐ", "Ιουν", "Ιουλ", "Αυγ", "Σεπ", "Οκτ", "Νοε", "Δεκ"]
 MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 LABEL = {
@@ -73,7 +74,7 @@ vm.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), ctx);
 vm.runInNewContext(fs.readFileSync(process.argv[3], "utf8"), ctx);
 const en = ctx.window.BROADCAST_TITLES_EN || {}, out = [];
 for (const s of ctx.window.BROADCASTS) for (const e of s.episodes)
-  out.push({ date: e.date, title: e.title, link: e.link, en: en[e.date] || null });
+  out.push({ date: e.date, title: e.title, link: e.link, en: en[e.date] || null, tags: e.tags || [] });
 console.log(JSON.stringify(out));
 """
     with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as f:
@@ -129,7 +130,7 @@ def collect():
         y, m, d = map(int, b["date"].split("-"))
         items.append({"kind": "B", "key": bid, "url": "index.html#e-" + bid, "el": html.escape(b["title"], quote=False),
                       "en": html.escape(b["en"], quote=False) if b["en"] else None,
-                      "text": b["title"], "body": body, "own": link.split("#")[0] if body else None,
+                      "text": b["title"], "body": body, "own": link.split("#")[0] if body else None, "tags": set(b.get("tags") or []),
                       "date_el": "%d %s %d" % (d, MONTHS_EL[m - 1], y), "date_en": "%d %s %d" % (d, MONTHS_EN[m - 1], y)})
 
     # newspaper column articles
@@ -189,17 +190,35 @@ def cosine(a, b):
     return sum(x * b.get(t, 0) for t, x in a.items())
 
 
+def series(title):
+    """«Κατακλυσμός – Μέρος 2ο: …» → «κατακλυσμός»: the name shared by the parts of a series."""
+    t = re.split(r"\s*[–:\-]*\s*\(?\d*ο?\s*[Μμ]έρος\b", html.unescape(title))[0]
+    return re.sub(r"[«»\"'.,:;–\-\s]+", " ", t).strip().lower()
+
+
+def days_apart(a, b):
+    import datetime
+    d = lambda k: datetime.date(*map(int, k.split("_")))
+    return abs((d(a) - d(b)).days)
+
+
 def related_to(i, items, vecs, kinds, per_kind):
     scored = {}
     for j, it in enumerate(items):
         if j == i or it["kind"] not in kinds:
             continue
-        if items[i]["kind"] == "B" and it["kind"] == "B" and it["el"] == items[i]["el"]:
-            continue                                   # a repeat of the same broadcast
+        both_b = items[i]["kind"] == "B" and it["kind"] == "B"
+        if both_b and not (it["tags"] & items[i]["tags"]):
+            continue                                   # two broadcasts must share a topic (js/broadcasts.js)
+        if both_b and it["el"] != items[i]["el"] and series(it["el"]) == series(items[i]["el"]) \
+                and days_apart(it["key"], items[i]["key"]) < 400:
+            continue                                   # another part of the same series: it is right next to it
+        # (a broadcast of the same name in another year stays: «Ευθανασία» 2012 → «Ευθανασία» 2018;
+        #  below, only one of several with one name is kept)
         s = score(vecs[i], vecs[j])
         if it.get("own") and it["own"] == items[i].get("key"):
             s += 1                                     # the broadcast of this very topic page comes first
-        if s >= MIN_SCORE:
+        if s >= (MIN_SCORE_BB if both_b else MIN_SCORE):
             scored.setdefault(it["kind"], []).append((s, j))
     out = {}
     for k in kinds:
@@ -270,8 +289,9 @@ def main():
             add("faq.html", it["key"], related_to(i, items, vecs, ["B", "C"], 2), "",
                 '<!-- end:%s -->' % it["key"])
         elif k == "B":
-            g = related_to(i, items, vecs, ["C", "T", "M", "Q"], 3)
-            flat = [j for kind in ("C", "T", "M", "Q") for j in g.get(kind, []) if items[j]["key"] != it.get("own")][:5]
+            # «Σχετικά» in the archive: up to 3 other broadcasts first, then up to 4 articles, topics, questions
+            g = related_to(i, items, vecs, ["B", "C", "T", "M", "Q"], 3)
+            flat = g.get("B", [])[:3] + [j for kind in ("C", "T", "M", "Q") for j in g.get(kind, []) if items[j]["key"] != it.get("own")][:4]
             if flat:
                 js[it["key"]] = [[items[j]["kind"], items[j]["url"], items[j]["el"], items[j]["en"] or ""] for j in flat]
 

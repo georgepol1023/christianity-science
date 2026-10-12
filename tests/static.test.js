@@ -651,11 +651,17 @@ test("related: articles, topics and questions link to related content that exist
   assert.ok(Object.keys(rel).length > 250, Object.keys(rel).length + " broadcasts with related items");
   for (const [id, list] of Object.entries(rel)) {
     assert.ok(ids.has(id), id + " is a broadcast");
+    assert.ok(list.length <= 7, id + ": at most 3 broadcasts and 4 other items");
     for (const [kind, url, el] of list) {
-      assert.match(kind, /^[CTMQ]$/);
+      assert.match(kind, /^[BCTMQ]$/);
       assert.ok(el, id + ": has a title");
       assert.ok(fs.existsSync(path.join(ROOT, url.split("#")[0])), id + ": " + url + " exists");
+      if (kind === "B") {
+        const other = url.split("#e-")[1];
+        assert.ok(ids.has(other) && other !== id, id + ": related broadcast " + other);
+      }
     }
+    assert.ok(list.filter((r) => r[0] === "B").length <= 3, id + ": at most 3 related broadcasts");
   }
 });
 
