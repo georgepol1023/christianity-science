@@ -43,7 +43,7 @@
   // Θέματα των εκπομπών: κλειδί (για το tags: "…" κάθε εκπομπής), όνομα, απόχρωση της κουκκίδας (0–360)
   window.BROADCAST_TAGS = [
     { id: "bible",       name: "Αγία Γραφή",                 hue: 42 },
-    { id: "prophecy",    name: "Προφητείες & έσχατα",        hue: 12 },
+    { id: "prophecy",    name: "Προφητείες & εσχατολογία",   hue: 12 },
     { id: "christ",      name: "Ιησούς Χριστός",             hue: 352 },
     { id: "apologetics", name: "Πίστη & αθεϊσμός",           hue: 268 },
     { id: "religions",   name: "Θρησκείες & αποκρυφισμός",   hue: 300 },

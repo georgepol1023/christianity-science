@@ -238,7 +238,9 @@ def block(groups, items, lang, prefix, slot):
 
 
 def put(src, slot, html_block, before):
-    src = re.sub(r"(?s)\n?<!-- related:%s -->.*?<!-- /related:%s -->" % (slot, slot), "", src)
+    # the old block goes with the line break after it (put back below), so running this again changes
+    # nothing, and a page fresh from tools/update_column.py (the weekly GitHub run) comes out the same
+    src = re.sub(r"(?s)<!-- related:%s -->.*?<!-- /related:%s -->\n?" % (slot, slot), "", src)
     i = src.find(before)
     if i < 0:
         return src

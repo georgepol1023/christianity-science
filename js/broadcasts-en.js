@@ -6,7 +6,7 @@
  */
 // English names of the broadcast topics (window.BROADCAST_TAGS in js/broadcasts.js)
 window.BROADCAST_TAGS_EN = {
-  bible: "The Bible", prophecy: "Prophecy & the end times", christ: "Jesus Christ", apologetics: "Faith & atheism",
+  bible: "The Bible", prophecy: "Prophecy & eschatology", christ: "Jesus Christ", apologetics: "Faith & atheism",
   religions: "Religions & the occult", creation: "Creation & evolution", cosmos: "Astronomy & space",
   body: "The human body", soul: "The human spirit", bioethics: "Bioethics", gender: "Gender & sexuality",
   family: "Family & young people", mind: "Mental health", health: "Health & addiction", tech: "Technology & the internet",

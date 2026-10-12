@@ -38,7 +38,7 @@
       partsCount: function (n) { return n + " ημίωρα"; },
       resumeLabel: function (p, t) { return "Συνεχίστε από εκεί που σταματήσατε: " + p + "ο ημίωρο, " + t; },
       resume: "Συνέχεια", hide: "Απόκρυψη",
-      allSeasons: "Όλοι οι κύκλοι", allTags: "Όλα τα θέματα",
+      allSeasons: "Όλοι οι κύκλοι", allTags: "Όλα τα θέματα", topics: "Θέματα", topicsTitle: "Θέματα εκπομπών", close: "Κλείσιμο",
       tagFound: function (n, t) { return (n === 1 ? "1 εκπομπή" : n + " εκπομπές") + " με θέμα «" + t + "»."; },
       tagShow: function (t) { return "Όλες οι εκπομπές με θέμα «" + t + "»"; },
       stats: function (e, n, h) { return e + " εκπομπές σε " + n + " κύκλους, περίπου " + h + " ώρες ακρόασης."; },
@@ -78,7 +78,7 @@
       partsCount: function (n) { return n + " parts"; },
       resumeLabel: function (p, t) { return "Continue where you left off: part " + p + ", " + t; },
       resume: "Continue", hide: "Hide",
-      allSeasons: "All seasons", allTags: "All topics",
+      allSeasons: "All seasons", allTags: "All topics", topics: "Topics", topicsTitle: "Broadcast topics", close: "Close",
       tagFound: function (n, t) { return (n === 1 ? "1 broadcast" : n + " broadcasts") + " on “" + t + "”."; },
       tagShow: function (t) { return "All broadcasts on “" + t + "”"; },
       stats: function (e, n, h) { return e + " broadcasts in " + n + " seasons, about " + h + " hours of listening. Audio in Greek."; },
@@ -265,45 +265,64 @@
   var state = { season: "all", tag: "all", q: "" };
   var seasonBar = $("#seasonBar");
   (function () {
-    var h = '<button class="chip" data-season="all" aria-pressed="true">' + T.allSeasons + "</button>";
+    var h = '<span class="topicpick" id="tagPick"></span>' +
+      '<button class="chip" data-season="all" aria-pressed="true">' + T.allSeasons + "</button>";
     SEASONS.forEach(function (s) { h += '<button class="chip" data-season="' + s.n + '" aria-pressed="false">' + T.season(s.n) + "</button>"; });
     seasonBar.innerHTML = h;
   })();
   seasonBar.addEventListener("click", function (e) {
-    var b = e.target.closest(".chip"); if (!b) return;
+    if (e.target.closest("#tagOpen")) { openTags(); return; }
+    if (e.target.closest("[data-tag-clear]")) { setTag("all"); renderList(); return; }
+    var b = e.target.closest(".chip[data-season]"); if (!b) return;
     state.season = b.dataset.season;
-    $$(".chip", seasonBar).forEach(function (c) { c.setAttribute("aria-pressed", c === b); });
+    $$(".chip[data-season]", seasonBar).forEach(function (c) { c.setAttribute("aria-pressed", c === b); });
     renderList();
   });
 
-  // topics: one row of chips (most used first); a topic chip under a broadcast picks the same filter
-  var tagBar = $("#tagBar");
-  var tagChip = function (t, inRow, on) {
-    return '<button class="' + (inRow ? "chip chip--tag" : on ? "tag is-on" : "tag") + (t.hue < 0 ? " tag--plain" : "") + '" data-tag="' + t.id + '"' +
-      (t.hue >= 0 ? ' style="--h:' + t.hue + '"' : "") + ">" + esc(t.name) + "</button>";
+  /* ---------- topics ----------
+   * One «Θέματα» button at the start of the season row opens a window with every topic (with how many
+   * broadcasts it has); while a topic is chosen the button shows it, with ✕ next to it to show all again.
+   * The coloured topics under each title choose the same filter. */
+  var tagChip = function (t, on, extra) {
+    return '<button class="' + (on ? "tag is-on" : "tag") + (t.hue < 0 ? " tag--plain" : "") + '" data-tag="' + t.id + '"' +
+      (t.hue >= 0 ? ' style="--h:' + t.hue + '"' : "") + ">" + esc(t.name) + (extra || "") + "</button>";
   };
-  if (tagBar) {
-    var used = {};
-    EPISODES.forEach(function (e) { e.tags.forEach(function (t) { used[t] = (used[t] || 0) + 1; }); });
-    var h2 = '<button class="chip" data-tag="all" aria-pressed="true">' + T.allTags + "</button>";
+  var ICON_TOPICS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>';
+  var ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  var used = {};
+  EPISODES.forEach(function (e) { e.tags.forEach(function (t) { used[t] = (used[t] || 0) + 1; }); });
+  var tagDlg = document.createElement("dialog");
+  tagDlg.className = "tagdlg";
+  tagDlg.setAttribute("aria-labelledby", "tagDlgTitle");
+  tagDlg.innerHTML = '<div class="tagdlg__head"><h2 class="tagdlg__title" id="tagDlgTitle">' + T.topicsTitle + "</h2>" +
+    '<button class="iconbtn" data-close aria-label="' + T.close + '">' + ICON_CLOSE + "</button></div>" +
+    '<div class="tagdlg__list"><button class="tag tag--plain is-on" data-tag="all">' + T.allTags + '<span class="tag__n">' + EPISODES.length + "</span></button>" +
     TAG_LIST.filter(function (t) { return used[t.id]; })
-      .sort(function (a, b) { return (b.hue >= 0) - (a.hue >= 0) || used[b.id] - used[a.id]; })
-      .forEach(function (t) { h2 += tagChip(t, true).replace(">", ' aria-pressed="false">'); });
-    tagBar.innerHTML = h2;
+      .sort(function (a, b) { return (b.hue >= 0) - (a.hue >= 0) || used[b.id] - used[a.id]; })     // most used first
+      .map(function (t) { return tagChip(t, false, '<span class="tag__n">' + used[t.id] + "</span>"); }).join("") +
+    "</div>";
+  document.body.appendChild(tagDlg);
+  function openTags() {
+    if (tagDlg.showModal) tagDlg.showModal(); else tagDlg.setAttribute("open", "");
+    var on = $(".tag.is-on", tagDlg); if (on) on.focus();
   }
+  function closeTags() { if (tagDlg.close) tagDlg.close(); else tagDlg.removeAttribute("open"); }
+  tagDlg.addEventListener("click", function (e) {
+    if (e.target === tagDlg || e.target.closest("[data-close]")) { closeTags(); return; }      // the backdrop, or ✕
+    var b = e.target.closest("[data-tag]"); if (!b) return;
+    setTag(b.dataset.tag); renderList(); closeTags();
+    var top = $("#archive"); if (top && top.getBoundingClientRect().top < 0) top.scrollIntoView();
+  });
   function setTag(id) {
     state.tag = TAGS[id] ? id : "all";
-    if (!tagBar) return;
-    $$(".chip", tagBar).forEach(function (c) {
-      var on = c.dataset.tag === state.tag;
-      c.setAttribute("aria-pressed", on);
-      if (on && c.scrollIntoView && state.tag !== "all") tagBar.scrollLeft = c.offsetLeft - tagBar.offsetLeft - 16;
-    });
+    var t = TAGS[state.tag];
+    $("#tagPick").innerHTML = t
+      ? '<button class="chip chip--topics is-set" id="tagOpen" aria-haspopup="dialog"' + (t.hue >= 0 ? ' style="--h:' + t.hue + '"' : "") + ">" + esc(t.name) + "</button>" +
+        '<button class="chip chip--clear" data-tag-clear aria-label="' + T.allTags + '">' + ICON_CLOSE + "</button>"
+      : '<button class="chip chip--topics" id="tagOpen" aria-haspopup="dialog">' + ICON_TOPICS + T.topics + "</button>";
+    $$("[data-tag]", tagDlg).forEach(function (b) { b.classList.toggle("is-on", b.dataset.tag === state.tag); });
   }
-  if (tagBar) tagBar.addEventListener("click", function (e) {
-    var b = e.target.closest(".chip"); if (!b) return;
-    setTag(b.dataset.tag === state.tag ? "all" : b.dataset.tag); renderList();      // a second tap shows all again
-  });
+  setTag("all");
 
   var totalParts = EPISODES.reduce(function (a, e) { return a + e.parts.length; }, 0);
   $("#archiveStats").textContent = T.stats(EPISODES.length, SEASONS.length, Math.round(totalParts / 2));
@@ -314,7 +333,7 @@
       '<div class="ep__date"><span class="ep__day">' + e.d + '</span><span class="ep__mon">' + T.monthsShort[e.m - 1] + " " + e.y + "</span></div>" +
       '<div><h4 class="ep__title">' + highlight(e.title, hits) + "</h4>" +
       (e.tags.length ? '<p class="ep__tags">' + e.tags.map(function (t) {
-        return tagChip(TAGS[t], false, t === state.tag).replace(">", ' title="' + esc(T.tagShow(TAGS[t].name)) + '">');
+        return tagChip(TAGS[t], t === state.tag).replace(">", ' title="' + esc(T.tagShow(TAGS[t].name)) + '">');
       }).join("") + "</p>" : "") +
       '<p class="ep__links">' + (showSeason ? '<span class="ep__season">' + T.season(e.season) + "</span>" : "") +
       (e.link ? '<a href="' + esc(e.link) + '">' + T.sources + "</a>" : "") +
@@ -365,7 +384,7 @@
   qIn.addEventListener("input", function () { clearTimeout(qT); qT = setTimeout(function () { state.q = qIn.value.trim(); renderList(); }, 120); });
   $("#clearSearch").addEventListener("click", function () {
     qIn.value = ""; state.q = ""; state.season = "all"; setTag("all");
-    $$(".chip", seasonBar).forEach(function (c) { c.setAttribute("aria-pressed", c.dataset.season === "all"); });
+    $$(".chip[data-season]", seasonBar).forEach(function (c) { c.setAttribute("aria-pressed", c.dataset.season === "all"); });
     renderList(); qIn.focus();
   });
 

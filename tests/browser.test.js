@@ -194,24 +194,34 @@ test("home: '/' opens the site-wide search; Escape closes it", async () => {
   await page.close2();
 });
 
-test("home: topics filter the archive, from the topic row or a broadcast's own chips, and combine with seasons", async () => {
+test("home: the «Θέματα» window filters the archive by topic; a broadcast's own topics do too; ✕ shows all", async () => {
   const page = await open("index.html");
   const shown = () => page.$$eval("#list .ep", (e) => e.length);
   const all = await shown();
   assert.equal(await page.$$eval("#e-2008_01_31 .ep__tags .tag", (e) => e.map((t) => t.textContent).join()), "Η εκπομπή");
-  await page.click('#tagBar [data-tag="bioethics"]');
+  await page.click("#tagOpen");
+  assert.equal(await page.$eval(".tagdlg", (d) => d.open), true, "the window opens");
+  assert.ok((await page.$$(".tagdlg .tag")) .length > 20, "every topic, and «Όλα τα θέματα»");
+  await page.click('.tagdlg [data-tag="bioethics"]');
+  assert.equal(await page.$eval(".tagdlg", (d) => d.open), false, "choosing closes it");
   const n = await shown();
   assert.ok(n > 5 && n < all, `bioethics shows ${n} broadcasts`);
   assert.equal(await page.$$eval("#list .ep", (eps) => eps.every((e) => e.querySelector('.tag[data-tag="bioethics"]'))), true);
   assert.match(await page.$eval("#results", (e) => e.textContent), new RegExp(n + " εκπομπές με θέμα «Βιοηθική»"));
+  assert.match(await page.$eval("#tagOpen", (e) => e.textContent), /Βιοηθική/, "the button shows the chosen topic");
   await page.click('#seasonBar [data-season="15"]');
   assert.ok((await shown()) < n, "topic and season together");
   await page.click('#seasonBar [data-season="all"]');
-  await page.click('#tagBar [data-tag="bioethics"]');                       // second tap: all topics again
+  await page.click("[data-tag-clear]");                                       // ✕: all topics again
   assert.equal(await shown(), all);
-  await page.click('#e-2008_01_31 .ep__tags [data-tag="show"]');            // a broadcast's own chip
-  assert.equal(await page.$eval('#tagBar [data-tag="show"]', (c) => c.getAttribute("aria-pressed")), "true");
+  assert.match(await page.$eval("#tagOpen", (e) => e.textContent), /Θέματα/);
+  await page.click('#e-2008_01_31 .ep__tags [data-tag="show"]');            // a broadcast's own topic
+  assert.match(await page.$eval("#tagOpen", (e) => e.textContent), /Η εκπομπή/);
   assert.ok((await shown()) < 15);
+  await page.click("#tagOpen");
+  await page.keyboard.press("Escape");
+  assert.equal(await page.$eval(".tagdlg", (d) => d.open), false, "Escape closes the window");
+  assert.deepEqual(page.problems, []);
   await page.close2();
 });
 
@@ -222,7 +232,7 @@ test("search: a topic's name finds its broadcasts; on the English page the Engli
   assert.ok(await page.$$eval("#list .ep", (e) => e.some((x) => /Ευθανασία/.test(x.textContent))));
   await page.close2();
   const en = await open("en/index.html");
-  assert.match(await en.$eval('#tagBar [data-tag="cosmos"]', (e) => e.textContent), /Astronomy & space/);
+  assert.match(await en.$eval('.tagdlg [data-tag="cosmos"]', (e) => e.textContent), /Astronomy & space/);
   await en.type("#q", "bioethics");
   await en.waitForFunction(() => /Found \d+/.test(document.querySelector("#results").textContent));
   assert.ok(await en.$$eval("#list .ep", (e) => e.some((x) => /euthanasia/i.test(x.textContent))));
@@ -674,7 +684,7 @@ test("english home: interface, titles and dates are in English; audio plays from
   const page = await open("en/index.html");
   assert.equal(await page.$$eval("#list .ep", (e) => e.length), 355);
   assert.match(await page.$eval("#archiveStats", (e) => e.textContent), /^355 broadcasts in 20 seasons, .*Audio in Greek\.$/);
-  assert.equal(await page.$eval("#seasonBar .chip", (e) => e.textContent), "All seasons");
+  assert.equal(await page.$eval("#seasonBar [data-season=all]", (e) => e.textContent), "All seasons");
   assert.match(await page.$eval("#latest .latest__meta", (e) => e.textContent), /^\d{1,2} [A-Z][a-z]+ \d{4}, Season \d+, \d parts$/);
   assert.match(await page.$eval("#list .ep__title", (e) => e.textContent), /^[\x00-\u024f“”‘’–—…·]+$/);   // Latin text only
   await page.click("#list .ep .ep__play");
