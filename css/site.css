@@ -203,6 +203,26 @@ svg[viewBox="0 0 24 24"] { width: 22px; height: 22px; fill: none; stroke: curren
 .chip { flex-shrink: 0; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: .45rem .9rem; font-size: .9rem; cursor: pointer; white-space: nowrap; transition: background .15s, border-color .15s; }
 .chip:hover { border-color: var(--slate); }
 .chip[aria-pressed="true"] { background: var(--lapis); border-color: var(--lapis); color: #fff; }
+/* topics: a row of chips above the seasons, and up to three small chips under each title */
+.tagbar { display: flex; gap: .4rem; overflow-x: auto; padding: .2rem 0 .1rem; margin-top: 1.1rem; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 2.5rem), transparent); }
+.tagbar::-webkit-scrollbar { display: none; }
+.tagbar + .seasons { margin-top: .2rem; }
+.chip--tag, .tag { --dot: hsl(var(--h, 0) 62% 48%); }
+.chip--tag::before, .tag::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--dot); margin-right: .45rem; vertical-align: 1px; }
+.tag--plain { --dot: var(--slate); }
+.chip--tag[aria-pressed="true"]::before { background: #fff; }
+.ep__tags { margin: .35rem 0 0; display: flex; flex-wrap: wrap; gap: .3rem; }
+.tag { border: 1px solid var(--line); background: transparent; color: var(--slate); border-radius: 999px; padding: .12rem .55rem; font: 500 .75rem/1.5 var(--sans); cursor: pointer; white-space: nowrap; transition: border-color .15s, color .15s; }
+.tag:hover { border-color: var(--dot); color: var(--ink); }
+.tag.is-on { border-color: var(--dot); color: var(--ink); background: color-mix(in srgb, var(--dot) 12%, transparent); }
+:root[data-theme="dark"] .chip--tag, :root[data-theme="dark"] .tag { --dot: hsl(var(--h, 0) 70% 64%); }
+:root[data-theme="dark"] .tag--plain { --dot: var(--slate); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .chip--tag, :root:not([data-theme="light"]) .tag { --dot: hsl(var(--h, 0) 70% 64%); }
+  :root:not([data-theme="light"]) .tag--plain { --dot: var(--slate); }
+}
+@media (max-width: 560px) { .ep__tags .tag:nth-child(n+3) { display: none; } }   /* phones: the two most relevant */
 .results { color: var(--slate); font-size: .92rem; margin: .5rem 0 0; min-height: 1.5em; }
 
 .season { margin-top: 2rem; }
@@ -239,7 +259,7 @@ svg[viewBox="0 0 24 24"] { width: 22px; height: 22px; fill: none; stroke: curren
   .ep { grid-template-columns: 56px minmax(0, 1fr) auto; padding: 1rem .25rem; }
   .ep__date { grid-row: 1; }
   .ep .parts { grid-column: 1 / -1; }
-  .ep__actions { grid-column: 3; grid-row: 1; }
+  .ep__actions { grid-column: 3; grid-row: 1; flex-direction: column-reverse; gap: .4rem; }   /* download above play: more room for the title */
   .ep__day { font-size: 1.4rem; }
 }
 .ep__actions { display: flex; align-items: center; gap: .25rem; }

@@ -87,6 +87,18 @@ const decodeEntities = (s) => s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fr
 /* =====================================================================
    1. Broadcast data (js/broadcasts.js)
    ===================================================================== */
+test("data: every broadcast has 1 to 3 known topics, and every topic has an English name", () => {
+  const ctx = { window: {} };
+  vm.runInNewContext(read("js/broadcasts.js") + "\n" + read("js/broadcasts-en.js"), ctx);
+  const ids = new Set(ctx.window.BROADCAST_TAGS.map((t) => t.id));
+  for (const s of ctx.window.BROADCASTS) for (const e of s.episodes) {
+    assert.ok(e.tags.length >= 1 && e.tags.length <= 3, `${e.date} has ${e.tags.length} topics`);
+    for (const t of e.tags) assert.ok(ids.has(t), `${e.date}: unknown topic "${t}"`);
+    assert.equal(new Set(e.tags).size, e.tags.length, `${e.date} repeats a topic`);
+  }
+  for (const id of ids) assert.ok(ctx.window.BROADCAST_TAGS_EN[id], `topic "${id}" has no English name`);
+});
+
 test("data: broadcasts.js loads and has seasons 1–20", () => {
   const { seasons } = loadData();
   assert.deepEqual(Array.from(seasons, (s) => s.n), Array.from({ length: 20 }, (_, i) => 20 - i));

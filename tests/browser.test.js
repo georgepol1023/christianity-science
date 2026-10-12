@@ -194,6 +194,48 @@ test("home: '/' opens the site-wide search; Escape closes it", async () => {
   await page.close2();
 });
 
+test("home: topics filter the archive, from the topic row or a broadcast's own chips, and combine with seasons", async () => {
+  const page = await open("index.html");
+  const shown = () => page.$$eval("#list .ep", (e) => e.length);
+  const all = await shown();
+  assert.equal(await page.$$eval("#e-2008_01_31 .ep__tags .tag", (e) => e.map((t) => t.textContent).join()), "Η εκπομπή");
+  await page.click('#tagBar [data-tag="bioethics"]');
+  const n = await shown();
+  assert.ok(n > 5 && n < all, `bioethics shows ${n} broadcasts`);
+  assert.equal(await page.$$eval("#list .ep", (eps) => eps.every((e) => e.querySelector('.tag[data-tag="bioethics"]'))), true);
+  assert.match(await page.$eval("#results", (e) => e.textContent), new RegExp(n + " εκπομπές με θέμα «Βιοηθική»"));
+  await page.click('#seasonBar [data-season="15"]');
+  assert.ok((await shown()) < n, "topic and season together");
+  await page.click('#seasonBar [data-season="all"]');
+  await page.click('#tagBar [data-tag="bioethics"]');                       // second tap: all topics again
+  assert.equal(await shown(), all);
+  await page.click('#e-2008_01_31 .ep__tags [data-tag="show"]');            // a broadcast's own chip
+  assert.equal(await page.$eval('#tagBar [data-tag="show"]', (c) => c.getAttribute("aria-pressed")), "true");
+  assert.ok((await shown()) < 15);
+  await page.close2();
+});
+
+test("search: a topic's name finds its broadcasts; on the English page the English name does too", async () => {
+  const page = await open("index.html");
+  await page.type("#q", "βιοηθική");
+  await page.waitForFunction(() => /Βρέθηκαν \d+/.test(document.querySelector("#results").textContent));
+  assert.ok(await page.$$eval("#list .ep", (e) => e.some((x) => /Ευθανασία/.test(x.textContent))));
+  await page.close2();
+  const en = await open("en/index.html");
+  assert.match(await en.$eval('#tagBar [data-tag="cosmos"]', (e) => e.textContent), /Astronomy & space/);
+  await en.type("#q", "bioethics");
+  await en.waitForFunction(() => /Found \d+/.test(document.querySelector("#results").textContent));
+  assert.ok(await en.$$eval("#list .ep", (e) => e.some((x) => /euthanasia/i.test(x.textContent))));
+  await en.close2();
+});
+
+test("phone: at most two topic chips show under a broadcast", async () => {
+  const page = await open("index.html", { width: 390, height: 844 });
+  const counts = await page.$$eval(".ep__tags", (ps) => ps.map((p) => [...p.children].filter((c) => getComputedStyle(c).display !== "none").length));
+  assert.ok(Math.max(...counts) <= 2 && Math.min(...counts) >= 1);
+  await page.close2();
+});
+
 test("home: deep link #e-2013_11_14 shows and highlights that broadcast even when filtered", async () => {
   const page = await open("index.html#e-2013_11_14");
   assert.equal(await page.$eval("#e-2013_11_14", (e) => e.classList.contains("is-target")), true);
@@ -207,6 +249,12 @@ test("home: deep link #e-2013_11_14 shows and highlights that broadcast even whe
 /* =====================================================================
    Player
    ===================================================================== */
+/** Wait until the page has loaded and stopped moving (deep links place their row after the load event). */
+const settle = (page) => page.evaluate(() => new Promise((r) => {
+  const go = () => setTimeout(r, 400);
+  if (document.readyState === "complete") go(); else addEventListener("load", go);
+}));
+
 const audioState = (page) => page.evaluate(() => {
   const a = document.querySelector("#audio");
   return { src: decodeURI(a.getAttribute("src") || ""), t: a.currentTime, paused: a.paused, rate: a.playbackRate, ready: a.readyState };
@@ -262,6 +310,22 @@ test("player: progress is remembered and offered as 'Συνέχεια' after rel
   assert.match(await page.$eval("#resume", (e) => e.textContent), /1ο ημίωρο, 2:0[45]/);
   await page.click("#resumeBtn");
   await page.waitForFunction(() => document.querySelector("#audio").currentTime > 100, { timeout: 15000 });
+  await page.close2();
+});
+
+test("player: starting another broadcast clears the previous one's 'now playing' look", async () => {
+  const page = await open("index.html");
+  await page.click("#e-2008_01_31 .ep__play");
+  await page.click("#e-2008_02_14 .ep__play");
+  assert.equal(await page.$$eval("#e-2008_01_31 .part.is-current, #e-2008_01_31 .part.is-playing", (e) => e.length), 0);
+  assert.equal(await page.$$eval("#e-2008_02_14 .part.is-current", (e) => e.length), 1);
+  await page.close2();
+});
+
+test("phone: a broadcast's download button sits above its play button, leaving the title room", async () => {
+  const page = await open("index.html", { width: 390, height: 844 });
+  const [dl, play] = await page.$eval("#e-2008_01_31 .ep__actions", (a) => [a.querySelector(".ep__dl").getBoundingClientRect(), a.querySelector(".ep__play").getBoundingClientRect()].map((r) => ({ top: r.top, bottom: r.bottom })));
+  assert.ok(dl.bottom <= play.top, "download above play");
   await page.close2();
 });
 
@@ -387,9 +451,10 @@ test("home: «Σχετικά» lists related column articles, topics and questio
   assert.ok(await page.$(".related .related__list a[href^='../index.html#e-']"), "the article links back to related broadcasts");
   const en = await open("en/index.html#e-2013_10_17");
   await en.waitForSelector("#e-2013_10_17 [data-rel]");
+  await settle(en);                                            // the deep link places the row once the page has loaded
   await en.click("#e-2013_10_17 [data-rel]");
   const enItems = await en.$$eval("#e-2013_10_17 .dlmenu--rel a", (e) => e.map((a) => ({ href: a.getAttribute("href"), text: a.textContent })));
-  assert.ok(enItems.some((i) => /The Flood \(Part \d\)/.test(i.text) && /^\.\.\/column\//.test(i.href)), "English titles, links inside the English site");
+  assert.ok(enItems.some((i) => /The Flood \(Part \d\)/.test(i.text) && /^\.\.\/column\//.test(i.href)), "English titles, links inside the English site: " + JSON.stringify(enItems));
   await en.close2();
   await page.close2();
 });

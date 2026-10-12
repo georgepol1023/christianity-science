@@ -4,6 +4,16 @@
  * New broadcast? Add a line here as well:   "2026-10-15": "English title",
  * A broadcast without an English title is shown with its Greek title.
  */
+// English names of the broadcast topics (window.BROADCAST_TAGS in js/broadcasts.js)
+window.BROADCAST_TAGS_EN = {
+  bible: "The Bible", prophecy: "Prophecy & the end times", christ: "Jesus Christ", apologetics: "Faith & atheism",
+  religions: "Religions & the occult", creation: "Creation & evolution", cosmos: "Astronomy & space",
+  body: "The human body", soul: "The human spirit", bioethics: "Bioethics", gender: "Gender & sexuality",
+  family: "Family & young people", mind: "Mental health", health: "Health & addiction", tech: "Technology & the internet",
+  society: "Society", environment: "Environment & climate", science: "Science news", feasts: "Feasts & traditions",
+  life: "Christian life", show: "About the programme"
+};
+
 window.BROADCAST_TITLES_EN = {
   "2026-10-01": "Answers to atheist arguments",
   "2026-09-17": "Falling birth rates and the value of family",
