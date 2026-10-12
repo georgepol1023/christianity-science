@@ -339,6 +339,41 @@ test("phone: a broadcast's play button sits above its download button, leaving t
   await page.close2();
 });
 
+test("player: the phone's lock screen gets title, cover and a progress bar; the mini window mirrors the player", async () => {
+  const page = await open("index.html");
+  await page.evaluate(() => {
+    window.__pos = [];
+    const set = navigator.mediaSession.setPositionState && navigator.mediaSession.setPositionState.bind(navigator.mediaSession);
+    navigator.mediaSession.setPositionState = (s) => { window.__pos.push(s); if (set) set(s); };
+  });
+  await page.click("#e-2008_01_31 .ep__play");
+  await page.waitForFunction(() => document.querySelector("#audio").readyState >= 1 && window.__pos.length, { timeout: 15000 });
+  const m = await page.evaluate(() => {
+    const md = navigator.mediaSession.metadata;
+    return { title: md.title, artist: md.artist, artwork: [...md.artwork].map((a) => a.sizes + " " + a.src), pos: window.__pos[window.__pos.length - 1] };
+  });
+  assert.equal(m.title, "Εισαγωγική Εκπομπή (1ο ημίωρο)");
+  assert.equal(m.artist, "Χριστιανισμός & Επιστήμη");
+  assert.deepEqual(m.artwork, ["192x192 " + BASE + "pictures/cover-192.jpg", "512x512 " + BASE + "pictures/cover-512.jpg"]);
+  for (const f of ["pictures/cover-192.jpg", "pictures/cover-512.jpg"]) assert.ok(fs.existsSync(path.join(ROOT, f)), f);
+  assert.ok(m.pos.duration > 1000 && m.pos.position >= 0 && m.pos.playbackRate === 1, "length and position for the lock screen");
+  // the mini window (Chrome and Edge on computers)
+  if (await page.evaluate(() => !!window.documentPictureInPicture)) {
+    assert.equal(await page.$eval("#pMini", (b) => b.hidden), false, "the button shows where the browser can do it");
+    await page.click("#pMini");
+    const opened = await page.waitForFunction(() => documentPictureInPicture.window, { timeout: 5000 }).then(() => true, () => false);
+    if (opened) {
+      assert.equal(await page.evaluate(() => documentPictureInPicture.window.document.getElementById("t").textContent), "Εισαγωγική Εκπομπή");
+      await page.evaluate(() => documentPictureInPicture.window.document.getElementById("p").click());
+      assert.equal(await page.$eval("#audio", (a) => a.paused), true, "its pause button pauses the player");
+      await page.click("#pClose");
+      assert.equal(await page.evaluate(() => !documentPictureInPicture.window), true, "closing the player closes it");
+    }
+  }
+  assert.deepEqual(page.problems, []);
+  await page.close2();
+});
+
 test("player: close button hides the player and stops audio", async () => {
   const page = await open("index.html");
   await page.click('#e-2008_01_31 .ep__play');

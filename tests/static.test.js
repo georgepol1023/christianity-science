@@ -704,6 +704,24 @@ test("podcast: podcast.xml lists every broadcast (whole, or its half-hour parts)
   assert.match(xml, /<language>el<\/language>/);
 });
 
+test("links: every link and picture inside the site points to a file that exists (mp3s and the 404 page aside)", () => {
+  const decode = (u) => u.replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, "&");
+  const broken = [];
+  for (const p of allPages()) {
+    if (p === "404.html") continue;                                   // root-based links (/…): any folder
+    const s = read(p);
+    if (s.includes('http-equiv="refresh"')) continue;
+    for (const [, url] of s.matchAll(/\b(?:href|src)="([^"]+)"/g)) {
+      const u = decode(url);
+      if (/^([a-z]+:|\/\/|#)/i.test(u)) continue;                       // other sites, mail, data:, same page
+      const file = path.join(path.dirname(path.join(ROOT, p)), decodeURIComponent(u.split("#")[0].split("?")[0]));
+      if (/[\\/]mp3[\\/]/.test(file) || /[\\/]files[\\/]/.test(file) && !fs.existsSync(path.join(ROOT, "files"))) continue;   // kept outside git
+      if (!fs.existsSync(file)) broken.push(p + " → " + url);
+    }
+  }
+  assert.deepEqual(broken, []);
+});
+
 test("site search: every page has the search button, and everything in the index exists", () => {
   const missing = [];
   for (const p of allPages()) {

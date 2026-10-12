@@ -562,6 +562,7 @@
     this.textContent = fmtSpeed(player.speed);
   });
   $("#pClose").addEventListener("click", function () {
+    if (mini) mini.close();
     audio.pause(); saveProgress(true); audio.removeAttribute("src"); audio.load();
     bar.hidden = true; player.ep = null; setPlayerH();
     $$(".ep.is-active").forEach(function (el) { el.classList.remove("is-active"); });
@@ -573,19 +574,89 @@
   function setPlayerH() { document.documentElement.style.setProperty("--player-h", bar.hidden ? "0px" : bar.offsetHeight + "px"); }
   window.addEventListener("resize", setPlayerH);
 
+  /* ---------- the phone's lock screen and notification player (Media Session) ----------
+   * Title, the show's cover, play/pause, ±15 s, previous/next half-hour, and a progress bar that can be
+   * dragged. Full addresses: in the frame (SiteShell below) this page's address is another page's. */
+  var cover = function (n) { return { src: new URL(ROOT + "pictures/cover-" + n + ".jpg", PAGE).href, sizes: n + "x" + n, type: "image/jpeg" }; };
   function mediaSession() {
     if (!("mediaSession" in navigator) || !player.ep) return;
     navigator.mediaSession.metadata = new MediaMetadata({
       title: player.ep.title + " (" + T.part(player.part + 1) + ")",
       artist: T.site,
-      album: T.seasonAria(player.ep.season)
+      album: T.seasonAria(player.ep.season),
+      artwork: [cover(192), cover(512)]
     });
     var h = {
       play: function () { audio.play(); }, pause: function () { audio.pause(); },
       seekbackward: function () { player.skip(-15); }, seekforward: function () { player.skip(15); },
-      previoustrack: function () { player.prev(); }, nexttrack: function () { player.next(); }
+      previoustrack: function () { player.prev(); }, nexttrack: function () { player.next(); },
+      seekto: function (d) { if (isFinite(audio.duration)) { audio.currentTime = Math.max(0, Math.min(audio.duration, d.seekTime)); positionState(); } }
     };
     Object.keys(h).forEach(function (k) { try { navigator.mediaSession.setActionHandler(k, h[k]); } catch (e) {} });
+    miniSync();
+  }
+  function positionState() {
+    if (!("mediaSession" in navigator) || !navigator.mediaSession.setPositionState) return;
+    var d = audio.duration;
+    if (!isFinite(d) || d <= 0) return;
+    try { navigator.mediaSession.setPositionState({ duration: d, playbackRate: audio.playbackRate || 1, position: Math.min(audio.currentTime, d) }); } catch (e) {}
+  }
+  ["loadedmetadata", "play", "pause", "seeked", "ratechange"].forEach(function (t) { audio.addEventListener(t, positionState); });
+
+  /* ---------- mini player: a small always-on-top window (computers, Chrome and Edge) ----------
+   * Document Picture-in-Picture: the window stays above other programs while the broadcast plays. It is
+   * drawn here and only mirrors this page's player; where the browser cannot do it, the button stays hidden. */
+  var mini = null, miniBtn = $("#pMini");
+  var MINI_CSS = "*{box-sizing:border-box}html,body{margin:0;height:100%}" +
+    "body{font:15px/1.35 Commissioner,system-ui,sans-serif;background:radial-gradient(120% 100% at 85% 0%,#2C3E8C,#1C2B6E 50%,#121C4D);color:#EEF0FA;" +
+    "display:flex;flex-direction:column;justify-content:center;gap:10px;padding:14px 16px;overflow:hidden}" +
+    "#t{margin:0;font:600 15px/1.3 Literata,Georgia,serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    "#m{margin:2px 0 0;font-size:12px;color:#AEB6DD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+    "#c{display:flex;align-items:center;justify-content:center;gap:14px}" +
+    "button{border:0;background:transparent;color:inherit;cursor:pointer;display:grid;place-items:center;width:38px;height:38px;border-radius:50%}" +
+    "button:hover{background:rgba(255,255,255,.12)}#p{width:46px;height:46px;background:#C8A54A;color:#1A1D33}#p:hover{filter:brightness(1.07);background:#C8A54A}" +
+    "svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}#p svg{fill:currentColor;stroke:none}" +
+    "#r{display:flex;align-items:center;gap:8px;font-size:11px;color:#AEB6DD;font-variant-numeric:tabular-nums}" +
+    "input{flex:1;accent-color:#C8A54A;margin:0}";
+  function openMini() {
+    if (mini || !window.documentPictureInPicture) return;
+    documentPictureInPicture.requestWindow({ width: 360, height: 168 }).then(function (w) {
+      mini = w;
+      var d = w.document, fonts = $('link[href*="fonts.googleapis.com/css"]');
+      d.title = T.site;
+      if (fonts) d.head.appendChild(fonts.cloneNode());
+      var st = d.createElement("style"); st.textContent = MINI_CSS; d.head.appendChild(st);
+      d.documentElement.lang = LANG;
+      d.body.innerHTML = '<div><p id="t"></p><p id="m"></p></div>' +
+        '<div id="c"><button id="b" aria-label="' + esc($("#back15").getAttribute("aria-label")) + '">' + $("#back15").innerHTML + "</button>" +
+        '<button id="p"></button>' +
+        '<button id="f" aria-label="' + esc($("#fwd15").getAttribute("aria-label")) + '">' + $("#fwd15").innerHTML + "</button></div>" +
+        '<div id="r"><span id="now">0:00</span><input type="range" id="s" min="0" max="1000" value="0" aria-label="' + esc(seek.getAttribute("aria-label")) + '"><span id="len">0:00</span></div>';
+      d.getElementById("b").onclick = function () { player.skip(-15); };
+      d.getElementById("f").onclick = function () { player.skip(15); };
+      d.getElementById("p").onclick = function () { player.toggle(); };
+      d.getElementById("s").oninput = function () { if (isFinite(audio.duration)) audio.currentTime = this.value / 1000 * audio.duration; };
+      w.addEventListener("pagehide", function () { mini = null; });
+      miniSync();
+    }).catch(function () {});
+  }
+  function miniSync() {
+    if (!mini || !player.ep) return;
+    var d = mini.document, el = function (id) { return d.getElementById(id); };
+    if (!el("t")) return;
+    el("t").textContent = player.ep.title;
+    el("m").textContent = T.meta(player.ep.dateLong, player.part + 1, player.ep.parts.length);
+    el("p").innerHTML = audio.paused ? I.play : I.pause;
+    el("p").setAttribute("aria-label", audio.paused ? T.play : T.pause);
+    var dur = audio.duration;
+    el("now").textContent = fmt(audio.currentTime);
+    el("len").textContent = isFinite(dur) ? fmt(dur) : "0:00";
+    if (isFinite(dur) && dur > 0 && d.activeElement !== el("s")) el("s").value = Math.round(audio.currentTime / dur * 1000);
+  }
+  ["timeupdate", "play", "pause", "loadedmetadata", "seeked"].forEach(function (t) { audio.addEventListener(t, miniSync); });
+  if (miniBtn && window.documentPictureInPicture && window.parent === window) {
+    miniBtn.hidden = false;
+    miniBtn.addEventListener("click", function () { if (mini) mini.close(); else openMini(); });
   }
 
   /* ---------- keyboard ---------- */

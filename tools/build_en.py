@@ -174,15 +174,15 @@ def localise(src, page, english):
     src = re.sub(r"(<time\b[^>]*>)(\S+)", lambda m: m.group(1) + MONTHS.get(m.group(2), m.group(2)), src)
 
     def fix(m):
-        attr, url = m.group(1), m.group(2)
-        t = target_of(page, html_unescape(url))
+        attr, url = m.group(1), html_unescape(m.group(2))   # decoded first: the # in &#x27; is no fragment
+        t = target_of(page, url)
         if t is None:
             return m.group(0)
         if t in english:
             return m.group(0)                  # English page exists: stay inside en/
         rest = url[len(url.split("#")[0].split("?")[0]):]          # keep ?query / #fragment
         here = posixpath.dirname("en/" + page)
-        return '%s="%s"' % (attr, posixpath.relpath(t, here) + rest)
+        return '%s="%s"' % (attr, html_escape(posixpath.relpath(t, here) + rest))
     src = re.sub(r'\b(href|src)="([^"]*)"', fix, src)
     if page == "index.html":
         src = src.replace('<script src="../js/app.js', '<script src="../js/broadcasts-en.js"></script>\n  <script src="../js/app.js', 1)
@@ -312,6 +312,11 @@ def related_en(src, page, related):
 def html_unescape(s):
     import html as _h
     return _h.unescape(s)
+
+
+def html_escape(s):
+    import html as _h
+    return _h.escape(s, quote=True)
 
 
 def lang_switch(src, href, label, lang, title):
