@@ -23,7 +23,8 @@ from collections import Counter
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE_EL, SITE_EN = "Χριστιανισμός & Επιστήμη", "Christianity & Science"
 
-MIN_SCORE = 0.09          # below this two items are not considered related
+MIN_SCORE = 0.12          # below this two items are not considered related
+MIN_SHARED = 2            # …and share this many words, or a word in both titles («σύγχρονος» alone is chance)
 MIN_SCORE_BB = 0.15       # two broadcasts: a higher bar (one shared word like «σύγχρονος» is not enough)
 MONTHS_EL = ["Ιαν", "Φεβ", "Μαρ", "Απρ", "Μαΐ", "Ιουν", "Ιουλ", "Αυγ", "Σεπ", "Οκτ", "Νοε", "Δεκ"]
 MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
@@ -46,7 +47,9 @@ STOP = set("""
 αρθρο αρθρα στηλη εφημεριδα ομαδα χριστιανισμοσ επιστημη επιστημησ μεροσ μερουσ συνεχιζεται κεφαλαιο εδαφιο εδαφια
 και του τησ τον την των τουσ τισ τα τη το τι ποσ πωσ που για απο στο στη στα στι μια ενα εισ οτι ουδ αλλ δια μετ
 παρ υπ επ ηδη ναι ανα ως εσυ εγω μου σου τουσ τισ οσο ολα θεε ενω the and for with are was from that this not but you
-""".split())
+ντοκιμαντερ ντοκυμαντερ ντοκιμαντερα βιντεο youtube video videos playlist βιβλιο βιβλιου συνεντευξη πολυμεσα
+παρακολουθηση εκπομπη εκπομπησ εκπομπεσ εκπομπων
+""".split())   # last lines: words about the medium, not the subject
 
 
 def norm(s):
@@ -215,6 +218,8 @@ def related_to(i, items, vecs, kinds, per_kind):
             continue                                   # another part of the same series: it is right next to it
         # (a broadcast of the same name in another year stays: «Ευθανασία» 2012 → «Ευθανασία» 2018;
         #  below, only one of several with one name is kept)
+        if sum(1 for w in vecs[i][0] if w in vecs[j][0]) < MIN_SHARED and not any(w in vecs[j][1] for w in vecs[i][1]):
+            continue                                   # one shared word only counts when both titles have it
         s = score(vecs[i], vecs[j])
         if it.get("own") and it["own"] == items[i].get("key"):
             s += 1                                     # the broadcast of this very topic page comes first
@@ -261,7 +266,7 @@ def put(src, slot, html_block, before):
     # nothing, and a page fresh from tools/update_column.py (the weekly GitHub run) comes out the same
     src = re.sub(r"(?s)<!-- related:%s -->.*?<!-- /related:%s -->\n?" % (slot, slot), "", src)
     i = src.find(before)
-    if i < 0:
+    if i < 0 or not html_block:
         return src
     return src[:i] + html_block + "\n" + src[i:]
 
@@ -273,7 +278,8 @@ def main():
     pages = {}
 
     def add(page, slot, groups, prefix, before):
-        if not groups:
+        if not groups:                                 # nothing related (any more): an old block is removed
+            pages.setdefault(page, []).append((slot, "", before))
             return
         pages.setdefault(page, []).append((slot, block(groups, items, "el", prefix, slot), before))
         english.setdefault(page, {})[slot] = block(groups, items, "en", prefix, slot)
@@ -305,7 +311,7 @@ def main():
                 # inside the page's .wrap, after the article
                 new = re.sub(r"(?s)\n?<!-- related:page -->.*?<!-- /related:page -->", "", new)
                 m = list(re.finditer(r"</article>", new))
-                if m:
+                if m and b:
                     p = m[-1].end()
                     new = new[:p] + "\n" + b + new[p:]
                 continue
@@ -313,7 +319,7 @@ def main():
                 qid = slot
                 new = re.sub(r"(?s)\n?<!-- related:%s -->.*?<!-- /related:%s -->" % (qid, qid), "", new)
                 m = re.search(r'(?s)(<details id="%s"[^>]*>.*?)(\s*</div>\s*</div>\s*</details>)' % qid, new)
-                if m:
+                if m and b:
                     new = new[:m.end(1)] + "\n" + b + new[m.end(1):]
                 continue
             new = put(new, slot, b, before)

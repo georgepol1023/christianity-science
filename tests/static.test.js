@@ -631,16 +631,21 @@ test("column: the English lists show every article title in English", () => {
 
 test("related: articles, topics and questions link to related content that exists", () => {
   const online = JSON.parse(read("data/column.json")).online;
-  let withBroadcasts = 0;
+  let withBroadcasts = 0, withBlock = 0;
   for (const e of online) {
     const el = read("column/" + e.id + ".htm");
-    assert.match(el, /<!-- related:page -->[\s\S]*<!-- \/related:page -->/, e.id + ": «Σχετικά» block");
-    if (/<!-- related:page -->[\s\S]*<a href="\.\.\/index\.html#e-\d{4}_\d\d_\d\d"/.test(el)) withBroadcasts++;
     const en = read("en/column/" + e.id + ".htm");
+    if (!/<!-- related:page -->[\s\S]*<!-- \/related:page -->/.test(el)) {   // nothing close enough (e.g. a tribute)
+      assert.doesNotMatch(en, /related__title/, e.id + ": no block in Greek, none in English");
+      continue;
+    }
+    withBlock++;
+    if (/<!-- related:page -->[\s\S]*<a href="\.\.\/index\.html#e-\d{4}_\d\d_\d\d"/.test(el)) withBroadcasts++;
     assert.match(en, /<h2 class="related__title">Related<\/h2>/, e.id + ": English «Related» block");
     assert.doesNotMatch(en, /Ακούστε σχετικές εκπομπές/, e.id + ": no Greek block on the English page");
   }
-  assert.ok(withBroadcasts > online.length * 0.9, withBroadcasts + " of " + online.length + " articles link to related broadcasts");
+  assert.ok(withBlock > online.length * 0.9, withBlock + " of " + online.length + " articles have a «Σχετικά» block");
+  assert.ok(withBroadcasts > online.length * 0.8, withBroadcasts + " of " + online.length + " articles link to related broadcasts");
   assert.ok((read("faq.html").match(/<!-- related:q-\d+ -->/g) || []).length >= 6, "most questions have related items");
   // the archive menu's data: every address exists, and every broadcast id is a real broadcast
   const ctx = { window: {} };
