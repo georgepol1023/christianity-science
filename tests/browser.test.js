@@ -332,10 +332,10 @@ test("player: starting another broadcast clears the previous one's 'now playing'
   await page.close2();
 });
 
-test("phone: a broadcast's download button sits above its play button, leaving the title room", async () => {
+test("phone: a broadcast's play button sits above its download button, leaving the title room", async () => {
   const page = await open("index.html", { width: 390, height: 844 });
   const [dl, play] = await page.$eval("#e-2008_01_31 .ep__actions", (a) => [a.querySelector(".ep__dl").getBoundingClientRect(), a.querySelector(".ep__play").getBoundingClientRect()].map((r) => ({ top: r.top, bottom: r.bottom })));
-  assert.ok(dl.bottom <= play.top, "download above play");
+  assert.ok(play.bottom <= dl.top, "play above download");
   await page.close2();
 });
 
