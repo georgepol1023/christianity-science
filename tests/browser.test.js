@@ -572,6 +572,28 @@ async function openAt(isoNow) {
   });
 }
 
+test("Spotify: the button under «Ακούστε ζωντανά» stays hidden until SITE_CONFIG.spotifyUrl is filled in", async () => {
+  const page = await open("index.html");
+  assert.equal(await page.$eval("#spotifyLink", (a) => getComputedStyle(a).display), "none");
+  await page.close2();
+  const show = "https://open.spotify.com/show/test";
+  const withLink = await open("index.html", { before: async (p) => {
+    await p.setRequestInterception(true);
+    p.on("request", (r) => {
+      if (/js\/broadcasts\.js/.test(r.url())) {
+        r.respond({ status: 200, contentType: "application/javascript",
+          body: fs.readFileSync(path.join(ROOT, "js/broadcasts.js"), "utf8").replace('spotifyUrl: ""', `spotifyUrl: "${show}"`) });
+      } else r.continue();
+    });
+  } });
+  const a = await withLink.$eval("#spotifyLink", (a) => ({ href: a.href, shown: getComputedStyle(a).display !== "none", text: a.textContent.trim(), target: a.target }));
+  assert.deepEqual(a, { href: show, shown: true, text: "Ακούστε στο Spotify", target: "_blank" });
+  await withLink.close2();
+  const en = await open("en/index.html");
+  assert.equal(await en.$eval("#spotifyLink", (a) => a.textContent.trim()), "Listen on Spotify");
+  await en.close2();
+});
+
 test("countdown: shows the next Thursday 22:00 broadcast", async () => {
   const page = await openAt("2026-10-12T10:00:00Z");
   assert.match(await page.$eval("#nextDate", (e) => e.textContent), /Πέμπτη 15 Οκτωβρίου/);

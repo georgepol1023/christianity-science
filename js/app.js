@@ -630,6 +630,8 @@
     return t;
   }
   $("#liveLink").href = CFG.liveUrl || "#";
+  var spotify = $("#spotifyLink");                       // shown once SITE_CONFIG.spotifyUrl is filled in
+  if (spotify && CFG.spotifyUrl) { spotify.href = CFG.spotifyUrl; spotify.hidden = false; }
 
   var pad = function (n) { return String(n).padStart(2, "0"); };
   function icsLocal(ms) { var p = athensParts(ms); return p.y + pad(p.mo) + pad(p.d) + "T" + pad(p.h) + pad(p.mi) + "00"; }

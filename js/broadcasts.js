@@ -30,6 +30,11 @@
     // Επόμενη ζωντανή εκπομπή (ώρα Ελλάδας). Αν περάσει, η σελίδα υπολογίζει αυτόματα +14 ημέρες.
     nextBroadcast: "2026-10-15T22:00:00+03:00",
     liveUrl: "https://www.christianity.gr/radiophono/akouste-zontana",
+    // Η εκπομπή στο Spotify (σύνδεσμος της σελίδας της εκπομπής). Κενό = το κουμπί «Ακούστε στο Spotify» δεν εμφανίζεται.
+    spotifyUrl: "",
+    // Το podcast (podcast.xml, tools/podcast.py): εδώ στέλνει το Spotify τον κωδικό επιβεβαίωσης της εκπομπής.
+    // Φαίνεται μέσα στο podcast.xml· μετά την επιβεβαίωση μπορεί να αλλάξει ή να μείνει κενό.
+    podcastEmail: "gp1023@ic.ac.uk",
     columnUrl: "column.html",
     latestColumn: {
       month: "Σεπτεμβρίου 2026",

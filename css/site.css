@@ -145,6 +145,11 @@ svg[viewBox="0 0 24 24"] { width: 22px; height: 22px; fill: none; stroke: curren
 .btn--gold { background: var(--gold); color: #1A1D33; width: 100%; }
 .btn--gold:hover { filter: brightness(1.07); }
 .btn--ghost { background: rgba(255,255,255,.1); color: #fff; }
+.btn[hidden] { display: none; }
+/* under «Ακούστε ζωντανά»: quieter than the gold button; Spotify's logo stays in Spotify's green */
+.btn--spotify { width: 100%; margin-top: .6rem; background: rgba(255,255,255,.07); color: #fff; border: 1px solid rgba(255,255,255,.22); }
+.btn--spotify:hover { background: rgba(255,255,255,.13); }
+.btn--spotify svg.spotify-logo { width: 21px; height: 21px; fill: #1DB954; stroke: none; }
 .btn--ghost:hover { background: rgba(255,255,255,.16); }
 
 /* Latest episode — the signature element: a broadcast shown as its four half-hours */
