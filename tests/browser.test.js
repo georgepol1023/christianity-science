@@ -572,23 +572,26 @@ async function openAt(isoNow) {
   });
 }
 
-test("Spotify: the button under «Ακούστε ζωντανά» stays hidden until SITE_CONFIG.spotifyUrl is filled in", async () => {
-  const page = await open("index.html");
-  assert.equal(await page.$eval("#spotifyLink", (a) => getComputedStyle(a).display), "none");
-  await page.close2();
-  const show = "https://open.spotify.com/show/test";
-  const withLink = await open("index.html", { before: async (p) => {
+test("Spotify: the button under «Ακούστε ζωντανά» links to the show, and stays hidden while SITE_CONFIG.spotifyUrl is empty", async () => {
+  const withUrl = (url) => async (p) => {
     await p.setRequestInterception(true);
     p.on("request", (r) => {
       if (/js\/broadcasts\.js/.test(r.url())) {
         r.respond({ status: 200, contentType: "application/javascript",
-          body: fs.readFileSync(path.join(ROOT, "js/broadcasts.js"), "utf8").replace('spotifyUrl: ""', `spotifyUrl: "${show}"`) });
+          body: fs.readFileSync(path.join(ROOT, "js/broadcasts.js"), "utf8").replace(/spotifyUrl: "[^"]*"/, `spotifyUrl: "${url}"`) });
       } else r.continue();
     });
-  } });
-  const a = await withLink.$eval("#spotifyLink", (a) => ({ href: a.href, shown: getComputedStyle(a).display !== "none", text: a.textContent.trim(), target: a.target }));
+  };
+  const none = await open("index.html", { before: withUrl("") });
+  assert.equal(await none.$eval("#spotifyLink", (a) => getComputedStyle(a).display), "none");
+  await none.close2();
+  const show = "https://open.spotify.com/show/test";
+  const page = await open("index.html", { before: withUrl(show) });
+  const a = await page.$eval("#spotifyLink", (a) => ({ href: a.href, shown: getComputedStyle(a).display !== "none", text: a.textContent.trim(), target: a.target }));
   assert.deepEqual(a, { href: show, shown: true, text: "Ακούστε στο Spotify", target: "_blank" });
-  await withLink.close2();
+  await page.close2();
+  // the real setting: a Spotify show link, or empty
+  assert.match(fs.readFileSync(path.join(ROOT, "js/broadcasts.js"), "utf8"), /spotifyUrl: "(https:\/\/open\.spotify\.com\/show\/\w+)?"/);
   const en = await open("en/index.html");
   assert.equal(await en.$eval("#spotifyLink", (a) => a.textContent.trim()), "Listen on Spotify");
   await en.close2();
