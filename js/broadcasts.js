@@ -38,6 +38,11 @@
     // Η διεύθυνση όπου βρίσκεται τώρα η ιστοσελίδα, για το podcast.xml (σύνδεσμοι, εξώφυλλο, mp3).
     // Όταν το christianity-science.gr δείξει στη νέα ιστοσελίδα: "https://www.christianity-science.gr/".
     podcastSite: "https://christianity-science.onrender.com/",
+    // Πού βρίσκονται online τα mp3 (κενό = στη διεύθυνση της ιστοσελίδας). Τώρα: στον παλιό server.
+    podcastAudio: "https://www.christianity-science.gr/",
+    // true: κάθε ημίωρο είναι ξεχωριστό επεισόδιο (τα ημίωρα είναι ήδη online). false: ένα επεισόδιο ανά
+    // εκπομπή, με το mp3 ολόκληρης της εκπομπής (όταν ανέβουν τα <ημερομηνία>_full.mp3).
+    podcastParts: true,
     columnUrl: "column.html",
     latestColumn: {
       month: "Σεπτεμβρίου 2026",

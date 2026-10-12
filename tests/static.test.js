@@ -670,27 +670,33 @@ test("related: articles, topics and questions link to related content that exist
   }
 });
 
-test("podcast: podcast.xml lists every broadcast with a known mp3, newest first, with cover, owner and lengths", () => {
+test("podcast: podcast.xml lists every broadcast (whole, or its half-hour parts), newest first, with cover, owner and lengths", () => {
   const xml = read("podcast.xml");
   const audio = JSON.parse(read("data/podcast-audio.json"));
   const { seasons, cfg } = loadData();
   const site = (cfg.podcastSite || "https://www.christianity-science.gr/").replace(/\/?$/, "/");
-  const esc = (t) => t.replace(/[.*+?^${}()|[\]\/]/g, "\\$&");
+  const media = (cfg.podcastAudio || site).replace(/\/?$/, "/");
   const ids = Array.from(seasons.flatMap((s) => s.episodes.map((e) => e.date.replace(/-/g, "_"))));   // (from the vm context)
+  const parts = Object.fromEntries(seasons.flatMap((s) => s.episodes.map((e) => [e.date.replace(/-/g, "_"), partPaths(cfg, s, e)])));
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
-  assert.ok(items.length >= ids.length - 2, items.length + " episodes for " + ids.length + " broadcasts");
-  const guids = items.map((i) => i.match(/christianity-science-(\d{4}_\d\d_\d\d)</)[1]);
-  assert.deepEqual(guids, ids.filter((id) => guids.includes(id)), "same order as the archive, newest first");
-  assert.equal(new Set(guids).size, guids.length, "each broadcast once");
+  const guid = (it) => it.match(/christianity-science-(\d{4}_\d\d_\d\d)(?:-(\d))?</);
+  const order = [...new Set(items.map((it) => guid(it)[1]))];
+  assert.ok(order.length >= ids.length - 2, order.length + " of " + ids.length + " broadcasts in the feed");
+  assert.deepEqual(order, ids.filter((id) => order.includes(id)), "same order as the archive, newest first");
+  assert.equal(new Set(items.map((it) => guid(it)[0])).size, items.length, "each episode once");
   for (const it of items) {
-    const id = it.match(/christianity-science-(\d{4}_\d\d_\d\d)</)[1];
-    const enc = it.match(new RegExp('<enclosure url="' + esc(site) + '([^"]+)" length="(\\d+)" type="audio/mpeg"/>'));
-    assert.ok(enc, id + ": enclosure");
-    assert.equal(enc[1], audio[id].file, id + ": the measured mp3");
-    assert.equal(+enc[2], audio[id].bytes, id + ": its size");
+    const [, id, n] = guid(it);
+    const enc = it.match(/<enclosure url="([^"]+)" length="(\d+)" type="audio\/mpeg"\/>/);
+    assert.ok(enc && enc[1].startsWith(media), id + ": enclosure at " + media);
+    const rel = decodeURIComponent(enc[1].slice(media.length));
+    if (cfg.podcastParts) assert.equal(rel, parts[id][n - 1], id + ": part " + n);
+    else assert.ok(rel.endsWith(id + "_full.mp3") || parts[id].length === 1, id + ": the whole broadcast");
+    assert.equal(+enc[2], audio[rel].bytes, id + ": the measured size");
     assert.match(it, /<itunes:duration>\d+:\d\d:\d\d<\/itunes:duration>/);
-    assert.match(it, /<pubDate>\w{3}, \d\d \w{3} \d{4} 22:00:00 \+0[23]00<\/pubDate>/, id + ": 22:00 Athens time");
+    // 22:00 Athens time; parts at 22:00–23:30, part 1 latest so apps list 1, 2, 3, 4 in order
+    assert.match(it, /<pubDate>\w{3}, \d\d \w{3} \d{4} 2[23]:[03]0:00 \+0[23]00<\/pubDate>/, id + ": evening, Athens time");
   }
+  if (cfg.podcastParts) assert.match(items[0], /<title>[^<]+\(1ο ημίωρο\)<\/title>/, "parts are named by their half-hour");
   assert.ok(xml.includes('<itunes:image href="' + site + 'pictures/podcast-cover.jpg"/>'), "the cover, at the site's address");
   assert.ok(xml.includes('<atom:link href="' + site + 'podcast.xml"'), "the feed's own address");
   assert.ok(fs.statSync(path.join(ROOT, "pictures/podcast-cover.jpg")).size > 50000, "the cover exists");
