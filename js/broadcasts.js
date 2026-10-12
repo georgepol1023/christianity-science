@@ -35,6 +35,9 @@
     // Το podcast (podcast.xml, tools/podcast.py): εδώ στέλνει το Spotify τον κωδικό επιβεβαίωσης της εκπομπής.
     // Φαίνεται μέσα στο podcast.xml· μετά την επιβεβαίωση μπορεί να αλλάξει ή να μείνει κενό.
     podcastEmail: "gp1023@ic.ac.uk",
+    // Η διεύθυνση όπου βρίσκεται τώρα η ιστοσελίδα, για το podcast.xml (σύνδεσμοι, εξώφυλλο, mp3).
+    // Όταν το christianity-science.gr δείξει στη νέα ιστοσελίδα: "https://www.christianity-science.gr/".
+    podcastSite: "https://christianity-science.onrender.com/",
     columnUrl: "column.html",
     latestColumn: {
       month: "Σεπτεμβρίου 2026",

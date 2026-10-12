@@ -673,7 +673,9 @@ test("related: articles, topics and questions link to related content that exist
 test("podcast: podcast.xml lists every broadcast with a known mp3, newest first, with cover, owner and lengths", () => {
   const xml = read("podcast.xml");
   const audio = JSON.parse(read("data/podcast-audio.json"));
-  const { seasons } = loadData();
+  const { seasons, cfg } = loadData();
+  const site = (cfg.podcastSite || "https://www.christianity-science.gr/").replace(/\/?$/, "/");
+  const esc = (t) => t.replace(/[.*+?^${}()|[\]\/]/g, "\\$&");
   const ids = Array.from(seasons.flatMap((s) => s.episodes.map((e) => e.date.replace(/-/g, "_"))));   // (from the vm context)
   const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].map((m) => m[1]);
   assert.ok(items.length >= ids.length - 2, items.length + " episodes for " + ids.length + " broadcasts");
@@ -682,14 +684,15 @@ test("podcast: podcast.xml lists every broadcast with a known mp3, newest first,
   assert.equal(new Set(guids).size, guids.length, "each broadcast once");
   for (const it of items) {
     const id = it.match(/christianity-science-(\d{4}_\d\d_\d\d)</)[1];
-    const enc = it.match(/<enclosure url="https:\/\/www\.christianity-science\.gr\/([^"]+)" length="(\d+)" type="audio\/mpeg"\/>/);
+    const enc = it.match(new RegExp('<enclosure url="' + esc(site) + '([^"]+)" length="(\\d+)" type="audio/mpeg"/>'));
     assert.ok(enc, id + ": enclosure");
     assert.equal(enc[1], audio[id].file, id + ": the measured mp3");
     assert.equal(+enc[2], audio[id].bytes, id + ": its size");
     assert.match(it, /<itunes:duration>\d+:\d\d:\d\d<\/itunes:duration>/);
     assert.match(it, /<pubDate>\w{3}, \d\d \w{3} \d{4} 22:00:00 \+0[23]00<\/pubDate>/, id + ": 22:00 Athens time");
   }
-  assert.match(xml, /<itunes:image href="https:\/\/www\.christianity-science\.gr\/pictures\/podcast-cover\.jpg"\/>/);
+  assert.ok(xml.includes('<itunes:image href="' + site + 'pictures/podcast-cover.jpg"/>'), "the cover, at the site's address");
+  assert.ok(xml.includes('<atom:link href="' + site + 'podcast.xml"'), "the feed's own address");
   assert.ok(fs.statSync(path.join(ROOT, "pictures/podcast-cover.jpg")).size > 50000, "the cover exists");
   assert.match(xml, /<itunes:email>[^<@]+@[^<]+<\/itunes:email>/, "an owner e-mail for Spotify's check");
   assert.match(xml, /<language>el<\/language>/);

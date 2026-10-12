@@ -7,8 +7,8 @@ Every broadcast in js/broadcasts.js becomes an episode, newest first: its whole-
 one), its date and season, its topics and a link back to it on the site. Spotify copies the episodes from
 the feed by itself, and adds each new broadcast once it is in the feed: nothing is uploaded by hand.
 
-Settings are in SITE_CONFIG in js/broadcasts.js (podcastEmail: Spotify sends its "is this your show?" code
-there; it is readable in the feed). The cover is pictures/podcast-cover.jpg (tools/podcast_cover.js).
+Settings are in SITE_CONFIG in js/broadcasts.js: podcastEmail (Spotify sends its "is this your show?" code
+there; it is readable in the feed) and podcastSite (the address the site is at now; links, cover and mp3s). The cover is pictures/podcast-cover.jpg (tools/podcast_cover.js).
 
 Each mp3's size and length are measured here (ffprobe) and kept in data/podcast-audio.json, so the feed can
 be made where the mp3s are not (the weekly GitHub run): a broadcast whose mp3 is neither here nor in that
@@ -20,7 +20,7 @@ from xml.sax.saxutils import escape
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from seo import SITE_URL
+import seo
 
 AUDIO = os.path.join(ROOT, "data", "podcast-audio.json")
 OUT = os.path.join(ROOT, "podcast.xml")
@@ -31,7 +31,7 @@ MONTHS = ["Ιανουαρίου", "Φεβρουαρίου", "Μαρτίου", "�
 DESCRIPTION = ("Ραδιοφωνική εκπομπή από το ράδιο «Χριστιανισμός». Μέσα από τις νεότερες ανακαλύψεις και τα "
                "θαύματα της Δημιουργίας που η σύγχρονη επιστήμη έρχεται να εξιχνιάσει, δείχνουμε ότι η Αγία Γραφή "
                "είναι ο Λόγος του Θεού. Ζωντανά κάθε δεύτερη Πέμπτη στις 22:00 (ώρα Ελλάδας). "
-               "Όλες οι εκπομπές, με άρθρα και πηγές: " + SITE_URL)
+               "Όλες οι εκπομπές, με άρθρα και πηγές: %s")
 
 LIST_JS = r"""
 const fs = require("fs"), vm = require("vm");
@@ -44,7 +44,7 @@ for (const s of ctx.window.BROADCASTS) for (const e of s.episodes) {
     (C.mp3Base || "") + "Season_" + (s.n < 10 ? "0" : "") + s.n + "/" + id + "/" + (e.cs ? "CS_" : "") + id + "_(" + n + ")_" + e.slug + ".mp3");
   out.push({ id, date: e.date, title: e.title, season: s.n, parts, link: e.link, tags: (e.tags || []).map((t) => tags[t] || t) });
 }
-console.log(JSON.stringify({ config: { email: C.podcastEmail || "" }, episodes: out }));
+console.log(JSON.stringify({ config: { email: C.podcastEmail || "", site: C.podcastSite || "" }, episodes: out }));
 """
 
 
@@ -111,7 +111,7 @@ def duration(s):
     return "%d:%02d:%02d" % (s // 3600, s % 3600 // 60, s % 60)
 
 
-def item(e, a):
+def item(e, a, SITE_URL):
     y, m, d = map(int, e["date"].split("-"))
     page = SITE_URL + "index.html#e-" + e["id"]
     text = ["%s. Εκπομπή της %d %s %d (%dος κύκλος) από τη ραδιοφωνική σειρά «%s» του ράδιο «Χριστιανισμός»."
@@ -140,12 +140,14 @@ def item(e, a):
 def main():
     data = load()
     episodes, email = data["episodes"], data["config"]["email"]
+    # where the site is now (SITE_CONFIG.podcastSite), else its own address (tools/seo.py)
+    SITE_URL = (data["config"]["site"] or seo.SITE_URL).rstrip("/") + "/"
     known, measured = measure(episodes)
     items, left_out = [], []
     for e in episodes:                                   # js/broadcasts.js is newest first, as feeds should be
         a = known.get(e["id"])
         if a and a.get("file") == audio_file(e):
-            items.append(item(e, a))
+            items.append(item(e, a, SITE_URL))
         else:
             left_out.append(e["date"])
     owner = ("    <itunes:owner>\n      <itunes:name>%s</itunes:name>\n      <itunes:email>%s</itunes:email>\n    </itunes:owner>\n"
@@ -174,7 +176,7 @@ def main():
     <itunes:type>episodic</itunes:type>
 %(items)s  </channel>
 </rss>
-""" % {"name": escape(NAME), "site": SITE_URL, "desc": escape(DESCRIPTION), "owner": owner, "cover": COVER,
+""" % {"name": escape(NAME), "site": SITE_URL, "desc": escape(DESCRIPTION % SITE_URL), "owner": owner, "cover": COVER,
        "items": "".join(items)}
     old = open(OUT, encoding="utf-8").read() if os.path.exists(OUT) else None
     if feed != old:
