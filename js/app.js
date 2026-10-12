@@ -225,8 +225,7 @@
     play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>',
     pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>',
     dl: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
-    link: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>',
-    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></svg>'
+    link: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>'
   };
   // phones and tablets share through their own menu (WhatsApp, Viber, e-mail…); computers copy the link
   var SHARE = !!navigator.share && matchMedia("(pointer: coarse)").matches;
@@ -343,7 +342,7 @@
       (e.link ? '<a href="' + esc(e.link) + '">' + T.sources + "</a>" : "") +
       (RELATED[e.id] ? '<span class="ep__rel"><button data-rel="' + e.id + '" aria-haspopup="true" aria-expanded="false">' + T.related + "</button></span>" : "") +
       '<button class="ep__share" data-share="' + e.id + '" aria-label="' + (SHARE ? T.share : T.copyLink) + '" title="' + (SHARE ? T.share : T.copyLink) + '">' +
-      (SHARE ? I.share : I.link) + "</button></p></div>" +
+      I.link + "</button></p></div>" +
       partsHTML(e) +
       '<div class="ep__actions"><button class="ep__play" data-play="' + e.id + '" aria-label="' + esc(T.listen(e.title)) + '">' + (active && player.playing ? I.pause : I.play) + "</button>" +
       '<div class="ep__dl"><button class="iconbtn" data-dl="' + e.id + '" aria-haspopup="true" aria-expanded="false" aria-label="' + T.download + '">' + I.dl + "</button></div></div>" +
