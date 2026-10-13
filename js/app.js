@@ -229,6 +229,15 @@
   };
   // phones and tablets share through their own menu (WhatsApp, Viber, e-mail…); computers copy the link
   var SHARE = !!navigator.share && matchMedia("(pointer: coarse)").matches;
+  // the phone's own share symbol: the box with an arrow on iPhone and iPad, the three dots on Android
+  var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  var SHARE_ICON = IOS
+    ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V3.5M7.5 8 12 3.5 16.5 8"/><path d="M8 11H6.5A1.5 1.5 0 0 0 5 12.5v7A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/></svg>'
+    : '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="m8.3 10.7 7.4-4.3M8.3 13.3l7.4 4.3"/></svg>';
+  function shareEp(ep) {
+    var url = PAGE.split("#")[0] + "#e-" + ep.id;
+    navigator.share({ title: ep.title + " – " + T.site, url: url }).catch(function () {});
+  }
 
   function partsHTML(ep) {
     var h = '<div class="parts" style="--n:' + ep.parts.length + '" role="group" aria-label="' + T.partsAria + '">';
@@ -422,7 +431,7 @@
     }
     if ((t = e.target.closest("[data-share]"))) {
       var url = PAGE.split("#")[0] + "#e-" + t.dataset.share;
-      if (SHARE) { navigator.share({ title: BY_ID[t.dataset.share].title + " – " + T.site, url: url }).catch(function () {}); return; }
+      if (SHARE) { shareEp(BY_ID[t.dataset.share]); return; }
       (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(
         function () { toast(T.copied); },
         function () { prompt(T.copyPrompt, url); });
@@ -638,7 +647,7 @@
       d.getElementById("s").oninput = function () { if (isFinite(audio.duration)) audio.currentTime = this.value / 1000 * audio.duration; };
       w.addEventListener("pagehide", function () { mini = null; });
       miniSync();
-    }).catch(function () {});
+    }).catch(function () { if (miniBtn) miniBtn.hidden = true; });   // the browser said it could, but cannot
   }
   function miniSync() {
     if (!mini || !player.ep) return;
@@ -654,7 +663,14 @@
     if (isFinite(dur) && dur > 0 && d.activeElement !== el("s")) el("s").value = Math.round(audio.currentTime / dur * 1000);
   }
   ["timeupdate", "play", "pause", "loadedmetadata", "seeked"].forEach(function (t) { audio.addEventListener(t, miniSync); });
-  if (miniBtn && window.documentPictureInPicture && window.parent === window) {
+  // phones: share the broadcast that is playing, from the player bar
+  var pShare = $("#pShare");
+  if (pShare && SHARE && window.parent === window) {
+    pShare.innerHTML = SHARE_ICON; pShare.hidden = false;
+    pShare.addEventListener("click", function () { if (player.ep) shareEp(player.ep); });
+  }
+  // computers only: phones may report the feature but cannot open the window
+  if (miniBtn && window.documentPictureInPicture && window.parent === window && !SHARE && matchMedia("(hover: hover) and (pointer: fine)").matches) {
     miniBtn.hidden = false;
     miniBtn.addEventListener("click", function () { if (mini) mini.close(); else openMini(); });
   }

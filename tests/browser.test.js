@@ -359,7 +359,7 @@ test("player: the phone's lock screen gets title, cover and a progress bar; the 
   assert.ok(m.pos.duration > 1000 && m.pos.position >= 0 && m.pos.playbackRate === 1, "length and position for the lock screen");
   // the mini window (Chrome and Edge on computers)
   if (await page.evaluate(() => !!window.documentPictureInPicture)) {
-    assert.equal(await page.$eval("#pMini", (b) => b.hidden), false, "the button shows where the browser can do it");
+    assert.equal(await page.$eval("#pMini", (b) => getComputedStyle(b).display !== "none"), true, "the button shows where the browser can do it");
     await page.click("#pMini");
     const opened = await page.waitForFunction(() => documentPictureInPicture.window, { timeout: 5000 }).then(() => true, () => false);
     if (opened) {
@@ -372,6 +372,41 @@ test("player: the phone's lock screen gets title, cover and a progress bar; the 
   }
   assert.deepEqual(page.problems, []);
   await page.close2();
+});
+
+test("phone: no mini window button (phones may report the feature but cannot open the window)", async () => {
+  const page = await open("index.html", { before: (p) => p.emulate({ viewport: { width: 390, height: 844, isMobile: true, hasTouch: true },
+    userAgent: "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36" }) });
+  assert.equal(await page.$eval("#pMini", (b) => getComputedStyle(b).display !== "none"), false, "not on screen");
+  await page.close2();
+});
+
+test("phone: the player bar shares the playing broadcast, with the phone's own share symbol", async () => {
+  const phone = (ua) => async (p) => {
+    await p.emulate({ viewport: { width: 390, height: 844, isMobile: true, hasTouch: true }, userAgent: ua });
+    await p.evaluateOnNewDocument(() => {
+      navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };
+      const mm = window.matchMedia.bind(window);
+      window.matchMedia = (q) => (q === "(pointer: coarse)" ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q));
+    });
+  };
+  const android = await open("index.html", { before: phone("Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36") });
+  await android.$eval("#e-2008_02_14 .ep__play", (b) => b.click());
+  assert.equal(await android.$eval("#pShare", (b) => getComputedStyle(b).display !== "none"), true, "the share button is on screen");
+  assert.equal(await android.$$eval("#pShare svg circle", (c) => c.length), 3, "Android: the three dots");
+  assert.equal(await android.$eval("#pMini", (b) => getComputedStyle(b).display !== "none"), false, "never both: the share button takes the mini window button's place");
+  await android.$eval("#pShare", (b) => b.click());
+  const shared = await android.evaluate(() => window.__shared);
+  assert.equal(shared.url, BASE + "index.html#e-2008_02_14");
+  assert.match(shared.title, /Βιβλική Αρχαιολογία/);
+  await android.close2();
+  const iphone = await open("index.html", { before: phone("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1") });
+  assert.equal(await iphone.$$eval("#pShare svg circle", (c) => c.length), 0, "iPhone: the box with an arrow");
+  assert.equal(await iphone.$$eval("#pShare svg path", (c) => c.length), 2);
+  await iphone.close2();
+  const computer = await open("index.html");
+  assert.equal(await computer.$eval("#pShare", (b) => getComputedStyle(b).display !== "none"), false, "computers keep the mini window button instead");
+  await computer.close2();
 });
 
 test("player: close button hides the player and stops audio", async () => {
