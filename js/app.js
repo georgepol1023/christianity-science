@@ -15,10 +15,9 @@
   var PAGE = location.href;
   var fileURL = function (u) { return new URL(encodeURI(u), PAGE).href; };
   var EN_TITLES = window.BROADCAST_TITLES_EN || {};
-  // topics (js/broadcasts.js); names in English from js/broadcasts-en.js
+  // topics (js/tags.js)
   var TAGS = {}, TAG_LIST = (window.BROADCAST_TAGS || []).map(function (t) {
-    var en = (window.BROADCAST_TAGS_EN || {})[t.id];
-    return (TAGS[t.id] = { id: t.id, name: (LANG === "en" && en) || t.name, el: t.name, hue: t.hue });
+    return (TAGS[t.id] = { id: t.id, name: (LANG === "en" && t.en) || t.name, el: t.name, hue: t.hue });
   });
   var RELATED = window.RELATED || {};                    // «Σχετικά» per broadcast, from js/related.js
   var T = {

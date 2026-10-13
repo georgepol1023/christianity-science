@@ -89,14 +89,20 @@ const decodeEntities = (s) => s.replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fr
    ===================================================================== */
 test("data: every broadcast has 1 to 3 known topics, and every topic has an English name", () => {
   const ctx = { window: {} };
-  vm.runInNewContext(read("js/broadcasts.js") + "\n" + read("js/broadcasts-en.js"), ctx);
+  vm.runInNewContext(read("js/broadcasts.js") + "\n" + read("js/tags.js"), ctx);
   const ids = new Set(ctx.window.BROADCAST_TAGS.map((t) => t.id));
   for (const s of ctx.window.BROADCASTS) for (const e of s.episodes) {
     assert.ok(e.tags.length >= 1 && e.tags.length <= 3, `${e.date} has ${e.tags.length} topics`);
     for (const t of e.tags) assert.ok(ids.has(t), `${e.date}: unknown topic "${t}"`);
     assert.equal(new Set(e.tags).size, e.tags.length, `${e.date} repeats a topic`);
   }
-  for (const id of ids) assert.ok(ctx.window.BROADCAST_TAGS_EN[id], `topic "${id}" has no English name`);
+  for (const t of ctx.window.BROADCAST_TAGS) assert.ok(t.en && t.name && Number.isInteger(t.hue), `topic "${t.id}": Greek and English name, colour`);
+  // and the newspaper column's topics (data/column-tags.json) are known topics too
+  const col = JSON.parse(read("data/column-tags.json"));
+  for (const [k, v] of Object.entries(col)) if (k !== "_about") {
+    const tags = v.split(/\s+/);
+    assert.ok(tags.length >= 1 && tags.length <= 3 && tags.every((t) => ids.has(t)), `column ${k}: "${v}"`);
+  }
 });
 
 test("data: broadcasts.js loads and has seasons 1–20", () => {
@@ -448,7 +454,7 @@ test("tools/stamp.py: stamps nested pages correctly and is idempotent", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-"));
   fs.mkdirSync(path.join(tmp, "tools")); fs.mkdirSync(path.join(tmp, "css")); fs.mkdirSync(path.join(tmp, "js")); fs.mkdirSync(path.join(tmp, "material"));
   fs.copyFileSync(path.join(ROOT, "tools/stamp.py"), path.join(tmp, "tools/stamp.py"));
-  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/search.js", "js/related.js", "js/sitesearch.js", "js/search-index.js", "js/broadcasts.js", "js/broadcasts-en.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
+  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/search.js", "js/related.js", "js/sitesearch.js", "js/search-index.js", "js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
   fs.writeFileSync(path.join(tmp, "a.html"), '<link href="css/site.css"><script src="js/page.js?v=0000000000"></script>');
   fs.writeFileSync(path.join(tmp, "material/b.htm"), '<link href="../css/site.css">');
   const py = process.env.PYTHON || "python";
@@ -747,7 +753,7 @@ test("site search: every page has the search button, and everything in the index
 test("column: page, Articles block and home page box all agree", () => {
   const d = JSON.parse(read("data/column.json")), total = d.online.length + d.archive.length;
   const col = read("column.html"), art = read("articles.html");
-  assert.equal((col.match(/<li class="ref[^"]*" data-filter>/g) || []).length, total);
+  assert.equal((col.match(/<li class="ref[^"]*" data-filter[^>]*>/g) || []).length, total);
   assert.ok(col.includes(`${total} άρθρα`));
   assert.ok(art.includes(`href="column.html">Όλα τα άρθρα της στήλης (${total}) →`));
   const block = art.slice(art.indexOf("<!-- column -->"), art.indexOf("<!-- /column -->"));

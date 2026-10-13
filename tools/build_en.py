@@ -283,7 +283,8 @@ def column_list(src, col):
             return block.replace(t.group(0), t.group(0).replace('translate="no"', 'translate="no" lang="el"', 1))
         block = block.replace(t.group(0), '<p class="ref__title"><a href="%s"%s>%s</a></p>' % (t.group(1), t.group(2), en))
         greek = re.sub(r"<[^>]+>", "", t.group(3)).replace('"', "&quot;")
-        return re.sub(r" data-filter>", ' data-filter data-keys="%s">' % greek, block, count=1)
+        # (data-filter may be followed by data-year / data-tags on the column page)
+        return re.sub(r" data-filter(?=[\s>])", lambda m: ' data-filter data-keys="%s"' % greek, block, count=1)
     return re.sub(r'<li class="ref[^"]*"[^>]*>.*?</li>', item, src, flags=re.S)
 
 

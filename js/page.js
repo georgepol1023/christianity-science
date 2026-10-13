@@ -37,35 +37,64 @@
   /* ---------- filter (άρθρα, στήλη εφημερίδας, ερωτήσεις) ----------
    * The same forgiving search as the broadcast archive (js/search.js): typos, word forms, Greeklish,
    * partial words; best matches first. data-keys="…" on an item adds words to search (e.g. the Greek
-   * title on the English page). Without js/search.js it falls back to plain matching. */
+   * title on the English page). Without js/search.js it falls back to plain matching.
+   * The newspaper column also has topics (data-tags, names and colours from js/tags.js) and years
+   * (data-year): a «Θέματα» button and year chips in #colBar, as in the broadcast archive. */
   function norm(s) { return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/ς/g, "σ"); }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   var input = $("#filter");
   if (input) {
+    var EN = document.documentElement.lang === "en";
+    var L = EN ? { topics: "Topics", topicsTitle: "Article topics", all: "All topics", close: "Close", show: function (t) { return "All articles on “" + t + "”"; } }
+               : { topics: "Θέματα", topicsTitle: "Θέματα άρθρων", all: "Όλα τα θέματα", close: "Κλείσιμο", show: function (t) { return "Όλα τα άρθρα με θέμα «" + t + "»"; } };
+    var TAGS = {};
+    (window.BROADCAST_TAGS || []).forEach(function (t) { TAGS[t.id] = { id: t.id, name: (EN && t.en) || t.name, el: t.name, hue: t.hue }; });
+    var tagBtn = function (t, on, extra) {
+      return '<button class="' + (on ? "tag is-on" : "tag") + (t.hue < 0 ? " tag--plain" : "") + '" data-tag="' + t.id + '"' +
+        (t.hue >= 0 ? ' style="--h:' + t.hue + '"' : "") + ">" + esc(t.name) + (extra || "") + "</button>";
+    };
+    // the topics under each article (before the search reads the text, so a topic's name finds its articles)
+    $$("[data-filter][data-tags]").forEach(function (el) {
+      var ids = el.getAttribute("data-tags").split(/\s+/).filter(function (t) { return TAGS[t]; });
+      if (!ids.length) return;
+      var p = document.createElement("p");
+      p.className = "ep__tags";
+      p.innerHTML = ids.map(function (t) { return tagBtn(TAGS[t]).replace(">", ' title="' + esc(L.show(TAGS[t].name)) + '">'); }).join("");
+      (el.querySelector(".ref__body") || el).appendChild(p);
+      el.setAttribute("data-keys", (el.getAttribute("data-keys") || "") + " " + ids.map(function (t) { return TAGS[t].el; }).join(" "));
+    });
+
     var SS = window.SiteSearch;
     var items = $$("[data-filter]").map(function (el, i) {
       var text = el.textContent + " " + (el.getAttribute("data-keys") || "");
       var it = SS ? SS.prepare(text) : { norm: norm(text) };
       it.el = el; it.id = -i; it.parent = el.parentNode;     // id: ties keep the page's own order
+      it.year = el.getAttribute("data-year") || "";
+      it.tags = (el.getAttribute("data-tags") || "").split(/\s+/);
       return it;
     });
     var groups = items.map(function (it) { return it.parent; }).filter(function (p, i, a) { return a.indexOf(p) === i; });
     var empty = $("#filterEmpty");
     var near = document.createElement("p");
     near.className = "empty"; near.hidden = true;
-    near.textContent = document.documentElement.lang === "en" ? "No exact match – these are the closest:" : "Δεν βρέθηκε ακριβές αποτέλεσμα – τα πλησιέστερα:";
+    near.textContent = EN ? "No exact match – these are the closest:" : "Δεν βρέθηκε ακριβές αποτέλεσμα – τα πλησιέστερα:";
     var anchor = empty || input.closest("label") || input;
     anchor.parentNode.insertBefore(near, anchor);
+    var want = { tag: "all", year: "all" };
 
-    input.addEventListener("input", function () {
+    function apply() {
       var q = input.value.trim(), res;
+      var pool = items.filter(function (it) {
+        return (want.year === "all" || it.year === want.year) && (want.tag === "all" || it.tags.indexOf(want.tag) !== -1);
+      });
       if (!q) {
-        res = { list: items.map(function (it) { return { ep: it }; }), approx: false };
+        res = { list: pool.map(function (it) { return { ep: it }; }), approx: false };
       } else if (SS) {
-        res = SS.search(items, q);
+        res = SS.search(pool, q);
       } else {
         var tokens = norm(q).split(/\s+/).filter(Boolean);
-        res = { list: items.filter(function (it) { return tokens.every(function (t) { return it.norm.indexOf(t) !== -1; }); })
-                           .map(function (it) { return { ep: it }; }), approx: false };
+        res = { list: pool.filter(function (it) { return tokens.every(function (t) { return it.norm.indexOf(t) !== -1; }); })
+                          .map(function (it) { return { ep: it }; }), approx: false };
       }
       items.forEach(function (it) { it.el.hidden = true; });
       res.list.forEach(function (r) { r.ep.el.hidden = false; r.ep.parent.appendChild(r.ep.el); });   // in ranked order
@@ -77,7 +106,63 @@
       });
       near.hidden = !res.approx;
       if (empty) empty.hidden = res.list.length > 0;
-    });
+      $$(".ep__tags .tag").forEach(function (b) { b.classList.toggle("is-on", b.dataset.tag === want.tag); });
+    }
+    input.addEventListener("input", apply);
+
+    /* topics and years (the newspaper column) */
+    var bar = $("#colBar"), pick = $("#tagPick");
+    if (bar && pick && Object.keys(TAGS).length) {
+      var used = {};
+      items.forEach(function (it) { it.tags.forEach(function (t) { if (TAGS[t]) used[t] = (used[t] || 0) + 1; }); });
+      var ICON_TOPICS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg>';
+      var ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+      var dlg = document.createElement("dialog");
+      dlg.className = "tagdlg";
+      dlg.setAttribute("aria-labelledby", "tagDlgTitle");
+      dlg.innerHTML = '<div class="tagdlg__head"><h2 class="tagdlg__title" id="tagDlgTitle">' + L.topicsTitle + "</h2>" +
+        '<button class="iconbtn" data-close aria-label="' + L.close + '">' + ICON_CLOSE + "</button></div>" +
+        '<div class="tagdlg__list"><button class="tag tag--plain is-on" data-tag="all">' + L.all + '<span class="tag__n">' + items.length + "</span></button>" +
+        Object.keys(used).map(function (t) { return TAGS[t]; })
+          .sort(function (a, b) { return (b.hue >= 0) - (a.hue >= 0) || used[b.id] - used[a.id]; })
+          .map(function (t) { return tagBtn(t, false, '<span class="tag__n">' + used[t.id] + "</span>"); }).join("") + "</div>";
+      document.body.appendChild(dlg);
+      var close = function () { if (dlg.close) dlg.close(); else dlg.removeAttribute("open"); };
+      var setTag = function (id) {
+        want.tag = TAGS[id] ? id : "all";
+        var t = TAGS[want.tag];
+        pick.innerHTML = t
+          ? '<button class="chip chip--topics is-set" id="tagOpen" aria-haspopup="dialog"' + (t.hue >= 0 ? ' style="--h:' + t.hue + '"' : "") + ">" + esc(t.name) + "</button>" +
+            '<button class="chip chip--clear" data-tag-clear aria-label="' + L.all + '">' + ICON_CLOSE + "</button>"
+          : '<button class="chip chip--topics" id="tagOpen" aria-haspopup="dialog">' + ICON_TOPICS + L.topics + "</button>";
+        $$("[data-tag]", dlg).forEach(function (b) { b.classList.toggle("is-on", b.dataset.tag === want.tag); });
+        apply();
+      };
+      setTag("all");
+      var toTop = function () { var top = bar.getBoundingClientRect().top; if (top < 0 || top > innerHeight) bar.scrollIntoView(); };
+      bar.addEventListener("click", function (e) {
+        if (e.target.closest("#tagOpen")) {
+          if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+          var on = dlg.querySelector(".tag.is-on"); if (on) on.focus();
+          return;
+        }
+        if (e.target.closest("[data-tag-clear]")) { setTag("all"); return; }
+        var y = e.target.closest(".chip[data-year]"); if (!y) return;
+        want.year = y.dataset.year;
+        $$(".chip[data-year]", bar).forEach(function (c) { c.setAttribute("aria-pressed", c === y); });
+        apply();
+      });
+      dlg.addEventListener("click", function (e) {
+        if (e.target === dlg || e.target.closest("[data-close]")) { close(); return; }
+        var b = e.target.closest("[data-tag]"); if (!b) return;
+        setTag(b.dataset.tag); close(); toTop();
+      });
+      // a topic under an article: the same filter (again: all topics)
+      document.addEventListener("click", function (e) {
+        var b = e.target.closest(".ep__tags [data-tag]"); if (!b) return;
+        setTag(want.tag === b.dataset.tag ? "all" : b.dataset.tag); toTop();
+      });
+    }
   }
 
   /* ---------- ερωτήσεις: άνοιγμα από σύνδεσμο #q-... ---------- */

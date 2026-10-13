@@ -225,6 +225,39 @@ test("home: the «Θέματα» window filters the archive by topic; a broadcas
   await page.close2();
 });
 
+test("column: topics and years filter the newspaper articles, together with the search", async () => {
+  const page = await open("column.html");
+  const shown = () => page.$$eval("[data-filter]:not([hidden])", (e) => e.length);
+  const all = await shown();
+  assert.ok(all > 140, all + " articles");
+  assert.ok(await page.$$eval(".ep__tags .tag", (t) => t.length) > all, "topics under the articles");
+  await page.click("#tagOpen");
+  await page.click('.tagdlg [data-tag="creation"]');
+  const creation = await shown();
+  assert.ok(creation > 10 && creation < all, `creation: ${creation}`);
+  assert.equal(await page.$$eval("[data-filter]:not([hidden])", (e) => e.every((x) => x.dataset.tags.split(" ").includes("creation"))), true);
+  await page.click('#colBar [data-year="2017"]');
+  const both = await shown();
+  assert.ok(both > 0 && both < creation, `creation and 2017: ${both}`);
+  assert.equal(await page.$$eval("[data-filter]:not([hidden])", (e) => e.every((x) => x.dataset.year === "2017")), true);
+  assert.equal(await page.$$eval("h2.refs__year:not([hidden])", (h) => h.map((x) => x.textContent).join()), "2017", "only that year's heading");
+  await page.type("#filter", "ζώα");
+  await page.waitForFunction(() => document.querySelectorAll("[data-filter]:not([hidden])").length === 2);
+  await page.$eval("#filter", (i) => { i.value = ""; i.dispatchEvent(new Event("input")); });
+  await page.click("[data-tag-clear]");
+  await page.click('#colBar [data-year="all"]');
+  assert.equal(await shown(), all, "everything again");
+  await page.click("[data-filter] .ep__tags [data-tag]");              // a topic under an article
+  assert.ok((await shown()) < all);
+  assert.deepEqual(page.problems, []);
+  await page.close2();
+  const en = await open("en/column.html");
+  assert.match(await en.$eval("#tagOpen", (b) => b.textContent), /Topics/);
+  assert.match(await en.$eval('#colBar [data-year="all"]', (b) => b.textContent), /All years/);
+  assert.match(await en.$eval(".ep__tags .tag", (b) => b.textContent), /[A-Za-z]/, "English topic names");
+  await en.close2();
+});
+
 test("search: a topic's name finds its broadcasts; on the English page the English name does too", async () => {
   const page = await open("index.html");
   await page.type("#q", "βιοηθική");

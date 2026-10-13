@@ -225,7 +225,58 @@ def page_of(e):
     return "%s/%d.htm" % (PAGES, e["id"])
 
 
-def card(e, prefix=""):
+TAGS_FILE = os.path.join(ROOT, "data", "column-tags.json")
+
+
+def tag_key(e):
+    return str(e["id"]) if "id" in e else e["path"]
+
+
+def column_tags(online, archive):
+    """Topics of every article (data/column-tags.json). A new article gets suggested topics, from the
+    broadcasts it is most like (tools/related.py), saved in the file so they can be corrected there."""
+    tags = json.load(open(TAGS_FILE, encoding="utf-8")) if os.path.exists(TAGS_FILE) else {}
+    new = [e for e in online + archive if tag_key(e) not in tags]
+    if new:
+        try:
+            tags.update(suggest_tags(new))
+        except Exception as ex:                       # never stop the weekly update over a suggestion
+            print("column: could not suggest topics (%s)" % ex)
+        with open(TAGS_FILE, "w", encoding="utf-8", newline="\n") as f:
+            json.dump(tags, f, ensure_ascii=False, indent=0)
+            f.write("\n")
+    return {k: v.split() for k, v in tags.items() if k != "_about"}
+
+
+def suggest_tags(entries):
+    import related as R
+    items = R.collect()
+    for e in entries:
+        if tag_key(e) not in {it["key"] for it in items}:
+            items.append({"kind": "X", "key": tag_key(e), "url": "", "el": html.escape(e["title"], quote=False), "en": None,
+                          "text": e["title"], "body": e.get("body", ""), "page": ""})
+    keyed = {it["key"]: i for i, it in enumerate(items)}
+    for e in entries:                                   # online articles are in related.py as column/<id>.htm
+        if "id" in e and "column/%s.htm" % e["id"] in keyed:
+            keyed[tag_key(e)] = keyed["column/%s.htm" % e["id"]]
+    vecs = R.vectors(items)
+    order = {b["date"].replace("-", "_"): b["tags"] for b in R.broadcasts()}
+    B = [i for i, it in enumerate(items) if it["kind"] == "B"]
+    out = {}
+    for e in entries:
+        i = keyed[tag_key(e)]
+        score = {}
+        for s, j in sorted(((R.score(vecs[i], vecs[j]), j) for j in B), reverse=True)[:6]:
+            for k, t in enumerate(order.get(items[j]["key"], [])):
+                score[t] = score.get(t, 0) + s * (1, .6, .4)[min(k, 2)]
+        best = sorted(score.items(), key=lambda x: -x[1])
+        pick = [t for t, v in best if v >= 0.45 * best[0][1]][:3] if best and best[0][1] > 0 else []
+        out[tag_key(e)] = " ".join(pick or ["life"])
+        print("column: suggested topics for «%s»: %s" % (e["title"], out[tag_key(e)]))
+    return out
+
+
+def card(e, prefix="", tags=None):
     online = "id" in e
     href = prefix + (page_of(e) if online else e["path"])
     meta = ('<time datetime="%s">%s</time>' % (e["date"][:7], month_label(e["date"]))) if e["date"] else "Χωρίς ημερομηνία"
@@ -236,7 +287,8 @@ def card(e, prefix=""):
         visual = '<span class="ref__thumb"><img src="%s" alt="" loading="lazy" decoding="async" width="96" height="72"></span>' % html.escape(prefix + e["picture"], quote=True)
     else:
         visual = '<span class="ref__icon ref__icon--%s">%s</span>' % ("web" if online else "pdf", NEWS if online else DOC)
-    return ('          <li class="ref%s" data-filter>\n' % (" ref--thumb" if "ref__thumb" in visual else "") +
+    extra = (' data-year="%s"' % e["date"][:4] if e.get("date") else "") + (' data-tags="%s"' % " ".join(tags) if tags else "")
+    return ('          <li class="ref%s" data-filter%s>\n' % (" ref--thumb" if "ref__thumb" in visual else "", extra) +
             '            ' + visual + '\n'
             '            <div class="ref__body">\n'
             '              <p class="ref__title" translate="no"><a href="%s">%s</a></p>\n'
@@ -324,12 +376,18 @@ def column_page(online, archive):
         <p class="pagehead__lede">Τα άρθρα της ομάδας «Χριστιανισμός &amp; Επιστήμη» στη μηνιαία στήλη της εφημερίδας, όλα διαθέσιμα εδώ. Τα παλαιότερα διαβάζονται ως PDF.</p>
       </div>
     </section>''', shell)
+    tags = column_tags(online, archive)
     groups, cur = [], None
     for e in online:
         y = e["date"][:4]
         if y != cur:
             groups.append((y, [])); cur = y
-        groups[-1][1].append(card(e))
+        groups[-1][1].append(card(e, tags=tags.get(tag_key(e))))
+    years = sorted({e["date"][:4] for e in online + archive if e.get("date")}, reverse=True)
+    bar = ('        <div class="seasons" id="colBar" role="toolbar" aria-label="Φιλτράρισμα ανά θέμα και έτος">'
+           '<span class="topicpick" id="tagPick"></span>'
+           '<button class="chip" data-year="all" aria-pressed="true">Όλα τα έτη</button>' +
+           "".join('<button class="chip" data-year="%s" aria-pressed="false">%s</button>' % (y, y) for y in years) + "</div>")
     body = ['''        <div class="page__tools">
           <p class="page__count">%d άρθρα</p>
           <label class="search">
@@ -338,16 +396,19 @@ def column_page(online, archive):
             <input id="filter" type="search" placeholder="Αναζήτηση άρθρου…" autocomplete="off">
           </label>
         </div>
-        <article class="prose prose--wide reflist">''' % (len(online) + len(archive))]
+%s
+        <article class="prose prose--wide reflist">''' % (len(online) + len(archive), bar)]
     for y, cards in groups:
         body.append('        <h2 class="refs__year">%s</h2>\n        <ul class="refs">\n%s\n        </ul>' % (y, "\n".join(cards)))
     if archive:
         body.append('        <h2 class="refs__year">Παλαιότερα άρθρα της στήλης (PDF)</h2>\n        <ul class="refs">\n%s\n        </ul>'
-                    % "\n".join(card(e) for e in archive))
+                    % "\n".join(card(e, tags=tags.get(tag_key(e))) for e in archive))
     body.append('''        </article>
         <p class="empty" id="filterEmpty" hidden>Δεν βρέθηκε άρθρο. Δοκιμάστε άλλη λέξη.</p>''')
     page = re.sub(r'(?s)(<div class="page">\s*<div class="wrap">).*?(</div>\s*</div>\s*</main>)',
                   lambda m: m.group(1) + "\n" + "\n".join(body) + "\n      " + m.group(2), shell)
+    if "js/tags.js" not in page:
+        page = page.replace('<script src="js/page.js', '<script src="js/tags.js"></script>\n  <script src="js/page.js', 1)
     open(os.path.join(ROOT, "column.html"), "w", encoding="utf-8", newline="\n").write(page)
 
 
@@ -366,7 +427,7 @@ def articles_block(online, total):
           </ul>
         </section>
         <h2 class="group__title">Άρθρα ανά κατηγορία</h2>
-        <!-- /column -->''' % (total, "\n".join(card(e) for e in online[:4]).replace(" data-filter", ""))
+        <!-- /column -->''' % (total, re.sub(r" data-filter[^>]*", "", "\n".join(card(e) for e in online[:4])))   # no filters in this block
     src = src.replace('<div class="page__tools">', block.strip() + '\n        <div class="page__tools">', 1)
     open(path, "w", encoding="utf-8", newline="\n").write(src)
 

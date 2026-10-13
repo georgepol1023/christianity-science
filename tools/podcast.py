@@ -41,6 +41,7 @@ DESCRIPTION = ("Ραδιοφωνική εκπομπή από το ράδιο «�
 LIST_JS = r"""
 const fs = require("fs"), vm = require("vm");
 const ctx = { window: {} }; vm.runInNewContext(fs.readFileSync(process.argv[2], "utf8"), ctx);
+vm.runInNewContext(fs.readFileSync(process.argv[2].replace(/broadcasts\.js$/, "tags.js"), "utf8"), ctx);
 const C = ctx.window.SITE_CONFIG, tags = {}, out = [];
 for (const t of ctx.window.BROADCAST_TAGS || []) tags[t.id] = t.name;
 for (const s of ctx.window.BROADCASTS) for (const e of s.episodes) {
