@@ -1,26 +1,34 @@
-# Έλεγχοι (tests)
+# Tests
 
-Δύο σειρές αυτόματων ελέγχων. Χρειάζεται [Node.js](https://nodejs.org) 18+ και Python (για το `tools/stamp.py`).
+Two sets of automatic tests. They need [Node.js](https://nodejs.org) 18+ and Python (for `tools/stamp.py`).
 
-## 1. Στατικοί έλεγχοι (χωρίς browser), 31 έλεγχοι
-Δεδομένα εκπομπών, συναρτήσεις του `js/app.js`, HTML όλων των σελίδων, σύνδεσμοι, CSS, `tools/stamp.py`.
+## 1. Static tests (no browser), 53 tests
+Broadcast data and topics, functions of `js/app.js`, the HTML of every page, every internal link, CSS,
+the English pages and translations, «Σχετικά» (Related), the site search index, the podcast feed, `tools/stamp.py`.
 ```
 node --test tests/static.test.js
 ```
 
-## 2. Έλεγχοι στον browser, 26 έλεγχοι
-Ανοίγουν κάθε σελίδα σε headless Chrome/Edge: αναζήτηση, player, αντίστροφη μέτρηση, θέμα, μενού, φίλτρα, κινητό.
+## 2. Browser tests, 58 tests
+They open the pages in headless Chrome or Edge: search, player, keep-playing-while-browsing, topics,
+countdown, theme, menu, filters, share and lock-screen controls, phone layout.
 ```
-npm install --prefix tests puppeteer-core     # μία φορά
-node tests/server.js                           # σε ξεχωριστό παράθυρο (σερβίρει τον φάκελο στο :8081)
+npm install --prefix tests puppeteer-core     # once
+node tests/server.js                           # in a separate window (serves the folder at :8081)
 node --test tests/browser.test.js
 ```
-Το `tests/server.js` υποστηρίζει HTTP Range, απαραίτητο για μεταπήδηση μέσα στα mp3
-(ο `python -m http.server` δεν το υποστηρίζει, οπότε το «Συνέχεια ακρόασης» δεν δουλεύει με αυτόν).
+`tests/server.js` supports HTTP Range requests, which jumping within an mp3 needs
+(`python -m http.server` does not, so «Συνέχεια» (resume) does not work with it).
 
-## Γνωστό κενό
-Η εκπομπή της 7/3/2013 («Νηστεία») δεν έχει mp3: λείπουν και από τον παλιό server.
-Ο έλεγχος τα καταγράφει στο `KNOWN_MISSING_MP3`. Αν βρεθούν τα αρχεία, προσθέστε τα στο
-`mp3/broadcasts/Season_06/2013_03_07/` και αφαιρέστε τα από τη λίστα.
+## After going live
+```
+node tests/live-check.js
+```
+Checks that every page on the live site is the new version and that all files and mp3s load.
 
-Οι φάκελοι `tests/` και `tools/` δεν χρειάζεται να ανέβουν στον server.
+## Known gap
+The broadcast of 7 March 2013 («Νηστεία», *Fasting*) has no mp3s: they are missing on the old server too.
+The tests list them in `KNOWN_MISSING_MP3`. If the files turn up, add them to
+`mp3/broadcasts/Season_06/2013_03_07/` and remove them from that list.
+
+The `tests/` and `tools/` folders do not need to be uploaded to the web host.
