@@ -4,7 +4,7 @@ The website of **«Χριστιανισμός & Επιστήμη»** (*Christian
 Radio Christianity since 2008: every broadcast to listen to (355 so far, about 710 hours), the team's
 newspaper column, topic studies, questions from listeners and more, in Greek and English.
 
-![The home page: the next live broadcast with a countdown, «Listen live» and «Listen on Spotify», and the latest broadcast](docs/screenshot-home.png)
+![The home page: the verse, and the next live broadcast with a countdown, «Listen live» and «Listen on Spotify»](docs/screenshot-home.png)
 
 <img src="docs/screenshot-phone.png" alt="On a phone: the broadcast archive with topics and seasons, a broadcast playing in the player bar" width="300" align="right">
 
