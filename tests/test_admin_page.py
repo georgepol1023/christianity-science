@@ -253,6 +253,49 @@ class UploadPageTest(PageServer, unittest.TestCase):
         self.assertIn("settings", kinds)
         self.assertIn("correction", kinds)
 
+    def test_recordings_from_email_can_be_completed_or_discarded(self):
+        """What tools/mailwatch.py leaves in private/drafts/ when an email had no clear title or date."""
+        def draft(ident, freq):
+            d = os.path.join(self.private, "drafts", ident)
+            os.makedirs(d)
+            data = self.mp3(freq)
+            with open(os.path.join(d, "part-1.mp3"), "wb") as f:
+                f.write(data)
+            with open(os.path.join(d, "request.json"), "w", encoding="utf-8") as f:
+                json.dump({"type": "broadcast", "id": ident, "user": "email", "date": "2026-12-03", "title": "", "tags": [],
+                           "files": [{"name": "part-1.mp3", "original": "Εκπομπή.mp3", "bytes": len(data)}],
+                           "from_email": {"from": "radio@christianity.gr", "subject": "Maria sent you files"}}, f, ensure_ascii=False)
+            return data
+        data = draft("20261203-100000-0000aaaa", 980)
+        draft("20261203-110000-0000bbbb", 981)
+        b = self.signed_in()
+        st, r = b.api("state")
+        self.assertEqual([d["id"] for d in r["drafts"]], ["20261203-110000-0000bbbb", "20261203-100000-0000aaaa"])
+        self.assertEqual(r["drafts"][1]["from"], "radio@christianity.gr")
+        # listen before publishing
+        st, h, body = b.req("GET", "/%s/?a=draft_audio&id=20261203-100000-0000aaaa&n=1" % SECRET)
+        self.assertEqual((st, h.get("content-type"), body), (200, "audio/mpeg", data))
+        st, _, _ = b.req("GET", "/%s/?a=draft_audio&id=../../config&n=1" % SECRET)
+        self.assertEqual(st, 404)
+        # a title is needed; then it goes to the inbox
+        st, r = b.api("draft_publish", {"id": "20261203-100000-0000aaaa", "date": "2026-12-03", "title": ""})
+        self.assertEqual(st, 400)
+        st, r = b.api("draft_publish", {"id": "20261203-100000-0000aaaa", "date": "2026-12-03", "title": "Από το email", "tags": ["bible"]})
+        self.assertEqual((st, r.get("ok")), (200, True), r)
+        with open(os.path.join(self.private, "inbox", "20261203-100000-0000aaaa", "request.json"), encoding="utf-8") as f:
+            req = json.load(f)
+        self.assertEqual((req["title"], req["tags"], req["approved_by"]), ("Από το email", ["bible"], "maria"))
+        # the same date again (the other draft) is refused while the first waits
+        st, r = b.api("draft_publish", {"id": "20261203-110000-0000bbbb", "date": "2026-12-03", "title": "Δεύτερη"})
+        self.assertEqual(st, 409)
+        st, r = b.api("draft_discard", {"id": "20261203-110000-0000bbbb"})
+        self.assertEqual(st, 200)
+        self.assertTrue(os.path.isdir(os.path.join(self.private, "discarded", "20261203-110000-0000bbbb")))
+        st, r = b.api("state")
+        self.assertEqual(r["drafts"], [])
+        st, r = b.api("draft_discard", {"id": "20261203-110000-0000bbbb"})
+        self.assertEqual(st, 404)
+
     def test_zz_too_many_wrong_passwords_lock_the_sign_in(self):
         b = Browser(self.port)
         b.req("GET", "/%s/?k=%s" % (SECRET, self.key))

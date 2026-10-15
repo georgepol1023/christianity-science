@@ -53,7 +53,80 @@ if ($action === 'state') {
     }
     session_write_close();
     cs_json(['ok' => true, 'broadcasts' => $list, 'topics' => cs_topics(), 'pending' => cs_pending(), 'results' => cs_results(),
-             'youtube' => cs_site_setting('youtubeId'), 'next' => cs_site_setting('nextBroadcast'), 'chunk' => cs_chunk_size()]);
+             'drafts' => cs_drafts(), 'youtube' => cs_site_setting('youtubeId'), 'next' => cs_site_setting('nextBroadcast'),
+             'chunk' => cs_chunk_size()]);
+}
+
+/* ------------------------------------------------------------ recordings that came by email and wait to be completed */
+function cs_draft(string $id): array
+{
+    $f = cs_private() . '/drafts/' . $id . '/request.json';
+    $r = (cs_valid_id($id) && is_file($f)) ? json_decode((string)file_get_contents($f), true) : null;
+    if (!is_array($r)) cs_error('Αυτές οι ηχογραφήσεις δεν περιμένουν πια (δημοσιεύτηκαν ή απορρίφθηκαν).', 404);
+    return $r;
+}
+
+if ($action === 'draft_audio') {
+    $id = (string)($_GET['id'] ?? '');
+    $r = cs_draft($id);
+    $n = (int)($_GET['n'] ?? 0);
+    $f = $r['files'][$n - 1] ?? null;
+    $path = $f ? cs_private() . '/drafts/' . $id . '/' . basename((string)$f['name']) : '';
+    if (!$f || !is_file($path)) cs_error('Δεν βρέθηκε.', 404);
+    session_write_close();
+    header('Content-Type: audio/mpeg');
+    header('Content-Length: ' . filesize($path));
+    readfile($path);
+    exit;
+}
+
+if ($action === 'draft_publish' && $method === 'POST') {
+    $in = cs_input();
+    $id = (string)($in['id'] ?? '');
+    $r = cs_draft($id);
+    [$date, $title, $title_en, $tags, $replace] = cs_check_broadcast($in);
+    $r = array_merge($r, ['date' => $date, 'title' => $title, 'title_en' => $title_en, 'tags' => $tags, 'replace' => $replace,
+                          'approved_by' => cs_user()['id'], 'email' => cs_user()['email'] ?? '']);
+    $dir = cs_private() . '/drafts/' . $id;
+    file_put_contents("$dir/request.json", json_encode($r, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
+    if (!@rename($dir, cs_inbox() . '/' . $id)) cs_error('Η αποθήκευση απέτυχε στον server. Δοκιμάστε ξανά.', 500);
+    cs_log('draft approved', "$id $date $title");
+    cs_wake_publisher();
+    cs_json(['ok' => true]);
+}
+
+if ($action === 'draft_discard' && $method === 'POST') {
+    $id = (string)(cs_input()['id'] ?? '');
+    cs_draft($id);
+    @mkdir(cs_private() . '/discarded', 0700, true);
+    if (!@rename(cs_private() . '/drafts/' . $id, cs_private() . '/discarded/' . $id)) cs_error('Δεν έγινε. Δοκιμάστε ξανά.', 500);
+    cs_log('draft discarded', $id);
+    cs_json(['ok' => true]);
+}
+
+/** The fields of a broadcast, checked; stops with the reason if they are not right. Never twice: a date already on
+ *  the site (unless replacing), or already waiting in the inbox, is refused. */
+function cs_check_broadcast(array $in): array
+{
+    $date = (string)($in['date'] ?? '');
+    $title = cs_clean_text($in['title'] ?? '');
+    $title_en = cs_clean_text($in['title_en'] ?? '');
+    $tags = cs_clean_tags($in['tags'] ?? []);
+    $replace = !empty($in['replace']);
+    if (!cs_valid_date($date)) cs_error('Η ημερομηνία δεν είναι έγκυρη.');
+    if ($title === null || $title === '') cs_error('Γράψτε τον τίτλο της εκπομπής (έως 200 χαρακτήρες, χωρίς < >).');
+    if ($title_en === null) cs_error('Ο αγγλικός τίτλος δεν είναι έγκυρος.');
+    if ($tags === null) cs_error('Επιλέξτε έως 3 θέματα.');
+    $existing = cs_broadcasts()[$date] ?? null;
+    if ($existing && !$replace) {
+        cs_error('Η εκπομπή αυτής της ημερομηνίας υπάρχει ήδη: «' . $existing['title'] . '». Αν θέλετε να την αντικαταστήσετε, επιλέξτε «Αντικατάσταση».', 409);
+    }
+    foreach (cs_pending() as $p) {
+        if ($p['type'] === 'broadcast' && $p['date'] === $date) {
+            cs_error('Μια εκπομπή αυτής της ημερομηνίας έχει ήδη σταλεί και περιμένει δημοσίευση.', 409);
+        }
+    }
+    return [$date, $title, $title_en, $tags, $replace];
 }
 
 function cs_chunk_size(): int
@@ -78,16 +151,7 @@ function cs_input(): array
 /* ------------------------------------------------------------ a new broadcast: start, pieces, finish */
 if ($action === 'start' && $method === 'POST') {
     $in = cs_input();
-    $date = (string)($in['date'] ?? '');
-    $title = cs_clean_text($in['title'] ?? '');
-    $title_en = cs_clean_text($in['title_en'] ?? '');
-    $tags = cs_clean_tags($in['tags'] ?? []);
-    $replace = !empty($in['replace']);
     $files = is_array($in['files'] ?? null) ? $in['files'] : [];
-    if (!cs_valid_date($date)) cs_error('Η ημερομηνία δεν είναι έγκυρη.');
-    if ($title === null || $title === '') cs_error('Γράψτε τον τίτλο της εκπομπής (έως 200 χαρακτήρες, χωρίς < >).');
-    if ($title_en === null) cs_error('Ο αγγλικός τίτλος δεν είναι έγκυρος.');
-    if ($tags === null) cs_error('Επιλέξτε έως 3 θέματα.');
     if (count($files) < 1 || count($files) > CS_MAX_PARTS) cs_error('Επιλέξτε 1 έως ' . CS_MAX_PARTS . ' αρχεία mp3.');
     $list = [];
     $total = 0;
@@ -99,16 +163,7 @@ if ($action === 'start' && $method === 'POST') {
         $list[] = ['name' => 'part-' . ($i + 1) . '.mp3', 'original' => $name, 'bytes' => $size];
         $total += $size;
     }
-    // never twice: a date already on the site (unless replacing), or already waiting in the inbox
-    $existing = cs_broadcasts()[$date] ?? null;
-    if ($existing && !$replace) {
-        cs_error('Η εκπομπή αυτής της ημερομηνίας υπάρχει ήδη: «' . $existing['title'] . '». Αν θέλετε να την αντικαταστήσετε, επιλέξτε «Αντικατάσταση».', 409);
-    }
-    foreach (cs_pending() as $p) {
-        if ($p['type'] === 'broadcast' && $p['date'] === $date) {
-            cs_error('Μια εκπομπή αυτής της ημερομηνίας έχει ήδη σταλεί και περιμένει δημοσίευση.', 409);
-        }
-    }
+    [$date, $title, $title_en, $tags, $replace] = cs_check_broadcast($in);
     @mkdir(cs_inbox() . '/.staging', 0700, true);
     cs_clear_old_staging();
     $free = @disk_free_space(cs_private());
@@ -264,7 +319,7 @@ if ($action !== '') {
 /* ------------------------------------------------------------ the page */
 $nonce = base64_encode(random_bytes(16));
 header("Content-Security-Policy: default-src 'none'; script-src 'nonce-$nonce'; style-src 'nonce-$nonce'; "
-     . "img-src 'self' https://i.ytimg.com; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
+     . "img-src 'self' https://i.ytimg.com; media-src 'self'; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
 header('Content-Type: text/html; charset=utf-8');
 $csrf = htmlspecialchars((string)$_SESSION['csrf'], ENT_QUOTES);
 $name = $user ? htmlspecialchars((string)($user['name'] ?? $user['id']), ENT_QUOTES) : '';

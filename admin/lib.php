@@ -402,6 +402,26 @@ function cs_pending(): array
     return $out;
 }
 
+/** Recordings that came by email and wait to be completed (tools/mailwatch.py), newest first. */
+function cs_drafts(): array
+{
+    $out = [];
+    foreach (@scandir(cs_private() . '/drafts') ?: [] as $id) {
+        $f = cs_private() . "/drafts/$id/request.json";
+        if (!cs_valid_id($id) || !is_file($f)) {
+            continue;
+        }
+        $r = json_decode((string)file_get_contents($f), true) ?: [];
+        $mail = is_array($r['from_email'] ?? null) ? $r['from_email'] : [];
+        $out[] = ['id' => $id, 'date' => (string)($r['date'] ?? ''), 'title' => (string)($r['title'] ?? ''),
+                  'from' => (string)($mail['from'] ?? ''), 'subject' => (string)($mail['subject'] ?? ''),
+                  'files' => array_map(function ($x) { return ['original' => (string)($x['original'] ?? ''), 'bytes' => (int)($x['bytes'] ?? 0)]; },
+                                       is_array($r['files'] ?? null) ? $r['files'] : [])];
+    }
+    usort($out, function ($a, $b) { return strcmp($b['id'], $a['id']); });
+    return $out;
+}
+
 /** The latest outcomes written by tools/inbox.py, newest first. */
 function cs_results(int $n = 15): array
 {

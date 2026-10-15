@@ -734,13 +734,14 @@ class Inbox:
                 self.srv.rename("private", "processing/" + ident, "inbox/" + ident)
 
     def clean_up(self):
-        """Requests published more than 30 days ago are removed (their mp3s are on the site by then)."""
-        for ident, kind in self.srv.list("private", "done").items():
-            m = re.match(r"(\d{8})-", ident)
-            if kind == "dir" and m:
-                age = datetime.date.today() - datetime.datetime.strptime(m.group(1), "%Y%m%d").date()
-                if age.days > KEEP_DONE_DAYS:
-                    self.srv.remove("private", "done/" + ident)
+        """Requests published (or email recordings discarded) more than 30 days ago are removed."""
+        for folder in ("done", "discarded"):
+            for ident, kind in self.srv.list("private", folder).items():
+                m = re.match(r"(\d{8})-", ident)
+                if kind == "dir" and m:
+                    age = datetime.date.today() - datetime.datetime.strptime(m.group(1), "%Y%m%d").date()
+                    if age.days > KEEP_DONE_DAYS:
+                        self.srv.remove("private", folder + "/" + ident)
 
 
 MONTHS = ["Ιανουαρίου", "Φεβρουαρίου", "Μαρτίου", "Απριλίου", "Μαΐου", "Ιουνίου", "Ιουλίου", "Αυγούστου",

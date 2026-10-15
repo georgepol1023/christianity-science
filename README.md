@@ -86,6 +86,8 @@ After any change to pages, `css/` or `js/`, run `python tools/build_all.py`. In 
 
 Publishing tools (Python standard library only, so they keep working without updates):
 - `inbox.py` publishes what the upload page hands in;
+- `mailwatch.py` fetches the recordings emailed to science@christianity.gr (WeTransfer links), read-only,
+  and hands them to the inbox;
 - `deploy.py` puts the changed files on the server by FTP;
 - `sync_mp3.py` copies new mp3s from the server to this computer, as a second copy;
 - `setup_server.py` sets everything up in one go (FTP account, private folder, the page's settings, GitHub
@@ -105,6 +107,9 @@ Other tools: `update_column.py` (fetches new newspaper column articles), `join_b
   (https://christianity-science.onrender.com/), which forwards `/mp3/…` to the server.
 - **Audio:** the mp3s and PDFs live only on the server (and as a second copy in `mp3/` on the editor's
   computer: `tools/sync_mp3.py`).
+- **Recordings by email:** every hour the WeTransfer links emailed to science@christianity.gr by trusted
+  senders are fetched and published, or wait in the upload page's «Από email» tab if title or date is
+  unclear.
 - **Upload page and inbox:** `admin/` at a secret address. It is invisible without a device key and
   needs a password and an authenticator code. See [docs/SETUP.md](docs/SETUP.md).
 - **Newspaper column:** every day a GitHub Action (`.github/workflows/update-column.yml`) adds new

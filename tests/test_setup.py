@@ -264,7 +264,7 @@ class FlowTest(unittest.TestCase):
                 ("plain FTP", "y"),
                 ("User name", "maria"), ("Full name", "Μαρία"), ("Email", "maria@example.com"),
                 ("Password", "a very long password"), ("Password again", "a very long password"),
-                ("Send an email", "y"), ("Claude API key", "")]
+                ("Send an email", "y"), ("Fetch recordings emailed", "n"), ("Claude API key", "")]
 
     def test_first_time_setup_from_start_to_finish(self):
         gh = FakeGh()
@@ -318,7 +318,7 @@ class FlowTest(unittest.TestCase):
         gh = FakeGh()
         answers = [("new FTP account", "n"), ("FTP server", "127.0.0.1"), ("FTP user", "publish@christianity-science.gr"),
                    ("FTP password", self.ftp_password()), ("plain FTP", "y"),
-                   ("Send an email", "n"), ("Claude API key", "")]
+                   ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("Claude API key", "")]
         s = self.setup(answers, gh)
         if not self.php:
             setup_server.check_online, real = (lambda *a: []), setup_server.check_online
@@ -334,7 +334,7 @@ class FlowTest(unittest.TestCase):
         self.test_first_time_setup_from_start_to_finish()
         answers = [("new FTP account", "y"), ("DirectAdmin user", "admin"), ("DirectAdmin password", "da-pass"),
                    ("FTP server", "127.0.0.1"), ("FTP user", ""), ("FTP password", self.ftp_password()), ("plain FTP", "y"),
-                   ("Send an email", "n"), ("Claude API key", "")]
+                   ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("Claude API key", "")]
         s = self.setup(answers, FakeGh())
         if not self.php:
             setup_server.check_online, real = (lambda *a: []), setup_server.check_online
@@ -349,7 +349,7 @@ class FlowTest(unittest.TestCase):
         self.test_first_time_setup_from_start_to_finish()
         gh = FakeGh({"LIVE_URL": "https://www.christianity-science.gr/"})
         answers = [("new FTP account", "n"), ("FTP server", "127.0.0.1"), ("FTP user", "publish@christianity-science.gr"),
-                   ("FTP password", self.ftp_password()), ("plain FTP", "y"), ("Send an email", "n"), ("Claude API key", "")]
+                   ("FTP password", self.ftp_password()), ("plain FTP", "y"), ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("Claude API key", "")]
         s = self.setup(answers, gh)
         trial = os.path.join(self.home, "public_html", "new-site-test")
         shutil.rmtree(trial)
@@ -370,6 +370,42 @@ class FlowTest(unittest.TestCase):
 
     def ftp_password(self):
         return self.auth.user_table["publish@christianity-science.gr"]["pwd"]
+
+    def test_email_recordings_are_set_up_and_checked(self):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from test_mailwatch import make_email
+        logins = []
+
+        class FakeBox:
+            def __init__(self, host, port, user, password):
+                logins.append((host, user, password))
+                self.password = password
+
+            def recent(self):
+                if self.password != "right":
+                    raise SystemExit("The mail server refused the login")
+                return [make_email(subject="Εκπομπή 15/10/2026 Α", body="https://we.tl/t-1"),
+                        make_email(frm="listener@example.com", subject="Ερώτηση")]
+        gh = FakeGh()
+        answers = self.first_time_answers()
+        answers[answers.index(("Send an email", "y")):] = [
+            ("Send an email", "n"), ("Fetch recordings emailed", "y"), ("The mailbox", ""), ("mail server", ""),
+            ("Who may send", "radio@christianity.gr, @studio.example"), ("Password of", "wrong"), ("Try another password", "y"),
+            ("Password of", "right"), ("Claude API key", "")]
+        s = self.setup(answers, gh)
+        s.mailbox_factory = FakeBox
+        if not self.php:
+            setup_server.check_online, real = (lambda *a: []), setup_server.check_online
+        try:
+            self.assertTrue(s.first_time(), "\n".join(s.con.said))
+        finally:
+            if not self.php:
+                setup_server.check_online = real
+        self.assertEqual(logins, [("app.christianity.gr", "science@christianity.gr", "wrong"),
+                                  ("app.christianity.gr", "science@christianity.gr", "right")])
+        self.assertEqual((gh.secrets["MAIL_IMAP_USER"], gh.secrets["MAIL_IMAP_PASSWORD"], gh.secrets["MAIL_TRUSTED_SENDERS"]),
+                         ("science@christianity.gr", "right", "radio@christianity.gr, @studio.example"))
+        self.assertIn("2 emails in the last 10 days, 1 from the trusted senders, 1 with recordings", "\n".join(s.con.said))
 
     def test_adding_a_person(self):
         self.test_first_time_setup_from_start_to_finish()

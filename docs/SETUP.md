@@ -40,12 +40,15 @@ DirectAdmin user name and password.
    python tools/setup_server.py
    ```
    It asks for your DirectAdmin login (used once, not stored), then your name, email and a password for
-   the upload page, and whether to send result emails. It then:
+   the upload page, whether to send result emails, and whether to fetch the recordings emailed to
+   science@christianity.gr. For that it needs that mailbox's password and who may send recordings. It
+   then:
    - makes an FTP account just for publishing (`publish@…`), and a mailbox for the emails (`ekpompes@…`);
    - finds the site's folder and makes the private folder `cs-admin` next to it;
    - makes the upload page's settings (with a code for your phone's authenticator app);
    - sets all of GitHub's secrets;
    - puts the new site into a **test folder**, `…/new-site-test/`, while the live site stays as it is;
+   - checks the science@ login straight away, read-only, and reports how many recent emails carry recordings;
    - checks over the internet that the pages load and the upload page works, and sends you a test email.
 
    At the end it prints the trial address and the **device link** for the upload page, plus the
@@ -96,6 +99,32 @@ If a step fails, the setup stops and says what to do. Running it again picks up 
    - run `python tools/build_all.py` and push;
    - change the Spotify RSS address;
    - set the repository variable `LIVE_URL`.
+
+## Recordings by email
+
+Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwatch.py`).
+
+- **Read-only.** The mailbox is opened in read-only mode, so the server itself refuses any change: nothing
+  is marked as read, moved or deleted.
+- **Trusted senders only.** It looks only at emails from the trusted senders, and skips any that the mail
+  server marks as forged.
+- **Recordings.** It downloads WeTransfer transfers (or attached recordings), converts other audio formats
+  to mp3, and orders the parts by file name.
+- **Title and date.** The title and the date come from the email: the subject, the transfer's title, or
+  "15/10/2026", "15 Οκτωβρίου" or "της 15ης". Failing that, the date is the broadcast day just before the
+  email (every second Thursday). When both are clear, the broadcast is **published automatically**,
+  through all the usual checks: never twice, real recordings, and so on.
+- **When unsure, it waits.** If the title or the date is unclear, the recordings wait in the upload page's
+  **«Από email»** tab, and the admin is emailed. There they can be played, completed and published with
+  one click, or discarded.
+- **Expired links.** A WeTransfer link that can't be downloaded is tried again every hour. After a day, the
+  admin is emailed to upload the recordings by hand. WeTransfer's download interface isn't an official
+  one, so if WeTransfer changes its site, this is what happens, and nothing else breaks.
+- **Each email only once.** Every email is handled once, and the robot remembers which.
+
+The settings are the secrets `MAIL_IMAP_USER`, `MAIL_IMAP_PASSWORD`, `MAIL_IMAP_HOST`
+(`app.christianity.gr`) and `MAIL_TRUSTED_SENDERS` (e.g. `radio@christianity.gr, @studio.gr`). The setup
+sets them.
 
 ## Make it last
 

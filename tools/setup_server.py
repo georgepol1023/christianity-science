@@ -9,7 +9,8 @@ What the first-time setup does (each step says what it is doing, and stops with 
      or one you already have;
   2. finds the site's folder on the server and makes the private folder next to it (cs-admin);
   3. your sign-in for the upload page: name, password, and a code for your phone's authenticator app;
-  4. optional: result emails (a mailbox is made for you) and suggested English titles (a Claude API key);
+  4. optional: result emails (a mailbox is made for you), recordings emailed to science@christianity.gr
+     (its login is checked now, read-only), and suggested English titles (a Claude API key);
   5. puts everything GitHub needs into the repository's secrets (with the GitHub CLI, gh);
   6. puts the new site into a TEST folder on the server (the live site is not touched) and checks over
      the internet that the pages load and the upload page works. You get the addresses to look at.
@@ -21,13 +22,15 @@ import urllib.error, urllib.parse, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import admin_user, deploy, serverfs
+import admin_user, deploy, mailwatch, serverfs
 
 ROOT = os.path.dirname(HERE)
 DOMAIN = "christianity-science.gr"
 TEST_FOLDER = "new-site-test"
 FTP_NAME = "publish"           # → publish@christianity-science.gr
 MAIL_NAME = "ekpompes"         # → ekpompes@christianity-science.gr
+INCOMING = "science@christianity.gr"           # where the station emails the recordings
+INCOMING_HOST = "app.christianity.gr"         # its mail server (the name in its certificate)
 
 
 class Stop(Exception):
@@ -248,13 +251,14 @@ def send_test_mail(settings, to):
 # ---------------------------------------------------------------- the steps
 class Setup:
     def __init__(self, con=None, runner=subprocess.run, domain=DOMAIN, ftp_port=21, site_url=None, root=ROOT,
-                 ftp_host=None, da_base=None, mailer=send_test_mail):
+                 ftp_host=None, da_base=None, mailer=send_test_mail, mailbox_factory=None):
         self.con = con or Console()
         self.runner, self.domain, self.ftp_port, self.root = runner, domain, ftp_port, root
         self.site_url = site_url or "https://www.%s/" % domain
         self.ftp_host = ftp_host or domain                # the tests use their own servers
         self.da_base = da_base
         self.mailer = mailer
+        self.mailbox_factory = mailbox_factory or mailwatch.Mailbox
         self.notes = []                                   # what the person must keep (shown at the end)
         self.da = None                                  # (base, user, password, verify) once given
 
@@ -402,6 +406,38 @@ class Setup:
         return {"SMTP_HOST": host, "SMTP_PORT": con.ask("  SMTP port", "465"), "SMTP_USER": addr,
                 "SMTP_PASSWORD": con.ask("  Its password", secret=True), "MAIL_FROM": addr}
 
+    def email_inbox(self):
+        """Recordings emailed to science@christianity.gr: the mailbox's login, checked now (read-only)."""
+        con = self.con
+        if not con.yes("  Fetch recordings emailed to %s (WeTransfer links) and publish them?" % INCOMING, True):
+            return {}
+        addr = con.ask("  The mailbox", INCOMING)
+        host = con.ask("  Its mail server (the name in its certificate)", INCOMING_HOST)
+        trust = con.ask("  Who may send recordings (addresses, or @domain for a whole domain; comma between them)")
+        trust_list = [t for t in re.split(r"[,\s;]+", trust) if t]
+        while True:
+            password = con.ask("  Password of %s (used by the robot only to read; nothing is changed)" % addr, secret=True)
+            try:
+                raws = self.mailbox_factory(host, 993, addr, password).recent()
+                break
+            except SystemExit as ex:
+                self.say("  ✗ %s" % ex)
+                if not con.yes("  Try another password?", True):
+                    return {}
+            except serverfs.ServerError as ex:
+                self.say("  ✗ %s; email fetching is left out for now (run the setup again later)" % ex)
+                return {}
+        msgs = [mailwatch.parse(r) for r in raws]
+        ours = [m for m in msgs if mailwatch.trusted(mailwatch.sender(m), trust_list)]
+        links = [m for m in ours if mailwatch.wetransfer_links(m) or mailwatch.attachments(m)]
+        self.say("  ✓ signed in to %s (read-only): %d emails in the last %d days, %d from the trusted senders, %d with recordings"
+                 % (addr, len(msgs), mailwatch.DAYS, len(ours), len(links)))
+        if msgs and not ours:
+            senders = sorted({mailwatch.sender(m) for m in msgs})[:8]
+            self.say("    (none from the trusted senders; recent senders were: %s)" % ", ".join(senders))
+        return {"MAIL_IMAP_HOST": host, "MAIL_IMAP_USER": addr, "MAIL_IMAP_PASSWORD": password,
+                "MAIL_TRUSTED_SENDERS": ", ".join(trust_list)}
+
     def try_mail(self, mail, to):
         problem = self.mailer(mail, to)
         if problem:
@@ -437,12 +473,13 @@ class Setup:
             if mail and me:
                 mail["MAIL_TO"] = me[0]
                 self.try_mail(mail, me[0])
+            incoming = self.email_inbox()
             key = self.con.ask("  Claude API key for suggested English titles and topics (Enter to skip)", secret=True, optional=True)
             test_dir = site.rstrip("/") + "/" + TEST_FOLDER
             target = site if live else test_dir
             set_secrets(repo, dict({"FTP_HOST": host, "FTP_USER": user, "FTP_PASSWORD": password, "FTP_SITE_DIR": target,
                                     "FTP_PRIVATE_DIR": private, "FTP_TLS": "1" if tls else "0", "ADMIN_PATH": admin_path,
-                                    "ANTHROPIC_API_KEY": key}, **mail),
+                                    "ANTHROPIC_API_KEY": key}, **mail, **incoming),
                         {"CS_FTP_HOST": host, "CS_FTP_USER": user, "CS_FTP_TLS": "1" if tls else "0",
                          "CS_SITE_DIR": site, "CS_PRIVATE_DIR": private}, self.runner)
             self.say("  ✓ GitHub secrets set" + ("" if live else " (publishing goes to the test folder until --go-live)"))

@@ -91,6 +91,7 @@ progress { width:100%; height:12px; }
   <button role="tab" aria-selected="true" data-tab="new">Νέα εκπομπή</button>
   <button role="tab" aria-selected="false" data-tab="fix">Διόρθωση εκπομπής</button>
   <button role="tab" aria-selected="false" data-tab="home">Αρχική σελίδα</button>
+  <button role="tab" aria-selected="false" data-tab="mail">Από email <span id="draftCount"></span></button>
   <button role="tab" aria-selected="false" data-tab="status">Κατάσταση <span id="pendingCount"></span></button>
 </nav>
 <main>
@@ -151,6 +152,14 @@ progress { width:100%; height:12px; }
     </div>
   </section>
 
+  <!-- FROM EMAIL -->
+  <section data-pane="mail" hidden>
+    <h1>Από email</h1>
+    <p class="lede">Ηχογραφήσεις που ήρθαν με email στο science@christianity.gr και χρειάζονται τίτλο ή ημερομηνία.
+      Όσες είχαν και τα δύο δημοσιεύτηκαν ήδη αυτόματα (δείτε «Κατάσταση»).</p>
+    <div class="list" id="drafts"></div>
+  </section>
+
   <!-- STATUS -->
   <section data-pane="status" hidden>
     <h1>Κατάσταση</h1>
@@ -203,7 +212,7 @@ progress { width:100%; height:12px; }
     t.addEventListener("click", function () {
       tabs.forEach(function (x) { x.setAttribute("aria-selected", x === t); });
       document.querySelectorAll("[data-pane]").forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.tab; });
-      if (t.dataset.tab === "status") refresh();
+      if (t.dataset.tab === "status" || t.dataset.tab === "mail") refresh();
     });
   });
 
@@ -235,6 +244,7 @@ progress { width:100%; height:12px; }
       S = r; S.byDate = {};
       r.broadcasts.forEach(function (b) { S.byDate[b.date] = b; });
       if (first) { chips($("nTags"), []); fillFix(); fillHome(); }
+      renderDrafts();
       renderStatus();
       checkDate();
     });
@@ -421,6 +431,65 @@ progress { width:100%; height:12px; }
     return d;
   }
   function head(r) { return (KIND[r.type] || "Αίτημα") + (r.date ? " · " + gdate(r.date) : "") + (r.title ? " · " + r.title : ""); }
+  /* -------- recordings from email, waiting to be completed */
+  var draftShown = "";
+  function renderDrafts() {
+    var list = S.drafts || [];
+    $("draftCount").textContent = list.length ? "(" + list.length + ")" : "";
+    var key = JSON.stringify(list.map(function (d) { return d.id; }));
+    if (key === draftShown) return;             // do not wipe what the admin is typing
+    draftShown = key;
+    var box = $("drafts"); box.textContent = "";
+    if (!list.length) { box.appendChild(item("", "Δεν περιμένει τίποτα.", "", "")); return; }
+    list.forEach(function (d) {
+      var card = document.createElement("div"); card.className = "card"; card.dataset.draft = d.id;
+      var head = document.createElement("div"); head.className = "lede";
+      head.textContent = "Από " + (d.from || "?") + " · «" + (d.subject || "") + "»";
+      card.appendChild(head);
+      var row = document.createElement("div"); row.className = "row";
+      var f1 = document.createElement("label"); f1.className = "f";
+      f1.innerHTML = "<span>Ημερομηνία εκπομπής</span>";
+      var date = document.createElement("input"); date.type = "date"; date.value = d.date || ""; f1.appendChild(date);
+      var f2 = document.createElement("label"); f2.className = "f";
+      f2.innerHTML = "<span>Τίτλος</span>";
+      var title = document.createElement("input"); title.type = "text"; title.maxLength = 200; title.value = d.title || ""; f2.appendChild(title);
+      row.appendChild(f1); row.appendChild(f2); card.appendChild(row);
+      var tagsBox = document.createElement("div"); tagsBox.className = "chips"; chips(tagsBox, []);
+      var tf = document.createElement("div"); tf.className = "f"; tf.innerHTML = "<span>Θέματα (προαιρετικά)</span>"; tf.appendChild(tagsBox);
+      card.appendChild(tf);
+      var files = document.createElement("div"); files.className = "files";
+      d.files.forEach(function (f, i) {
+        var r = document.createElement("div"); r.className = "file";
+        var b = document.createElement("b"); b.textContent = (i + 1) + "ο ημίωρο";
+        var s = document.createElement("span"); s.textContent = f.original + " · " + mb(f.bytes);
+        var play = document.createElement("audio"); play.controls = true; play.preload = "none";
+        play.src = "?a=draft_audio&id=" + encodeURIComponent(d.id) + "&n=" + (i + 1);
+        r.appendChild(b); r.appendChild(s); files.appendChild(r); files.appendChild(play);
+      });
+      card.appendChild(files);
+      var msg = document.createElement("div"); msg.className = "msg"; msg.hidden = true; card.appendChild(msg);
+      var actions = document.createElement("div"); actions.className = "actions";
+      var drop = document.createElement("button"); drop.type = "button"; drop.className = "btn"; drop.textContent = "Απόρριψη";
+      var go = document.createElement("button"); go.type = "button"; go.className = "btn primary"; go.textContent = "Δημοσίευση";
+      actions.appendChild(drop); actions.appendChild(go); card.appendChild(actions);
+      drop.addEventListener("click", function () {
+        if (drop.dataset.sure !== "1") { drop.dataset.sure = "1"; drop.textContent = "Σίγουρα; Πατήστε ξανά"; return; }
+        call("draft_discard", { id: d.id }).then(function (r) {
+          if (r.ok) { draftShown = ""; refresh(); } else show(msg, r.error, "bad");
+        });
+      });
+      go.addEventListener("click", function () {
+        go.disabled = true;
+        call("draft_publish", { id: d.id, date: date.value, title: title.value.trim(), title_en: "", tags: picked(tagsBox) }).then(function (r) {
+          go.disabled = false;
+          if (r.ok) { show(msg, "Παραλήφθηκε· δημοσιεύεται σε λίγα λεπτά.", "ok"); draftShown = ""; setTimeout(refresh, 1500); }
+          else show(msg, r.error, "bad");
+        });
+      });
+      box.appendChild(card);
+    });
+  }
+
   function renderStatus() {
     var p = $("pending"), q = $("results"); p.textContent = ""; q.textContent = "";
     (S.pending || []).forEach(function (r) { p.appendChild(item(r.state, head(r), "", "")); });
