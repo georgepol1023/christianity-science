@@ -170,17 +170,27 @@ class InboxTest(unittest.TestCase):
         self.assertIn("15 Οκτωβρίου 2026", r["message"])
         self.assertNotIn('ep("2026-10-29"', self.js())
 
-    def test_recordings_matching_the_archive_by_size_and_length_are_refused(self):
+    def test_recordings_matching_the_archive_by_fingerprint_are_refused(self):
         p = os.path.join(self.tmp, "x.mp3")
         make_mp3(p, 530)
         audio_path = os.path.join(self.root, "data", "podcast-audio.json")
-        audio = json.load(open(audio_path, encoding="utf-8"))
-        audio["mp3/broadcasts/Season_05/2012_01_12/CS_2012_01_12_(2)_X.mp3"] = {"bytes": os.path.getsize(p), "seconds": 61}
-        json.dump(audio, open(audio_path, "w", encoding="utf-8"))
+        with open(audio_path, encoding="utf-8") as f:
+            audio = json.load(f)
+        audio["mp3/broadcasts/Season_05/2012_01_12/CS_2012_01_12_(2)_X.mp3"] = {
+            "bytes": os.path.getsize(p), "seconds": 61, "sha256": inbox.sha256(p)}
+        with open(audio_path, "w", encoding="utf-8") as f:
+            json.dump(audio, f)
         ident = self.new(freqs=(530,))
         self.box.run()
         self.assertEqual(self.result(ident)["status"], "rejected")
         self.assertIn("12 Ιανουαρίου 2012", self.result(ident)["message"])
+
+    def test_same_size_and_length_but_other_content_is_not_a_duplicate(self):
+        self.new(date="2026-10-15", freqs=(535,))
+        self.box.run()
+        ident = self.new(date="2026-10-29", freqs=(536,))          # another tone: same size and length
+        self.box.run()
+        self.assertEqual(self.result(ident)["status"], "published", self.result(ident)["message"])
 
     def test_same_file_twice_in_one_request_is_refused(self):
         ident = self.new(freqs=(540, 540))

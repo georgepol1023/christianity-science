@@ -3,6 +3,7 @@
     python tools/inbox.py              publish everything waiting in the inbox on the server
     python tools/inbox.py --count      only say how many requests are waiting (for the workflow)
     python tools/inbox.py --local DIR  use the folder DIR as the "server" (tests, trial runs)
+    python tools/inbox.py --fingerprints   add the archive's fingerprints from the mp3s on this computer
         --no-push    change the files here but do not commit or push    --no-build   skip tools/build_all.py
 
 How it works. The upload page saves each request as a folder in the private inbox on the server
@@ -24,8 +25,8 @@ back to the inbox and is tried again on the next run; after 4 failed tries it is
 Never twice. A broadcast is known by its date (one broadcast per date, as in all 18 years so far):
   - a date already on the site is refused, unless the request says "replace" (the upload page asks);
   - a folder for that date already on the server with other files in it is refused;
-  - recordings identical to an existing broadcast's (same SHA-256, or same size and length) are refused,
-    whatever date they were given;
+  - recordings identical to an existing broadcast's (same SHA-256, the content's fingerprint) are refused,
+    whatever date they were given (the archive's fingerprints: python tools/inbox.py --fingerprints);
   - the same file twice in one request is refused;
   - right before the change is pushed, the newest version of the site is fetched and the date checked
     again, so a broadcast added meanwhile by hand (or by another run) is not added a second time.
@@ -252,18 +253,43 @@ def sha256(path):
 
 
 def same_recording(audio, files, except_date=None):
-    """The date of a broadcast whose mp3 is identical to one of `files` [(bytes, seconds, sha)], or None."""
+    """The date of a broadcast whose mp3 is identical (same SHA-256) to one of `files` [(bytes, seconds, sha)].
+
+    Only the content counts: different broadcasts can have exactly the same size and length (the archive
+    has 11 such pairs), so those are never taken as a sign of a duplicate.
+    """
+    shas = {sha for _, _, sha in files}
     for rel, a in audio.items():
-        m = re.search(r"/(\d{4})_(\d\d)_(\d\d)/", rel)
-        date = "%s-%s-%s" % m.groups() if m else "?"
-        if date == except_date:
-            continue
-        for size, secs, sha in files:
-            if a.get("sha256") and a["sha256"] == sha:
-                return date
-            if a.get("bytes") == size and abs((a.get("seconds") or -9) - secs) <= 1:
+        if a.get("sha256") in shas:
+            m = re.search(r"/(\d{4})_(\d\d)_(\d\d)/", rel)
+            date = "%s-%s-%s" % m.groups() if m else "?"
+            if date != except_date:
                 return date
     return None
+
+
+def fingerprint_archive(root, log=print):
+    """Add the SHA-256 of every mp3 that is on this computer to data/podcast-audio.json (once; for same_recording)."""
+    path = os.path.join(root, "data", "podcast-audio.json")
+    with open(path, encoding="utf-8") as f:
+        audio = json.load(f)
+    todo = [rel for rel, a in audio.items() if not a.get("sha256") and os.path.isfile(os.path.join(root, rel))
+            and os.path.getsize(os.path.join(root, rel)) == a.get("bytes")]
+    for i, rel in enumerate(todo, 1):
+        audio[rel]["sha256"] = sha256(os.path.join(root, rel))
+        if i % 100 == 0:
+            log("  %d / %d" % (i, len(todo)))
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(dict(sorted(audio.items(), reverse=True)), ensure_ascii=False, indent=0) + "\n")
+    seen = {}
+    for rel, a in audio.items():
+        if a.get("sha256"):
+            seen.setdefault(a["sha256"], []).append(rel)
+    twins = [v for v in seen.values() if len(v) > 1]
+    log("fingerprints: %d added, %d of %d files have one; identical files in the archive: %d"
+        % (len(todo), sum(1 for a in audio.values() if a.get("sha256")), len(audio), len(twins)))
+    for t in twins:
+        log("  same recording: " + " = ".join(t))
 
 
 # ---------------------------------------------------------------- Claude suggestions (optional)
@@ -729,9 +755,13 @@ def main(argv=None):
     ap.add_argument("--local", help="a folder standing in for the server")
     ap.add_argument("--root", default=ROOT, help=argparse.SUPPRESS)
     ap.add_argument("--count", action="store_true")
+    ap.add_argument("--fingerprints", action="store_true")
     ap.add_argument("--no-push", action="store_true")
     ap.add_argument("--no-build", action="store_true")
     a = ap.parse_args(argv)
+    if a.fingerprints:
+        fingerprint_archive(a.root)
+        return 0
     if not a.local and not serverfs.configured():
         print("The server is not set up yet (FTP settings missing); nothing to do.")
         return 0
