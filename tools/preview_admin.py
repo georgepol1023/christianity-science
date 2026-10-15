@@ -24,6 +24,10 @@ USER, PASSWORD = "demo", "preview-password"
 
 
 def main():
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")      # Greek in any Windows console
+    except (AttributeError, ValueError):
+        pass
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--php", default=os.environ.get("PHP") or shutil.which("php"))
     ap.add_argument("--port", type=int, default=8090)
