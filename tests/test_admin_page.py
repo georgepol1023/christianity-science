@@ -80,7 +80,7 @@ class PageServer:
         s.bind(("127.0.0.1", 0))
         cls.port = s.getsockname()[1]
         s.close()
-        env = dict(os.environ, CS_PRIVATE_DIR=cls.private)
+        env = dict(os.environ, CS_PRIVATE_DIR=cls.private, CS_SHOW_ERRORS="1")   # any PHP warning fails a test
         cls.php = subprocess.Popen([PHP, "-d", "post_max_size=2M", "-S", "127.0.0.1:%d" % cls.port, "-t", cls.site],
                                    env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         for _ in range(50):

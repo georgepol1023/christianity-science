@@ -335,8 +335,9 @@ function cs_valid_date(string $d): bool
 
 function cs_clean_text($s, int $longest = 200): ?string
 {
-    $s = trim(preg_replace('/\s+/u', ' ', (string)$s) ?? '');
-    if (mb_strlen($s) > $longest || preg_match('/[\x00-\x1f<>]/', $s)) {
+    $s = trim(preg_replace('/\s+/u', ' ', (string)$s) ?? '');              // null (→ '') if not valid UTF-8
+    $letters = (int)preg_match_all('/./su', $s);                            // no mbstring needed
+    if ($letters > $longest || preg_match('/[\x00-\x1f<>]/', $s)) {
         return null;
     }
     return $s;
@@ -388,7 +389,7 @@ function cs_pending(): array
 {
     $out = [];
     foreach (['inbox' => 'waiting', 'processing' => 'publishing'] as $dir => $state) {
-        foreach ((array)@scandir(cs_private() . '/' . $dir) as $id) {
+        foreach (@scandir(cs_private() . '/' . $dir) ?: [] as $id) {
             $f = cs_private() . "/$dir/$id/request.json";
             if ($id === '' || $id[0] === '.' || !is_file($f)) {
                 continue;
@@ -435,9 +436,9 @@ function cs_staging(string $id): string
 
 function cs_clear_old_staging(): void
 {
-    foreach ((array)@glob(cs_inbox() . '/.staging/*', GLOB_ONLYDIR) as $d) {
+    foreach (glob(cs_inbox() . '/.staging/*', GLOB_ONLYDIR) ?: [] as $d) {
         if (filemtime($d) < time() - 86400) {
-            foreach ((array)glob("$d/*") as $f) {
+            foreach (glob("$d/*") ?: [] as $f) {
                 @unlink($f);
             }
             @rmdir($d);

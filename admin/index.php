@@ -6,6 +6,11 @@
 declare(strict_types=1);
 require __DIR__ . '/lib.php';
 
+// warnings go to the server's log, never into the page's answers (the tests turn them back on: CS_SHOW_ERRORS)
+ini_set('display_errors', getenv('CS_SHOW_ERRORS') ? '1' : '0');
+ini_set('log_errors', '1');
+error_reporting(E_ALL);
+
 header('X-Robots-Tag: noindex, nofollow');
 header('Cache-Control: no-store');
 header('X-Frame-Options: DENY');
@@ -188,7 +193,7 @@ if ($action === 'finish' && $method === 'POST') {
 if ($action === 'cancel' && $method === 'POST') {
     $id = (string)(cs_input()['id'] ?? '');
     $m = cs_meta($id);
-    foreach ((array)glob(cs_staging($id) . '/*') as $f) @unlink($f);
+    foreach (glob(cs_staging($id) . '/*') ?: [] as $f) @unlink($f);
     @rmdir(cs_staging($id));
     cs_json(['ok' => true]);
 }

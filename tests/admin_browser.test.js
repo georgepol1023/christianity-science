@@ -62,7 +62,7 @@ async function startServer(env) {
     "['name' => 'Μαρία', 'email' => '', 'password' => 'pbkdf2-sha256$600000$" + salt.toString("base64") + "$" +
     hash.toString("base64") + "', 'totp' => '" + TOTP + "']]];\n");
   const port = await freePort();
-  const php = spawn("php", ["-S", "127.0.0.1:" + port, "-t", site], { env: { ...process.env, CS_PRIVATE_DIR: priv, ...env }, stdio: "ignore" });
+  const php = spawn("php", ["-S", "127.0.0.1:" + port, "-t", site], { env: { ...process.env, CS_PRIVATE_DIR: priv, CS_SHOW_ERRORS: "1", ...env }, stdio: "ignore" });
   for (let i = 0; i < 50; i++) {
     const up = await new Promise((ok) => { const c = net.connect(port, "127.0.0.1", () => { c.end(); ok(true); }).on("error", () => ok(false)); });
     if (up) break;
