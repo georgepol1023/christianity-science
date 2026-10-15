@@ -21,10 +21,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install ffmpeg
+      - name: Install ffmpeg, and an FTP server for the tests
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q ffmpeg
+          pip install -q pyftpdlib pyopenssl
       - name: PHP syntax of the upload page
         run: |
           php -v

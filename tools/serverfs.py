@@ -14,6 +14,8 @@ Environment variables for FtpServer (GitHub secrets in the workflows):
   FTP_SITE_DIR      e.g. /domains/christianity-science.gr/public_html
   FTP_PRIVATE_DIR   e.g. /domains/christianity-science.gr/cs-admin
   FTP_TLS           1 (default) = FTP over TLS; 0 = plain FTP (only if the host offers nothing else)
+  FTP_PORT          21 (default)
+  FTP_TLS_CAFILE    only for tests: a certificate to trust besides the usual ones
 Only the Python standard library is used, so these tools keep working for years without updates.
 """
 import ftplib, io, os, posixpath, shutil, ssl, time
@@ -32,7 +34,10 @@ def connect(local=None):
                          "FTP_PRIVATE_DIR are needed (see docs/SETUP.md).")
     return FtpServer(os.environ["FTP_HOST"], os.environ["FTP_USER"], os.environ["FTP_PASSWORD"],
                      os.environ["FTP_SITE_DIR"], os.environ["FTP_PRIVATE_DIR"],
-                     os.environ.get("FTP_TLS", "1") != "0")
+                     os.environ.get("FTP_TLS", "1") != "0", int(os.environ.get("FTP_PORT") or 21))
+
+
+ANSWER = (ftplib.error_perm, ftplib.error_temp)    # the server said no (a file or folder problem, not the connection)
 
 
 class ServerError(Exception):
@@ -132,28 +137,37 @@ class _TLS(ftplib.FTP_TLS):
 
 
 class FtpServer:
-    def __init__(self, host, user, password, site_dir, private_dir, tls=True):
-        self.args = (host, user, password, tls)
-        self.roots = {"site": site_dir.rstrip("/"), "private": private_dir.rstrip("/")}
+    def __init__(self, host, user, password, site_dir, private_dir, tls=True, port=21):
+        self.args = (host, user, password, tls, port)
+        self.roots = {"site": site_dir.rstrip("/") or "/", "private": private_dir.rstrip("/") or "/"}
+        self.known_dirs = set()                         # folders known to exist (fewer questions to the server)
         self.ftp = None
         self._connect()
 
     def _connect(self):
-        host, user, password, tls = self.args
+        host, user, password, tls, port = self.args
         for attempt in range(3):
             try:
                 if tls:
-                    ftp = _TLS(host, timeout=120, context=ssl.create_default_context())
+                    ftp = _TLS(timeout=120, context=ssl.create_default_context(cafile=os.environ.get("FTP_TLS_CAFILE")))
+                    ftp.connect(host, port)
+                    try:
+                        ftp.auth()
+                    except ftplib.error_perm as ex:
+                        raise ServerError("the server does not offer FTP over TLS (%s)" % ex)
                     ftp.login(user, password)
                     ftp.prot_p()
                 else:
-                    ftp = ftplib.FTP(host, timeout=120)
+                    ftp = ftplib.FTP(timeout=120)
+                    ftp.connect(host, port)
                     ftp.login(user, password)
                 ftp.set_pasv(True)
                 self.ftp = ftp
                 return
             except ftplib.error_perm as ex:
                 raise SystemExit("The server refused the FTP login: %s" % ex)
+            except ssl.SSLCertVerificationError as ex:      # will not change by trying again
+                raise ServerError("the server's certificate is not for %s (%s)" % (host, ex.verify_message))
             except (OSError, ftplib.Error) as ex:
                 if attempt == 2:
                     raise ServerError("could not connect to %s: %s" % (host, ex))
@@ -167,6 +181,8 @@ class FtpServer:
         try:
             return fn()
         except (OSError, EOFError, ftplib.error_temp) as ex:
+            if isinstance(ex, ftplib.error_temp) and not str(ex).startswith("421"):
+                raise                                  # an answer about the file, not a lost connection
             try:
                 self.ftp.close()
             except Exception:
@@ -174,89 +190,99 @@ class FtpServer:
             self._connect()
             try:
                 return fn()
-            except (OSError, EOFError, ftplib.error_temp) as ex2:
+            except (OSError, EOFError) as ex2:
                 raise ServerError(str(ex2)) from ex
+
+    def _dir_exists(self, d):
+        """Whether d is a folder: by trying to enter it (works on every server, whatever its error codes)."""
+        def go():
+            try:
+                self.ftp.cwd(d)
+            except (ftplib.error_perm, ftplib.error_temp):
+                return False
+            self.ftp.cwd("/")
+            return True
+        return self._do(go)
 
     def list(self, root, path):
         d = self._p(root, path)
-        try:
-            entries = list(self._do(lambda: list(self.ftp.mlsd(d, ["type", "size"]))))
-        except ftplib.error_perm as ex:
-            if str(ex).startswith("550"):
-                return {}
-            if not str(ex).startswith("500") and not str(ex).startswith("502"):
-                raise ServerError("%s: %s" % (d, ex))
-            return self._list_plain(d)
-        out = {}
-        for name, facts in entries:
-            if name in (".", "..") or facts.get("type") in ("cdir", "pdir"):
-                continue
-            out[name] = "dir" if facts.get("type") == "dir" else int(facts.get("size", 0))
-        return out
+        if not getattr(self, "no_mlsd", False):
+            try:
+                entries = self._do(lambda: list(self.ftp.mlsd(d, ["type", "size"])))
+            except (ftplib.error_perm, ftplib.error_temp) as ex:
+                # servers answer "no such folder" and "MLSD not supported" with various codes: find out which
+                if not self._dir_exists(d):
+                    return {}
+                self.no_mlsd = True
+            else:
+                out = {}
+                for name, facts in entries:
+                    if name in (".", "..") or facts.get("type") in ("cdir", "pdir"):
+                        continue
+                    out[name] = "dir" if facts.get("type") == "dir" else int(facts.get("size", 0))
+                return out
+        if not self._dir_exists(d):
+            return {}
+        return self._list_plain(d)
 
     def _list_plain(self, d):
-        """For servers without MLSD: names, then ask each one's size (a folder has none)."""
+        """For servers without MLSD: the names, then each one's size (a folder has none)."""
         try:
-            names = [posixpath.basename(n) for n in self._do(lambda: self.ftp.nlst(d))]
-        except ftplib.error_perm:
-            return {}
+            names = [posixpath.basename(n.rstrip("/")) for n in self._do(lambda: self.ftp.nlst(d))]
+        except (ftplib.error_perm, ftplib.error_temp):
+            return {}                                  # some servers answer an empty folder with an error
         out = {}
         for n in names:
-            if n in (".", ".."):
+            if n in (".", "..", ""):
                 continue
-            s = self.size_abs(posixpath.join(d, n))
-            out[n] = "dir" if s is None else s
+            p = posixpath.join(d, n)
+            out[n] = "dir" if self._dir_exists(p) else (self.size_abs(p) or 0)
         return out
 
     def size_abs(self, p):
         try:
             return self._do(lambda: (self.ftp.voidcmd("TYPE I"), self.ftp.size(p))[1])
-        except ftplib.error_perm:
+        except (ftplib.error_perm, ftplib.error_temp):
             return None
 
     def size(self, root, path):
         return self.size_abs(self._p(root, path))
 
     def is_dir(self, root, path):
-        p = self._p(root, path)
-        parent, name = posixpath.split(p)
-        try:
-            for n, facts in self._do(lambda: list(self.ftp.mlsd(parent, ["type"]))):
-                if n == name:
-                    return facts.get("type") == "dir"
-            return False
-        except ftplib.error_perm:
-            try:
-                here = self.ftp.pwd()
-                self.ftp.cwd(p)
-                self.ftp.cwd(here)
-                return True
-            except ftplib.error_perm:
-                return False
+        return self._dir_exists(self._p(root, path))
 
     def mtime(self, root, path):
         try:
             r = self._do(lambda: self.ftp.sendcmd("MDTM " + self._p(root, path)))
             t = time.strptime(r.split()[1][:14], "%Y%m%d%H%M%S")
             return time.mktime(t) - time.timezone
-        except (ftplib.error_perm, IndexError, ValueError):
+        except ANSWER + (IndexError, ValueError):
             return None
 
     def mkdirs(self, root, path):
-        cur = self.roots[root]
-        for part in [p for p in path.split("/") if p]:
+        """Make the folder and any missing folder above it, the root included."""
+        full = self._p(root, path)
+        cur = "/" if full.startswith("/") else ""
+        for part in [p for p in full.split("/") if p]:
             cur = posixpath.join(cur, part)
+            if cur in self.known_dirs:
+                continue
             try:
                 self._do(lambda: self.ftp.mkd(cur))
-            except ftplib.error_perm as ex:
-                if not str(ex).startswith("550") and not str(ex).startswith("521"):
+            except ANSWER as ex:                        # often just "it exists" (each server says it differently)
+                if not self._dir_exists(cur):
                     raise ServerError("could not make folder %s: %s" % (cur, ex))
+            self.known_dirs.add(cur)
+
+    def _forget(self, p):
+        """A folder was moved or removed: forget it, and everything in it, as existing."""
+        self.known_dirs = {d for d in self.known_dirs if d != p and not d.startswith(p.rstrip("/") + "/")}
 
     def read(self, root, path):
         buf = io.BytesIO()
         try:
             self._do(lambda: (buf.seek(0), buf.truncate(), self.ftp.retrbinary("RETR " + self._p(root, path), buf.write)))
-        except ftplib.error_perm:
+        except ANSWER:
             return None
         return buf.getvalue()
 
@@ -270,7 +296,7 @@ class FtpServer:
                 src.seek(0)
                 self.ftp.storbinary("STOR " + tmp, src, blocksize=256 * 1024)
                 break
-            except (OSError, EOFError, ftplib.error_temp) as ex:
+            except (OSError, EOFError) as ex:
                 if attempt == 2:
                     raise ServerError("upload of %s failed: %s" % (path, ex))
                 try:
@@ -279,7 +305,7 @@ class FtpServer:
                     pass
                 time.sleep(5 * (attempt + 1))
                 self._connect()
-            except ftplib.error_perm as ex:
+            except ANSWER as ex:
                 raise ServerError("upload of %s refused: %s" % (path, ex))
         got = self.size_abs(tmp)
         if got is not None and got != size:
@@ -289,15 +315,15 @@ class FtpServer:
     def _replace(self, tmp, p):
         try:
             self._do(lambda: self.ftp.rename(tmp, p))
-        except ftplib.error_perm:
+        except ANSWER:
             # some servers will not rename over an existing file: remove it, then rename
             try:
                 self._do(lambda: self.ftp.delete(p))
-            except ftplib.error_perm:
+            except ANSWER:
                 pass
             try:
                 self._do(lambda: self.ftp.rename(tmp, p))
-            except ftplib.error_perm as ex:
+            except ANSWER as ex:
                 raise ServerError("could not put %s in place: %s" % (p, ex))
 
     def write(self, root, path, data):
@@ -312,21 +338,26 @@ class FtpServer:
         def get():
             with open(tmp, "wb") as f:
                 self.ftp.retrbinary("RETR " + self._p(root, path), f.write, 256 * 1024)
-        self._do(get)
+        try:
+            self._do(get)
+        except ANSWER as ex:
+            raise ServerError("could not download %s: %s" % (path, ex))
         os.replace(tmp, local_file)
 
     def rename(self, root, old, new):
         self.mkdirs(root, posixpath.dirname(new))
         try:
             self._do(lambda: self.ftp.rename(self._p(root, old), self._p(root, new)))
-        except ftplib.error_perm as ex:
+            self._forget(self._p(root, old))
+        except ANSWER as ex:
             raise ServerError("could not move %s to %s: %s" % (old, new, ex))
 
     def move(self, root_from, path_from, root_to, path_to):
         self.mkdirs(root_to, posixpath.dirname(path_to))
         try:
             self._do(lambda: self.ftp.rename(self._p(root_from, path_from), self._p(root_to, path_to)))
-        except ftplib.error_perm as ex:
+            self._forget(self._p(root_from, path_from))
+        except ANSWER as ex:
             raise ServerError("could not move %s: %s" % (path_from, ex))
 
     def remove(self, root, path):
@@ -334,14 +365,18 @@ class FtpServer:
         try:
             self._do(lambda: self.ftp.delete(p))
             return
-        except ftplib.error_perm:
-            pass
-        for name, kind in self.list(root, path).items():
-            self.remove(root, posixpath.join(path, name))
-        try:
-            self._do(lambda: self.ftp.rmd(p))
-        except ftplib.error_perm:
-            pass
+        except ANSWER:
+            pass                                        # a folder, or nothing there
+        if self._dir_exists(p):
+            for name, kind in self.list(root, path).items():
+                self.remove(root, posixpath.join(path, name))
+            try:
+                self._do(lambda: self.ftp.rmd(p))
+            except ANSWER as ex:
+                raise ServerError("could not remove folder %s: %s" % (path, ex))
+            self._forget(p)
+        elif self.size_abs(p) is not None:
+            raise ServerError("could not remove %s" % path)
 
     def close(self):
         try:

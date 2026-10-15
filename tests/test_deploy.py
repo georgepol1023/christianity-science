@@ -38,7 +38,10 @@ class DeployTest(unittest.TestCase):
             return f.read()
 
     def manifest(self):
-        return json.loads(self.get("private", deploy.MANIFEST))
+        return json.loads(self.srv.read("private", deploy.manifest_path(self.srv)))
+
+    def set_manifest(self, m):
+        self.srv.write("private", deploy.manifest_path(self.srv), json.dumps(m).encode())
 
     def run_deploy(self, **kw):
         return deploy.deploy(self.srv, root=ROOT, log=self.logs.append, **kw)
@@ -71,7 +74,7 @@ class DeployTest(unittest.TestCase):
         self.run_deploy()
         m = self.manifest()
         m["css/site.css"] = "0" * 64
-        self.srv.write("private", deploy.MANIFEST, json.dumps(m).encode())
+        self.set_manifest(m)
         up, rm = self.run_deploy()
         self.assertEqual(up, ["css/site.css"])
 
@@ -80,7 +83,7 @@ class DeployTest(unittest.TestCase):
         self.put("gone.html", b"a page an earlier deploy put here")
         m = self.manifest()
         m["gone.html"] = "1" * 64
-        self.srv.write("private", deploy.MANIFEST, json.dumps(m).encode())
+        self.set_manifest(m)
         up, rm = self.run_deploy()
         self.assertEqual(rm, ["gone.html"])
         self.assertIsNone(self.get("site", "gone.html"))
@@ -92,7 +95,7 @@ class DeployTest(unittest.TestCase):
         m = self.manifest()
         for i in range(deploy.MAX_REMOVALS + 1):
             m["ghost/%d.html" % i] = "2" * 64
-        self.srv.write("private", deploy.MANIFEST, json.dumps(m).encode())
+        self.set_manifest(m)
         with self.assertRaises(SystemExit):
             self.run_deploy()
         up, rm = self.run_deploy(allow_removals=True)
@@ -102,12 +105,22 @@ class DeployTest(unittest.TestCase):
         up, rm = self.run_deploy(dry_run=True)
         self.assertGreater(len(up), 100)
         self.assertEqual(self.get("site", "index.html"), b"old home page")
-        self.assertIsNone(self.get("private", deploy.MANIFEST))
+        self.assertIsNone(self.srv.read("private", deploy.manifest_path(self.srv)))
 
     def test_the_upload_page_needs_a_proper_secret_address(self):
         for bad in ("admin", "../x", "a/b", "with space"):
             with self.assertRaises(SystemExit):
                 self.run_deploy(admin_path=bad)
+
+    def test_the_test_folder_and_the_live_site_keep_separate_records(self):
+        live = self.srv.roots["site"]
+        self.srv.roots["site"] = live + "/new-site-test"
+        os.makedirs(self.srv.roots["site"])
+        self.run_deploy()
+        self.srv.roots["site"] = live
+        up, rm = self.run_deploy()               # going live: everything goes up, the old files are kept
+        self.assertGreater(len(up), 500)
+        self.assertEqual(self.get("private", "old-site", "index.html"), b"old home page")
 
     def test_moving_the_upload_page_removes_it_from_the_old_address(self):
         self.run_deploy(admin_path="first-place")

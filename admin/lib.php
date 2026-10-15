@@ -17,15 +17,31 @@ const CS_MAX_CHUNK = 8 * 1024 * 1024;       // uploads go in pieces, so the host
 const CS_IDLE = 4 * 3600;                   // signed out after 4 hours without use
 const CS_FAILS = 5;                          // wrong sign-ins allowed per 15 minutes (per address and per user)
 
+/** The private folder: CS_PRIVATE_DIR, or the first "cs-admin" with a config.php next to the site or above it. */
 function cs_private(): string
 {
+    static $dir = null;
+    if ($dir !== null) {
+        return $dir;
+    }
     $env = getenv('CS_PRIVATE_DIR');
-    return $env ? rtrim($env, '/') : dirname(rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/')) . '/cs-admin';
+    if ($env) {
+        return $dir = rtrim($env, '/');
+    }
+    $up = dirname(cs_site());
+    for ($i = 0; $i < 4; $i++) {               // the site may be in a test folder inside public_html
+        if (is_file("$up/cs-admin/config.php")) {
+            return $dir = "$up/cs-admin";
+        }
+        $up = dirname($up);
+    }
+    return $dir = dirname(cs_site()) . '/cs-admin';
 }
 
+/** The site's folder: the page lives in <site>/<secret address>/. */
 function cs_site(): string
 {
-    return rtrim((string)$_SERVER['DOCUMENT_ROOT'], '/');
+    return dirname(__DIR__);
 }
 
 function cs_base(): string

@@ -234,6 +234,15 @@ class UploadPageTest(unittest.TestCase):
         st, r = b.api("finish", {"id": ident})
         self.assertEqual(st, 200, r)
 
+    def test_a_piece_too_big_for_the_server_is_answered_413(self):
+        b = self.signed_in(user="nikos", password="another long password", code="")
+        data = self.mp3(970)
+        big = data + b"\0" * (3 * 1024 * 1024)          # more than this server's post_max_size (2M)
+        st, r = b.api("start", {"date": "2026-11-19", "title": "Μεγάλο", "tags": [], "files": [{"name": "a.mp3", "size": len(big)}]})
+        self.assertLessEqual(r["chunk"], 2 * 1024 * 1024)
+        st, r = b.api("piece", big, query="&id=%s&n=1&offset=0" % r["id"], raw=True)
+        self.assertEqual(st, 413)
+
     def test_settings_and_corrections_go_to_the_inbox(self):
         b = self.signed_in()
         st, r = b.api("settings", {"youtube": "not a link"})

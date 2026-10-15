@@ -303,6 +303,90 @@ class InboxTest(unittest.TestCase):
         self.srv.upload = real
         self.assertNotIn('ep("2026-10-15"', self.js())
 
+    def test_a_failure_after_uploading_leaves_the_server_as_it_was(self):
+        ident = self.new(freqs=(760, 761))
+        real = self.box.change_site
+
+        def broken(*a):
+            raise serverfs.ServerError("git push failed")
+        self.box.change_site = broken
+        self.assertEqual(self.box.run(), 1)
+        self.assertEqual(self.result(ident)["status"], "retrying")
+        self.assertEqual(self.site_files("mp3/broadcasts/Season_20/2026_10_15"), [])
+        self.box.change_site = real                # the next run succeeds
+        self.box.run()
+        self.assertEqual(self.result(ident)["status"], "published")
+        self.assertEqual(len(self.site_files("mp3/broadcasts/Season_20/2026_10_15")), 3)
+
+    def test_a_failed_replacement_puts_the_old_recordings_back(self):
+        self.new(freqs=(770, 771))
+        self.box.run()
+        before = self.site_files("mp3/broadcasts/Season_20/2026_10_15")
+        ident = self.new(freqs=(772,), replace=True)
+
+        def broken(*a):
+            raise serverfs.ServerError("git push failed")
+        self.box.change_site = broken
+        self.box.run()
+        self.assertEqual(self.site_files("mp3/broadcasts/Season_20/2026_10_15"), before)
+        self.assertEqual(self.result(ident)["status"], "retrying")
+
+    def test_a_rejection_while_publishing_removes_the_uploaded_files(self):
+        ident = self.new(freqs=(775,))
+
+        def someone_else_was_first(*a):
+            raise inbox.Reject("Η εκπομπή προστέθηκε στο μεταξύ.")
+        self.box.change_site = someone_else_was_first
+        self.box.run()
+        self.assertEqual(self.result(ident)["status"], "rejected")
+        self.assertEqual(self.site_files("mp3/broadcasts/Season_20/2026_10_15"), [])
+
+    def test_a_published_request_is_not_processed_again(self):
+        ident = self.new(freqs=(780,))
+        self.box.run()
+        # as if filing it away had failed: back in processing/, with its result already written
+        self.srv.rename("private", "done/" + ident, "processing/" + ident)
+        self.srv.write("private", "processing/%s/claimed.json" % ident, json.dumps({"time": 0}).encode())
+        self.box.run()
+        self.assertEqual(self.result(ident)["status"], "published")
+        self.assertTrue(os.path.isdir(os.path.join(self.tmp, "server", "private", "done", ident)))
+        self.assertEqual(self.js().count('ep("2026-10-15"'), 1)
+
+    def test_a_broken_suggestion_service_never_stops_publishing(self):
+        class Broken:
+            class APIConnectionError(Exception): pass
+            class APIStatusError(Exception): pass
+            class Anthropic:
+                def __init__(self, **kw):
+                    raise TypeError("unexpected keyword argument 'fallbacks'")
+        sys.modules["anthropic"] = Broken
+        os.environ["ANTHROPIC_API_KEY"] = "test"
+        try:
+            ident = self.submit({"date": "2026-10-15", "title": "Χωρίς προτάσεις"}, freqs=(790,))
+            self.box.run()
+            self.assertEqual(self.result(ident)["status"], "published")
+        finally:
+            del sys.modules["anthropic"]
+            del os.environ["ANTHROPIC_API_KEY"]
+
+    def test_keeps_the_local_copy_of_the_archive(self):
+        self.box.keep_local = True
+        self.new(freqs=(795, 796))
+        self.box.run()
+        here = os.path.join(self.root, "mp3", "broadcasts", "Season_20", "2026_10_15")
+        self.assertEqual(len(os.listdir(here)), 3)
+        self.new(freqs=(797,), replace=True)
+        self.box.run()
+        self.assertEqual(sorted(os.listdir(here)), ["2026_10_15_(1)_I_agia_grafi_kai.mp3"])
+
+    def test_no_broadcasts_while_publishing_points_at_the_test_folder(self):
+        self.srv.roots["site"] = os.path.join(self.tmp, "server", "site", "new-site-test")
+        ident = self.new(freqs=(799,))
+        self.box.run()
+        self.assertEqual(self.result(ident)["status"], "rejected")
+        self.assertIn("δοκιμαστική", self.result(ident)["message"])
+        self.assertNotIn('ep("2026-10-15"', self.js())
+
     def test_a_request_left_half_done_goes_back_to_the_inbox(self):
         ident = self.new(freqs=(740,))
         self.srv.rename("private", "inbox/" + ident, "processing/" + ident)
@@ -445,6 +529,14 @@ class GitRaceTest(unittest.TestCase):
         self.assertIn('ep("2026-10-29"', js)
         self.assertIn('ep("2026-10-15"', js)
         self.assertLess(js.index('ep("2026-10-29"'), js.index('ep("2026-10-15"'))
+
+    def test_a_failed_build_leaves_the_working_copy_clean(self):
+        self.request("2026-10-15", 820)
+        box = inbox.Inbox(self.srv, self.a, push=True, build=True, keep_local=False, log=lambda *a: None)
+        box.run()                                  # this copy has no tools/build_all.py: the build fails
+        status = subprocess.run(["git", "status", "--porcelain"], cwd=self.a, capture_output=True).stdout
+        self.assertEqual(status, b"")
+        self.assertTrue(os.listdir(os.path.join(self.tmp, "server", "private", "inbox")))   # waiting for a retry
 
     def test_a_copy_with_unpushed_work_is_not_used(self):
         open(os.path.join(self.a, "note.txt"), "w").write("my own work")

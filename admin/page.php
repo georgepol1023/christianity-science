@@ -178,7 +178,8 @@ progress { width:100%; height:12px; }
       else { init.body = JSON.stringify(body); init.headers["Content-Type"] = "application/json"; }
     }
     return fetch(url, init).then(function (r) {
-      return r.json().catch(function () { return { ok: false, error: "Ο server δεν απάντησε σωστά (" + r.status + ")." }; });
+      return r.json().then(function (j) { j.status = r.status; return j; },
+        function () { return { ok: false, status: r.status, error: "Ο server δεν απάντησε σωστά (" + r.status + ")." }; });
     }, function () { return { ok: false, error: "Δεν υπάρχει σύνδεση με τον server.", network: true }; });
   }
   function show(el, text, kind) { el.textContent = text; el.className = "msg " + kind; el.hidden = !text; }
@@ -292,10 +293,15 @@ progress { width:100%; height:12px; }
   var sending = false;
   window.addEventListener("beforeunload", function (e) { if (sending) { e.preventDefault(); e.returnValue = ""; } });
 
+  var chunk = 0;
   function sendPiece(id, n, file, offset, size, tries) {
-    var blob = file.slice(offset, offset + size);
+    var blob = file.slice(offset, offset + chunk);
     return call("piece", blob, { raw: true, query: "&id=" + id + "&n=" + n + "&offset=" + offset }).then(function (r) {
       if (r.ok) return r.size;
+      if (r.status === 413 && chunk > 256 * 1024) {        // the server takes smaller pieces: halve and go on
+        chunk = Math.max(256 * 1024, Math.floor(chunk / 2));
+        return sendPiece(id, n, file, offset, size, tries);
+      }
       if (r.network && tries < 6) {
         return new Promise(function (res) { setTimeout(res, 2000 * (tries + 1)); })
           .then(function () { return call("piece", new Blob([]), { raw: true, query: "&id=" + id + "&n=" + n + "&offset=-1" }); })
@@ -311,7 +317,7 @@ progress { width:100%; height:12px; }
     if (!title) return show($("nMsg"), "Γράψτε τον τίτλο της εκπομπής.", "bad");
     if (!files.length) return show($("nMsg"), "Προσθέστε τα αρχεία mp3.", "bad");
     if (S.byDate[d] && !$("nReplace").checked) return show($("nMsg"), "Η εκπομπή αυτής της ημερομηνίας υπάρχει ήδη. Επιλέξτε «Αντικατάσταση» αν θέλετε να την αλλάξετε.", "bad");
-    var total = files.reduce(function (a, f) { return a + f.size; }, 0), done = 0, id = null, chunk;
+    var total = files.reduce(function (a, f) { return a + f.size; }, 0), done = 0, id = null;
     sending = true; $("send").disabled = true; show($("nMsg"), "", "ok");
     $("progressBox").hidden = false; $("progress").value = 0; $("progressText").textContent = "Ξεκινά…";
     call("start", { date: d, title: title, title_en: $("nTitleEn").value.trim(), tags: picked($("nTags")), replace: $("nReplace").checked,

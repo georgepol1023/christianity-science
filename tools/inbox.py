@@ -56,6 +56,7 @@ MAX_TRIES = 4
 KEEP_DONE_DAYS = 30
 STALE_HOURS = 3                  # a request "processing" for longer than this was left by a run that died
 SITE_URL = "https://www.christianity-science.gr/"
+TEST_FOLDER = "new-site-test"    # the trial copy of the site (tools/setup_server.py): no broadcasts go there
 
 
 class Reject(Exception):
@@ -337,6 +338,8 @@ def suggest(title, topics, examples):
         print("  Claude: error %s (%s); going on without a suggestion" % (ex.status_code, ex.message))
     except (ValueError, Reject) as ex:
         print("  Claude: unusable answer (%s); going on without a suggestion" % ex)
+    except Exception as ex:                        # e.g. an older library: the suggestion is never required
+        print("  Claude: %s (%s); going on without a suggestion" % (type(ex).__name__, ex))
     return None
 
 
@@ -372,6 +375,11 @@ class Git:
             self.run("fetch", "origin", self.branch)
             self.run("reset", "--hard", "origin/" + self.branch)
 
+    def discard(self):
+        if self.push:
+            self.run("reset", "-q", "--hard", "origin/" + self.branch, check=False)
+            self.run("clean", "-qfd", "--", "js", "data", "en", check=False)
+
     def commit_push(self, message):
         """True if pushed (or nothing to push); False if someone else pushed first (start again)."""
         if not self.push:
@@ -399,14 +407,19 @@ class Inbox:
     def change_site(self, message, apply):
         for attempt in range(3):
             self.git.refresh()
-            summary = apply(load_site(self.root))
-            if self.build:
-                r = subprocess.run([sys.executable, os.path.join(self.root, "tools", "build_all.py")],
-                                   cwd=self.root, capture_output=True)
-                if r.returncode:
-                    raise RuntimeError("tools/build_all.py failed: " + r.stdout.decode("utf-8", "replace")[-800:]
-                                       + r.stderr.decode("utf-8", "replace")[-800:])
-            if self.git.commit_push(message):
+            try:
+                summary = apply(load_site(self.root))
+                if self.build:
+                    r = subprocess.run([sys.executable, os.path.join(self.root, "tools", "build_all.py")],
+                                       cwd=self.root, capture_output=True)
+                    if r.returncode:
+                        raise RuntimeError("tools/build_all.py failed: " + r.stdout.decode("utf-8", "replace")[-800:]
+                                           + r.stderr.decode("utf-8", "replace")[-800:])
+                pushed = self.git.commit_push(message)
+            except BaseException:
+                self.git.discard()                # never leave half-made changes in the working copy
+                raise
+            if pushed:
                 return summary
             self.log("  someone else changed the site meanwhile; starting again from the newest version")
         raise serverfs.ServerError("could not push the change (the site kept changing)")
@@ -421,6 +434,9 @@ class Inbox:
 
     # -- a new broadcast (or a replacement)
     def broadcast(self, req, folder, work):
+        if posixpath.basename(self.srv.roots["site"].replace("\\", "/").rstrip("/")) == TEST_FOLDER:
+            raise Reject("Η σελίδα είναι ακόμα σε δοκιμαστική λειτουργία· οι εκπομπές θα δημοσιεύονται μετά τη "
+                         "μετάβαση της ιστοσελίδας (python tools/setup_server.py --go-live).")
         site = load_site(self.root)
         date = req.get("date", "")
         if not valid_date(date):
@@ -495,20 +511,28 @@ class Inbox:
                 raise Reject("Στον server υπάρχει ήδη φάκελος για την εκπομπή της %s με άλλα αρχεία, χωρίς να "
                              "υπάρχει η εκπομπή στην ιστοσελίδα. Ελέγξτε τον φάκελο %s (π.χ. από το File Manager) "
                              "πριν τη στείλετε ξανά." % (greek_date(date), mp3_dir))
+        put = []                                  # the files this run put on the server
+
+        def undo():
+            """Leave the server as it was: our new files out, the old recordings (if replacing) back."""
+            try:
+                for name in put:
+                    self.srv.remove("site", mp3_dir + "/" + name)
+                if set_aside:
+                    self.srv.remove("site", mp3_dir)
+                    self.srv.move("private", set_aside, "site", mp3_dir)
+            except Exception as ex:               # reported; the request itself is retried or reported anyway
+                self.log("  could not undo the upload (%s); check %s on the server" % (ex, mp3_dir))
+
         try:
             for path, name, m in uploads:
                 if there.get(name) != m[0]:
                     self.log("  uploading %s (%.1f MB)" % (name, m[0] / 1e6))
                     self.srv.upload(path, "site", mp3_dir + "/" + name)
+                    put.append(name)
         except Exception:
-            if set_aside:                         # put the old recordings back, so the site keeps working
-                self.srv.remove("site", mp3_dir)
-                self.srv.move("private", set_aside, "site", mp3_dir)
+            undo()
             raise
-        if self.keep_local:
-            os.makedirs(os.path.join(self.root, mp3_dir), exist_ok=True)
-            for path, name, m in uploads:
-                shutil.copyfile(path, os.path.join(self.root, mp3_dir, name))
 
         # English title and topics: the admin's, else Claude's suggestion
         if not title_en or not tags:
@@ -535,7 +559,18 @@ class Inbox:
             return None
 
         verb = "Αντικατάσταση" if old else "Νέα εκπομπή"
-        self.change_site("%s %s: %s (from the upload page)" % ("Replace broadcast" if old else "Broadcast", date, title), apply)
+        try:
+            self.change_site("%s %s: %s (from the upload page)" % ("Replace broadcast" if old else "Broadcast", date, title), apply)
+        except Exception:
+            undo()
+            raise
+        if self.keep_local:                       # the second copy of the archive, on this computer
+            here = os.path.join(self.root, mp3_dir)
+            if old and os.path.isdir(here):
+                shutil.rmtree(here)
+            os.makedirs(here, exist_ok=True)
+            for path, name, m in uploads:
+                shutil.copyfile(path, os.path.join(here, name))
         notes = []
         if not title_en:
             notes.append("δεν έχει αγγλικό τίτλο (στα αγγλικά φαίνεται ο ελληνικός)")
@@ -634,6 +669,12 @@ class Inbox:
             self.log("%s: taken by another run" % ident)
             return True
         folder = "processing/" + ident
+        done = json.loads(self.srv.read("private", "results/%s.json" % ident) or b"{}")
+        if done.get("status") == "published":     # published already; only filing it away had failed
+            self.log("%s: already published; filing it away" % ident)
+            self.srv.remove("private", folder + "/claimed.json")
+            self.srv.rename("private", folder, "done/" + ident)
+            return True
         self.srv.write("private", folder + "/claimed.json",
                        json.dumps({"time": time.time(), "by": socket.gethostname()}).encode())
         raw = self.srv.read("private", folder + "/request.json")
