@@ -191,6 +191,12 @@ class UploadPageTest(unittest.TestCase):
         srv = serverfs.connect(os.path.join(self.tmp, "server"))
         box = inbox.Inbox(srv, self.repo, push=False, build=False, keep_local=False, log=lambda *a: None)
         self.assertEqual(box.run(), 0)
+        outcomes = []
+        for f in sorted(os.listdir(os.path.join(self.private, "results"))):
+            with open(os.path.join(self.private, "results", f), encoding="utf-8") as fh:
+                r = json.load(fh)
+            outcomes.append("%s %s %s: %s" % (r.get("type"), r.get("date"), r["status"], r["message"]))
+        self.assertTrue(any(o.startswith("broadcast 2026-10-15 published") for o in outcomes), "\n".join(outcomes))
         for rel in ("js/broadcasts.js", "js/broadcasts-en.js"):
             shutil.copyfile(os.path.join(self.repo, rel), os.path.join(self.site, rel))
         self.assertEqual(sorted(os.listdir(os.path.join(self.site, "mp3", "broadcasts", "Season_20", "2026_10_15"))),
