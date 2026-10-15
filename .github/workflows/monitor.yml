@@ -1,0 +1,27 @@
+# Every Monday: is the live site working, and does every mp3 in the podcast feed download?
+# A failed run makes GitHub email the repository's owner. Set the repository variable LIVE_URL
+# (Settings → Secrets and variables → Actions → Variables) to the site's address once it is live.
+name: Check the live site
+
+on:
+  schedule:
+    - cron: "40 6 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Pages, pictures, PDFs and the podcast feed on the live site
+        env:
+          LIVE_URL: ${{ vars.LIVE_URL }}
+        run: |
+          if [ -z "$LIVE_URL" ]; then echo "LIVE_URL is not set yet; nothing to check."; exit 0; fi
+          node tests/live-check.js "$LIVE_URL"
+      - name: Every mp3 of the podcast feed answers with the right size
+        run: python tools/podcast.py --check

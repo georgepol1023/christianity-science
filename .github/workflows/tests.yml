@@ -1,0 +1,36 @@
+# The publishing tools' tests (inbox, deploy, upload page) on every push that touches them.
+name: Publishing tests
+
+on:
+  push:
+    paths:
+      - "tools/**"
+      - "admin/**"
+      - "tests/test_*.py"
+      - ".github/workflows/**"
+      - ".htaccess"
+  pull_request: {}
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg
+      - name: PHP syntax of the upload page
+        run: |
+          php -v
+          for f in admin/*.php; do php -l "$f"; done
+      - name: Tests
+        run: |
+          git config --global user.name "Tests"
+          git config --global user.email "tests@example.invalid"
+          python -m unittest discover -s tests -p "test_*.py" -v

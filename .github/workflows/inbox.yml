@@ -1,0 +1,63 @@
+# Publishes what the upload page hands in (tools/inbox.py), then puts the changed pages on the server.
+# Started by the upload page right after a broadcast is sent, and every 6 hours as a safety net
+# (which also finishes any earlier deploy that did not complete).
+name: Publish from the upload page
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:              # one change to the site at a time (shared with the column and deploy workflows)
+  group: site-publish
+  cancel-in-progress: false
+
+env:
+  FTP_HOST: ${{ secrets.FTP_HOST }}
+  FTP_USER: ${{ secrets.FTP_USER }}
+  FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+  FTP_SITE_DIR: ${{ secrets.FTP_SITE_DIR }}
+  FTP_PRIVATE_DIR: ${{ secrets.FTP_PRIVATE_DIR }}
+  FTP_TLS: ${{ secrets.FTP_TLS }}
+  ADMIN_PATH: ${{ secrets.ADMIN_PATH }}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Anything waiting in the inbox?
+        id: look
+        run: python tools/inbox.py --count
+      - name: Install ffmpeg (and the Claude library, for suggested English titles and topics)
+        if: steps.look.outputs.waiting && steps.look.outputs.waiting != '0'
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg
+          pip install -q anthropic
+      - name: Publish
+        if: steps.look.outputs.waiting && steps.look.outputs.waiting != '0'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+        run: |
+          git config user.name "Upload page"
+          git config user.email "148995294+georgepol1023@users.noreply.github.com"
+          python tools/inbox.py
+      - name: Put the changed pages on the server
+        if: always() && steps.look.outcome == 'success'
+        run: |
+          git pull -q --ff-only origin "${GITHUB_REF_NAME}" || true
+          python tools/deploy.py

@@ -1,0 +1,39 @@
+# christianity-science.gr on the web server (Apache, webleaders). Kept in git; tools/deploy.py puts it there.
+# Everything here is optional for the site to work: each block only runs if its Apache module is present.
+
+ErrorDocument 404 /404.html
+Options -Indexes
+AddDefaultCharset UTF-8
+
+AddType audio/mpeg .mp3
+AddType text/calendar .ics
+AddType font/woff2 .woff2
+<Files "podcast.xml">
+  ForceType "application/rss+xml; charset=utf-8"
+</Files>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  # Nothing in the media, picture and data folders may ever run as a program
+  RewriteRule ^(mp3|files|pictures|fonts|data|css|js)/.*\.(php[0-9]?|phtml|phar|pl|py|cgi|sh)$ - [F,NC]
+  # Hidden files and folders (.git and the like), except /.well-known/ (certificates)
+  RewriteRule (^|/)\.(?!well-known/) - [F]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  # Styles and scripts carry a version stamp (?v=…), so browsers may keep them; pages are always fresh
+  <FilesMatch "\.(css|js|woff2)$">
+    Header set Cache-Control "public, max-age=31536000"
+  </FilesMatch>
+  <FilesMatch "\.(jpe?g|png|webp|gif|svg|ico)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  <FilesMatch "\.(mp3|pdf)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  <FilesMatch "\.(html?|xml|txt|ics|json)$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

@@ -1,6 +1,9 @@
 # Large media: kept on the web host, not in git (20 GB of mp3, ~200 MB of PDFs)
 mp3/
 files/
+# …but the English pages made from the pages in mp3/ belong to the site (tools/build_en.py)
+!en/mp3/
+en/mp3/**/*.mp3
 
 # Tooling
 node_modules/
