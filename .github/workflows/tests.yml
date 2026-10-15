@@ -30,6 +30,11 @@ jobs:
         run: |
           php -v
           for f in admin/*.php; do php -l "$f"; done
+      - name: FTP debug (temporary)
+        env:
+          CS_FTP_DEBUG: "1"
+        run: python -m unittest -v test_ftp.PlainFtpTest.test_inbox_over_ftp 2>&1 | tail -150 || true
+        working-directory: tests
       - name: Tests
         run: |
           git config --global user.name "Tests"

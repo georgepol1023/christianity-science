@@ -31,6 +31,9 @@ except ImportError:
     TLS_FTPHandler = None
 
 USER, PASSWORD = "deploy", "a long test password"
+if os.environ.get("CS_FTP_DEBUG"):           # the FTP server's own log, to find out why it hangs up
+    import logging
+    logging.basicConfig(level=logging.INFO, format="ftpd %(message)s")
 
 
 def self_signed(folder):
