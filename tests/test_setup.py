@@ -99,6 +99,9 @@ class FakeDirectAdmin(http.server.ThreadingHTTPServer):
             cmd = self.path.strip("/")
             if srv.fail:
                 body = "error=1&text=Error&details=" + urllib.parse.quote_plus(srv.fail)
+            elif cmd == "CMD_API_FTP" and form.get("action") == "create" and srv.authorizer is not None and \
+                    srv.authorizer.has_user("%s@%s" % (form["user"], form["domain"])):
+                body = "error=1&text=Error&details=" + urllib.parse.quote_plus("That FTP account already exists")
             elif cmd == "CMD_API_FTP" and form.get("action") == "create" and form["passwd"] == form["passwd2"]:
                 user = "%s@%s" % (form["user"], form["domain"])
                 if srv.authorizer is not None:
@@ -251,8 +254,10 @@ class FlowTest(unittest.TestCase):
 
     def setup(self, answers, gh):
         site_url = "http://127.0.0.1:%d/" % self.php_port if self.php else "http://127.0.0.1:%d/" % free_port()
+        self.mails = []
         return setup_server.Setup(con=Script(answers), runner=gh, ftp_port=self.ftp_port, site_url=site_url,
-                                  ftp_host="127.0.0.1", da_base=self.da_base)
+                                  ftp_host="127.0.0.1", da_base=self.da_base,
+                                  mailer=lambda settings, to: self.mails.append((settings["SMTP_USER"], to)))
 
     def first_time_answers(self):
         return [("new FTP account", "y"), ("DirectAdmin user", "admin"), ("DirectAdmin password", "da-pass"),
@@ -294,6 +299,11 @@ class FlowTest(unittest.TestCase):
         self.assertTrue(os.path.isfile(os.path.join(trial, "index.html")))
         self.assertTrue(os.path.isfile(os.path.join(trial, sec["ADMIN_PATH"], "index.php")))
         self.assertEqual(open(os.path.join(self.home, "public_html", "index.html")).read(), "the old site")
+        # a test email, and what the person must keep
+        self.assertEqual(self.mails, [("ekpompes@christianity-science.gr", "maria@example.com")])
+        self.assertIn("✓ a test email was sent", said)
+        self.assertIn("FTP account: publish@christianity-science.gr   password: " + sec["FTP_PASSWORD"], said)
+        self.assertIn("Mailbox: ekpompes@christianity-science.gr   password: " + sec["SMTP_PASSWORD"], said)
         # what the person is told
         self.assertIn("/new-site-test/" + sec["ADMIN_PATH"] + "/?k=" + cfg["device_key"], said)
         self.assertIn("--go-live", said)
@@ -319,6 +329,44 @@ class FlowTest(unittest.TestCase):
                 setup_server.check_online = real
         self.assertEqual(open(os.path.join(self.home, "cs-admin", "config.php"), encoding="utf-8").read(), before)
         self.assertIn("keeping them", "\n".join(s.con.said))
+
+    def test_running_it_again_when_the_ftp_account_exists(self):
+        self.test_first_time_setup_from_start_to_finish()
+        answers = [("new FTP account", "y"), ("DirectAdmin user", "admin"), ("DirectAdmin password", "da-pass"),
+                   ("FTP server", "127.0.0.1"), ("FTP user", ""), ("FTP password", self.ftp_password()), ("plain FTP", "y"),
+                   ("Send an email", "n"), ("Claude API key", "")]
+        s = self.setup(answers, FakeGh())
+        if not self.php:
+            setup_server.check_online, real = (lambda *a: []), setup_server.check_online
+        try:
+            self.assertTrue(s.first_time(), "\n".join(s.con.said))
+        finally:
+            if not self.php:
+                setup_server.check_online = real
+        self.assertIn("already exists", "\n".join(s.con.said))
+
+    def test_running_it_again_after_going_live_keeps_the_live_site(self):
+        self.test_first_time_setup_from_start_to_finish()
+        gh = FakeGh({"LIVE_URL": "https://www.christianity-science.gr/"})
+        answers = [("new FTP account", "n"), ("FTP server", "127.0.0.1"), ("FTP user", "publish@christianity-science.gr"),
+                   ("FTP password", self.ftp_password()), ("plain FTP", "y"), ("Send an email", "n"), ("Claude API key", "")]
+        s = self.setup(answers, gh)
+        trial = os.path.join(self.home, "public_html", "new-site-test")
+        shutil.rmtree(trial)
+        self.assertTrue(s.first_time(), "\n".join(s.con.said))
+        self.assertEqual(gh.secrets["FTP_SITE_DIR"], "/public_html")
+        self.assertFalse(os.path.exists(trial))                     # no trial deploy once live
+        self.assertEqual(open(os.path.join(self.home, "public_html", "index.html")).read(), "the old site")
+
+    def test_the_branch_without_the_upload_page_is_refused(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            s = setup_server.Setup(con=Script([]), runner=FakeGh(), root=tmp)
+            with self.assertRaises(Stop) as e:
+                s.first_time()
+            self.assertIn("publishing branch", str(e.exception))
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
     def ftp_password(self):
         return self.auth.user_table["publish@christianity-science.gr"]["pwd"]

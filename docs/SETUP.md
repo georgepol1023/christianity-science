@@ -28,86 +28,76 @@ domains/christianity-science.gr/
 The site stays plain files. If every automation stopped, the site would keep working exactly as it is.
 See "When something goes wrong" below.
 
-## 1. On webleaders (DirectAdmin, port 2222)
+## Setting it up: one command
 
-1. **Back up the old site.** In *System Info & Files → Create/Restore Backups*, make a full backup and
-   download it. Keep it.
-2. **Make the private folder.** In *File Manager*, next to `public_html` (not inside it), create
-   `cs-admin`. The full path is usually `/domains/christianity-science.gr/cs-admin`.
-3. **Make an FTP account for the robots.** In *FTP Management → Create FTP account*, create e.g.
-   `deploy@christianity-science.gr` with a long random password and **Domain** access, so that it
-   sees `public_html` and `cs-admin`. Note the paths it sees, e.g. `/domains/christianity-science.gr/public_html`.
-   - Check that it accepts **FTP over TLS** (most DirectAdmin servers do). If it truly does not, set the
-     secret `FTP_TLS` to `0` below.
-4. **PHP**: in *PHP Version Selector* (or *Domain Setup*), use PHP 8.1 or newer. 7.4 also works.
-5. **HTTPS**: under *SSL Certificates*, keep "Force SSL with https redirect" on.
-6. **Email (optional)**: create e.g. `ekpompes@christianity-science.gr`, for sending the "published ✓"
-   emails. Note its SMTP server, port (465) and password.
+You need the [GitHub CLI](https://cli.github.com/), signed in once with `gh auth login`, and your
+DirectAdmin user name and password.
 
-## 2. The upload page's settings file
+1. **Back up the old site** first. In DirectAdmin go to *System Info & Files → Create/Restore Backups*,
+   make a full backup and download it.
+2. **Run the setup** from this folder, on the publishing branch:
+   ```
+   python tools/setup_server.py
+   ```
+   It asks for your DirectAdmin login (used once, not stored), then your name, email and a password for
+   the upload page, and whether to send result emails. It then:
+   - makes an FTP account just for publishing (`publish@…`), and a mailbox for the emails (`ekpompes@…`);
+   - finds the site's folder and makes the private folder `cs-admin` next to it;
+   - makes the upload page's settings (with a code for your phone's authenticator app);
+   - sets all of GitHub's secrets;
+   - puts the new site into a **test folder**, `…/new-site-test/`, while the live site stays as it is;
+   - checks over the internet that the pages load and the upload page works, and sends you a test email.
 
-On your own computer:
+   At the end it prints the trial address and the **device link** for the upload page, plus the
+   passwords it made. Keep them in a password manager.
+3. **Look at the trial** in a browser, including the upload page (open the device link first). The mp3s
+   won't play there, because they are one level up. Sending a broadcast is refused in the trial, on
+   purpose.
+4. **Merge the branch** into `main` on GitHub. Then:
+   ```
+   git checkout main
+   git pull
+   python tools/setup_server.py --go-live
+   ```
+   It points publishing at the real site, switches the podcast feed to the site's own address and pushes.
+   GitHub then deploys the new site. The first deploy keeps every old-site file it replaces in
+   `cs-admin/old-site/`, and leaves `mp3/`, `files/` and old pages alone.
+5. **Spotify** (it needs your login): in Spotify for Creators, change the show's RSS address to
+   `https://www.christianity-science.gr/podcast.xml`. Keep Render running for a few weeks, then turn it off.
 
-```
-python tools/admin_user.py new --out config.php
-```
+To let someone else use the upload page later: `python tools/setup_server.py --add-person`.
+Running `python tools/setup_server.py` again is safe:
+- it keeps the existing users;
+- if the site is already live, it renews the settings without touching the site.
 
-It asks for the first admin's user name, name, email and a password of at least 12 characters. It
-prints a **secret for an authenticator app** (Google Authenticator, Microsoft Authenticator, 2FAS). Add it
-to the admin's phone. To add more people later, run `python tools/admin_user.py add config.php --out config.php`.
+If a step fails, the setup stops and says what to do. Running it again picks up from there.
 
-Upload `config.php` to **`cs-admin/config.php`** with the File Manager. Keep a copy in a password manager.
-**Never put it in git.**
+### By hand, if the setup cannot be used
 
-The tool also prints the **device link** (`…/<ADMIN_PATH>/?k=…`). Each computer or phone that will use the
-page must open it once. Without it, the page answers "not found", like an address that doesn't exist.
+1. In DirectAdmin, create:
+   - an FTP account with **Domain** access;
+   - the folder `cs-admin` next to `public_html`.
+2. Make the page's settings with `python tools/admin_user.py new --out config.php` and upload the file as
+   `cs-admin/config.php`.
+3. In GitHub, add these secrets (*Settings → Secrets and variables → Actions*):
 
-Optional: so the page can start publishing straight away (otherwise it starts within 6 hours):
-1. On GitHub, go to *Settings → Developer settings → Fine-grained tokens*.
-2. Create a token for this repository only, with **Actions: Read and write** and nothing else.
-3. Give that token when `admin_user.py` asks for it.
+| Secret | Example |
+|---|---|
+| `FTP_HOST`, `FTP_USER`, `FTP_PASSWORD` | the FTP account |
+| `FTP_SITE_DIR` | `/public_html` (or `/public_html/new-site-test` for a trial) |
+| `FTP_PRIVATE_DIR` | `/cs-admin` |
+| `ADMIN_PATH` | a folder name only you know, e.g. `diaxeirisi-x7k2m9q4ab` |
+| `FTP_TLS` | `0` only if the server has no FTP over TLS |
+| `ANTHROPIC_API_KEY` | optional: suggested English titles and topics |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_FROM`, `MAIL_TO` | optional: result emails |
 
-## 3. GitHub secrets
+4. On switch day:
+   - set `podcastSite` in `js/broadcasts.js` to `https://www.christianity-science.gr/`, and `podcastAudio` to `""`;
+   - run `python tools/build_all.py` and push;
+   - change the Spotify RSS address;
+   - set the repository variable `LIVE_URL`.
 
-In the repository, open *Settings → Secrets and variables → Actions → New repository secret*:
-
-| Secret | Example | Needed |
-|---|---|---|
-| `FTP_HOST` | `ftp.christianity-science.gr` (or the server's name) | yes |
-| `FTP_USER` | `deploy@christianity-science.gr` | yes |
-| `FTP_PASSWORD` | the FTP account's password | yes |
-| `FTP_SITE_DIR` | `/domains/christianity-science.gr/public_html` | yes |
-| `FTP_PRIVATE_DIR` | `/domains/christianity-science.gr/cs-admin` | yes |
-| `ADMIN_PATH` | a folder name only you know, e.g. `kx7-ekpompes-2026` | for the upload page |
-| `FTP_TLS` | `0` only if the server has no FTP over TLS | no |
-| `ANTHROPIC_API_KEY` | for suggested English titles and topics | no |
-| `SMTP_HOST` `SMTP_PORT` `SMTP_USER` `SMTP_PASSWORD` `MAIL_FROM` | the email account from step 1.6 | no |
-| `MAIL_TO` | your own address: you get a copy of every result | no |
-
-**Before the switch, try it in a test folder:**
-1. Set `FTP_SITE_DIR` to `/domains/christianity-science.gr/public_html/new-site-test`.
-2. Run *Actions → Deploy to the web server → Run workflow*.
-3. Look at `https://www.christianity-science.gr/new-site-test/`.
-
-The mp3s won't play there (they are one level up), but everything else can be checked, including the
-upload page at `…/new-site-test/<ADMIN_PATH>/`.
-
-## 4. Switch day
-
-1. In `js/broadcasts.js`, set `podcastSite` to `"https://www.christianity-science.gr/"` and `podcastAudio`
-   to `""`. Then run `python tools/build_all.py`, commit and push.
-2. Set `FTP_SITE_DIR` back to `…/public_html` and run *Deploy to the web server*. The first deploy:
-   - **sets aside every old-site file it replaces** in `cs-admin/old-site/`, so nothing is lost;
-   - leaves alone `mp3/`, `files/` and old pages the new site doesn't have, so old links keep working.
-3. **Spotify:** in Spotify for Creators, change the show's RSS address to
-   `https://www.christianity-science.gr/podcast.xml`. Keep the Render site running for a few weeks, so
-   anyone still reading the old feed address finds it, then turn Render off.
-4. Set the repository **variable** `LIVE_URL` to `https://www.christianity-science.gr/`. The weekly check
-   then watches the live site and emails you if anything breaks.
-5. Upload a test broadcast through the page, check it, then delete it by hand (see below), or simply
-   replace it with the real one.
-
-## 5. Make it last
+## Make it last
 
 - **Make the repository private** (*Settings → General → Danger zone*). The upload page's code and
   everything else then stops being public. There's a second benefit: GitHub turns off scheduled jobs in
@@ -141,14 +131,23 @@ upload page at `…/new-site-test/<ADMIN_PATH>/`.
 ## The tests
 
 ```
-python -m unittest discover -s tests -p "test_*.py" -v     inbox, deploy, upload page (needs ffmpeg, node; php for the page)
-node --test tests/static.test.js                           the site's data and pages
+python -m unittest discover -s tests -p "test_*.py" -v     inbox, deploy, FTP, setup, upload page
+node --test tests/admin_browser.test.js                     the upload page in Chrome
+node --test tests/static.test.js                            the site's data and pages
 ```
 
-They run on GitHub on every push that touches the tools (*Publishing tests*). They cover:
-- the same broadcast sent twice;
-- a broadcast added by hand while another is being published;
-- the same recordings under another date;
-- replacements;
-- failed uploads and retries;
-- the upload page's sign-in, device key, two-factor login and lockout.
+The first two need ffmpeg and node. Some parts need more:
+- the FTP tests: `pip install pyftpdlib pyopenssl`;
+- the upload page: php;
+- the browser test: Chrome and `npm install --prefix tests puppeteer-core`.
+
+Tests whose needs are missing are skipped. GitHub runs all of them on every push that touches the tools
+(*Publishing tests*). They cover:
+- **never twice:** the same broadcast sent twice; one added by hand meanwhile; the same recordings under
+  another date; the same size but different recordings;
+- **replacing** a broadcast, and **undoing** an upload when publishing fails;
+- **retries:** failed uploads and stale requests;
+- **FTP:** a plain server, one without MLSD, and FTP over TLS, with dropped connections;
+- **the setup** from start to finish, with scripted answers;
+- **the upload page:** sign-in, device key, authenticator code and lockout; uploads checked byte for
+  byte, with small-piece servers and dropped connections, in a real browser.

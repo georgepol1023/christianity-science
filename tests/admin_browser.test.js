@@ -118,7 +118,7 @@ function inboxRequest(srv) {
   return { dir: path.join(dir, ids[0]), req: JSON.parse(fs.readFileSync(path.join(dir, ids[0], "request.json"), "utf8")) };
 }
 
-test("upload page in a browser", { skip: missing && "needs " + missing }, async (t) => {
+test("upload page in a browser", missing ? { skip: "needs " + missing } : {}, async (t) => {
   const browser = await puppeteer.launch({ executablePath: CHROME, headless: true });
   const work = fs.mkdtempSync(path.join(os.tmpdir(), "cs-mp3-"));
   const files = makeMp3s(work);

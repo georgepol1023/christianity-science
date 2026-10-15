@@ -15,7 +15,8 @@ What the first-time setup does (each step says what it is doing, and stops with 
      the internet that the pages load and the upload page works. You get the addresses to look at.
 Needs: the GitHub CLI (gh), signed in (gh auth login), and this repository's folder.
 """
-import argparse, base64, getpass, json, os, re, secrets, ssl, string, subprocess, sys, time
+import argparse, base64, getpass, json, os, re, secrets, smtplib, ssl, string, subprocess, sys, time
+from email.message import EmailMessage
 import urllib.error, urllib.parse, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -224,15 +225,37 @@ def check_online(base, admin_path, device_key):
     return out
 
 
+def send_test_mail(settings, to):
+    """Send one email with the given SMTP settings. Returns None, or what went wrong."""
+    msg = EmailMessage()
+    msg["Subject"] = "✓ Δοκιμαστικό μήνυμα: τα email της ιστοσελίδας λειτουργούν"
+    msg["From"], msg["To"] = settings["MAIL_FROM"], to
+    msg.set_content("Αυτό το μήνυμα στάλθηκε από την εγκατάσταση (tools/setup_server.py). "
+                    "Με τον ίδιο τρόπο θα έρχεται ένα email κάθε φορά που δημοσιεύεται μια εκπομπή.")
+    try:
+        port = int(settings.get("SMTP_PORT") or 465)
+        s = smtplib.SMTP_SSL(settings["SMTP_HOST"], port, timeout=60) if port == 465 else smtplib.SMTP(settings["SMTP_HOST"], port, timeout=60)
+        with s:
+            if port != 465:
+                s.starttls()
+            s.login(settings["SMTP_USER"], settings["SMTP_PASSWORD"])
+            s.send_message(msg)
+        return None
+    except (OSError, smtplib.SMTPException) as ex:
+        return str(ex) or type(ex).__name__
+
+
 # ---------------------------------------------------------------- the steps
 class Setup:
     def __init__(self, con=None, runner=subprocess.run, domain=DOMAIN, ftp_port=21, site_url=None, root=ROOT,
-                 ftp_host=None, da_base=None):
+                 ftp_host=None, da_base=None, mailer=send_test_mail):
         self.con = con or Console()
         self.runner, self.domain, self.ftp_port, self.root = runner, domain, ftp_port, root
         self.site_url = site_url or "https://www.%s/" % domain
         self.ftp_host = ftp_host or domain                # the tests use their own servers
         self.da_base = da_base
+        self.mailer = mailer
+        self.notes = []                                   # what the person must keep (shown at the end)
         self.da = None                                  # (base, user, password, verify) once given
 
     def say(self, *a):
@@ -255,11 +278,25 @@ class Setup:
         if con.yes("  Make a new FTP account for publishing now, with your DirectAdmin login?", True):
             base, da_user, da_pw, verify = self.ask_directadmin()
             password = strong_password()
-            directadmin(base, da_user, da_pw, "CMD_API_FTP", {"action": "create", "domain": self.domain, "user": FTP_NAME,
-                        "type": "domain", "passwd": password, "passwd2": password}, verify)
             user = "%s@%s" % (FTP_NAME, self.domain)
-            self.say("  ✓ made the FTP account %s" % user)
-            host, fresh = self.ftp_host, True
+            try:
+                directadmin(base, da_user, da_pw, "CMD_API_FTP", {"action": "create", "domain": self.domain, "user": FTP_NAME,
+                            "type": "domain", "passwd": password, "passwd2": password}, verify)
+                made = True
+            except Stop as ex:
+                if "refused" in str(ex) or "reach" in str(ex):
+                    raise
+                self.say("  DirectAdmin did not make it (%s); perhaps it exists from an earlier run." % ex)
+                made = False
+            if made:
+                self.say("  ✓ made the FTP account %s" % user)
+                self.notes.append("FTP account: %s   password: %s" % (user, password))
+                host, fresh = self.ftp_host, True
+            else:
+                host = con.ask("  FTP server", self.ftp_host)
+                user = con.ask("  FTP user name", user)
+                password = con.ask("  FTP password", secret=True)
+                fresh = False
         else:
             host = con.ask("  FTP server", self.ftp_host)
             user = con.ask("  FTP user name")
@@ -357,6 +394,7 @@ class Setup:
                 return {}
             addr = "%s@%s" % (MAIL_NAME, self.domain)
             self.say("  ✓ made the mailbox %s" % addr)
+            self.notes.append("Mailbox: %s   password: %s" % (addr, password))
             return {"SMTP_HOST": "mail." + self.domain, "SMTP_PORT": "465", "SMTP_USER": addr, "SMTP_PASSWORD": password,
                     "MAIL_FROM": addr}
         host = con.ask("  SMTP server", "mail." + self.domain)
@@ -364,12 +402,24 @@ class Setup:
         return {"SMTP_HOST": host, "SMTP_PORT": con.ask("  SMTP port", "465"), "SMTP_USER": addr,
                 "SMTP_PASSWORD": con.ask("  Its password", secret=True), "MAIL_FROM": addr}
 
+    def try_mail(self, mail, to):
+        problem = self.mailer(mail, to)
+        if problem:
+            self.say("  ✗ the test email could not be sent (%s): publishing still works, without emails" % problem)
+        else:
+            self.say("  ✓ a test email was sent to %s (check that it arrived, also in spam)" % to)
+
     # -- the whole first-time setup
     def first_time(self):
         T = 6
+        if not os.path.isfile(os.path.join(self.root, "admin", "index.php")):
+            raise Stop("This copy of the site has no upload page (admin/): switch to the publishing branch, or merge it first.")
         self.step(1, T, "Checking the GitHub CLI")
         repo = github_repo(self.runner)
         self.say("  ✓ repository %s" % repo)
+        live = bool(get_variable(repo, "LIVE_URL", self.runner))
+        if live:
+            self.say("  the site is already live: it stays as it is; this run renews the settings")
 
         self.step(2, T, "FTP account for publishing")
         host, user, password, tls = self.ftp_account()
@@ -386,35 +436,47 @@ class Setup:
             me = [u.get("email") for u in cfg["users"].values() if u.get("email")]
             if mail and me:
                 mail["MAIL_TO"] = me[0]
+                self.try_mail(mail, me[0])
             key = self.con.ask("  Claude API key for suggested English titles and topics (Enter to skip)", secret=True, optional=True)
             test_dir = site.rstrip("/") + "/" + TEST_FOLDER
-            set_secrets(repo, dict({"FTP_HOST": host, "FTP_USER": user, "FTP_PASSWORD": password, "FTP_SITE_DIR": test_dir,
+            target = site if live else test_dir
+            set_secrets(repo, dict({"FTP_HOST": host, "FTP_USER": user, "FTP_PASSWORD": password, "FTP_SITE_DIR": target,
                                     "FTP_PRIVATE_DIR": private, "FTP_TLS": "1" if tls else "0", "ADMIN_PATH": admin_path,
                                     "ANTHROPIC_API_KEY": key}, **mail),
                         {"CS_FTP_HOST": host, "CS_FTP_USER": user, "CS_FTP_TLS": "1" if tls else "0",
                          "CS_SITE_DIR": site, "CS_PRIVATE_DIR": private}, self.runner)
-            self.say("  ✓ GitHub secrets set (publishing goes to the test folder until --go-live)")
+            self.say("  ✓ GitHub secrets set" + ("" if live else " (publishing goes to the test folder until --go-live)"))
 
-            self.step(6, T, "Trial: the new site in the test folder %s/" % TEST_FOLDER)
-            srv.roots = {"site": test_dir, "private": private}
+            self.step(6, T, "Checking the live site" if live else "Trial: the new site in the test folder %s/" % TEST_FOLDER)
+            srv.roots = {"site": target, "private": private}
             n = [0]
 
             def progress(line):
                 n[0] += 1
                 if line.startswith(("deploy:", "  ")) and (n[0] % 4 == 0 or line.startswith("deploy:")):
                     self.say("  " + line.strip())
-            deploy.deploy(srv, root=self.root, admin_path=admin_path, log=progress)
+            if not live:                                # once live, GitHub deploys (the page moves to its new address)
+                deploy.deploy(srv, root=self.root, admin_path=admin_path, log=progress)
         finally:
             srv.close()
-        base = self.site_url + TEST_FOLDER + "/"
-        results = check_online(base, admin_path, cfg["device_key"])
+        base = self.site_url if live else self.site_url + TEST_FOLDER + "/"
+        if live:
+            self.say("  the upload page moves to its new address with the next deploy (any push, or Actions → Deploy → Run)")
+            results = []
+        else:
+            results = check_online(base, admin_path, cfg["device_key"])
         for what, ok, advice in results:
             self.say("  %s %s%s" % ("✓" if ok else "✗", what, "" if ok else "  (" + advice + ")"))
         link = base + admin_path + "/?k=" + cfg["device_key"]
-        self.say("\nDone. Look at the trial:  %s" % base)
+        self.say("\nDone." + ("" if live else " Look at the trial:  %s" % base))
         self.say("The upload page (open this link once on each computer/phone that will use it):\n  %s" % link)
-        self.say("After going live the page's address is %s%s/ (same key).\n"
-                 "Keep both in a password manager. Then, when happy:  python tools/setup_server.py --go-live" % (self.site_url, admin_path))
+        if not live:
+            self.say("After going live the page's address is %s%s/ (same key)." % (self.site_url, admin_path))
+        self.say("\nKeep these in a password manager (they are not shown again):")
+        for n in self.notes + ["Upload page device link: " + link]:
+            self.say("  " + n)
+        if not live:
+            self.say("\nWhen the trial looks right:  python tools/setup_server.py --go-live")
         return all(ok for _, ok, _ in results)
 
     def go_live(self):

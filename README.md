@@ -88,7 +88,9 @@ Publishing tools (Python standard library only, so they keep working without upd
 - `inbox.py` publishes what the upload page hands in;
 - `deploy.py` puts the changed files on the server by FTP;
 - `sync_mp3.py` copies new mp3s from the server to this computer, as a second copy;
-- `admin_user.py` makes the upload page's settings and users;
+- `setup_server.py` sets everything up in one go (FTP account, private folder, the page's settings, GitHub
+  secrets, a checked trial), then `--go-live`;
+- `admin_user.py` makes the upload page's settings and users by hand;
 - `serverfs.py` is the FTP connection they share.
 
 Other tools: `update_column.py` (fetches new newspaper column articles), `join_broadcasts.py`
@@ -124,6 +126,7 @@ node --test tests/static.test.js          # data, pages, links, feed, translatio
 node tests/server.js                       # serves the site at http://127.0.0.1:8081/ (also for previewing)
 node --test tests/browser.test.js          # in Chrome or Edge: player, search, topics, phone layout…
 node tests/live-check.js                   # after going live: every page and file loads on the real site
-python -m unittest discover -s tests -p "test_*.py"   # publishing: inbox, deploy, upload page
+python -m unittest discover -s tests -p "test_*.py"   # publishing: inbox, deploy, FTP, setup, upload page
+node --test tests/admin_browser.test.js               # the upload page in Chrome (needs php, ffmpeg, puppeteer-core)
 ```
 The browser tests need `npm install --prefix tests puppeteer-core` once. Details: [tests/README.md](tests/README.md).
