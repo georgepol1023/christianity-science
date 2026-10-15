@@ -50,6 +50,19 @@ def main():
                                              "password": admin_user.password_hash(PASSWORD)}}}
     with open(os.path.join(private, "config.php"), "w", encoding="utf-8") as f:
         f.write(admin_user.render(cfg))
+    if shutil.which("ffmpeg"):                     # an example of recordings that came by email without a title
+        d = os.path.join(private, "drafts", time.strftime("%Y%m%d-%H%M%S-") + "0000demo")
+        os.makedirs(d)
+        files = []
+        for i, freq in enumerate((330, 440), 1):
+            p = os.path.join(d, "part-%d.mp3" % i)
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=%d:duration=61" % freq,
+                            "-ac", "1", "-b:a", "48k", p], check=True)
+            files.append({"name": "part-%d.mp3" % i, "original": "Ekpompi (%d).mp3" % i, "bytes": os.path.getsize(p)})
+        with open(os.path.join(d, "request.json"), "w", encoding="utf-8") as f:
+            json.dump({"type": "broadcast", "user": "email", "date": "", "title": "", "tags": [], "files": files,
+                       "from_email": {"from": "radio@christianity.gr", "subject": "Maria sent you files via WeTransfer"}},
+                      f, ensure_ascii=False)
 
     with socket.socket() as s:
         if s.connect_ex(("127.0.0.1", a.port)) == 0:
