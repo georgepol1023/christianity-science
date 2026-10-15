@@ -168,9 +168,9 @@ class FtpServer:
                 raise SystemExit("The server refused the FTP login: %s" % ex)
             except ssl.SSLCertVerificationError as ex:      # will not change by trying again
                 raise ServerError("the server's certificate is not for %s (%s)" % (host, ex.verify_message))
-            except (OSError, ftplib.Error) as ex:
+            except (OSError, EOFError, ftplib.Error) as ex:  # EOFError: it hung up straight away
                 if attempt == 2:
-                    raise ServerError("could not connect to %s: %s" % (host, ex))
+                    raise ServerError("could not connect to %s: %s" % (host, ex or type(ex).__name__))
                 time.sleep(5 * (attempt + 1))
 
     def _p(self, root, path):

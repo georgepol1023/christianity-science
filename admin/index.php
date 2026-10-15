@@ -145,7 +145,8 @@ if ($action === 'piece' && $method === 'POST') {
         cs_json(['ok' => true, 'size' => $have]);       // a repeated piece: tell the page where to go on from
     }
     $data = (string)file_get_contents('php://input');
-    if ($data === '' && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+    $test_limit = (int)getenv('CS_MAX_PIECE_FOR_TESTS');     // only set by tests/admin_browser.test.js
+    if (($data === '' && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) || ($test_limit > 0 && strlen($data) > $test_limit)) {
         cs_error('Το κομμάτι ήταν μεγαλύτερο από όσο δέχεται ο server.', 413);   // the page sends smaller ones
     }
     if ($data === '' || strlen($data) > CS_MAX_CHUNK || $have + strlen($data) > (int)$f['bytes']) {

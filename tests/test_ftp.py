@@ -31,7 +31,7 @@ except ImportError:
     TLS_FTPHandler = None
 
 USER, PASSWORD = "deploy", "a long test password"
-if os.environ.get("CS_FTP_DEBUG"):           # the FTP server's own log, to find out why it hangs up
+if os.environ.get("CS_FTP_DEBUG"):           # the FTP server's own log, when looking into a failure
     import logging
     logging.basicConfig(level=logging.INFO, format="ftpd %(message)s")
 
@@ -81,6 +81,10 @@ class FtpBase:
         handler.permit_foreign_addresses = True
         self.server = ThreadedFTPServer(("127.0.0.1", 0), handler)
         self.port = self.server.socket.getsockname()[1]
+        # pyftpdlib's threaded server shares one stop signal between all its servers: give this one its own,
+        # or stopping the previous test's server can stop this one half-way through a test
+        self.server._exit = threading.Event()
+        self.server._lock = threading.Lock()
         self.thread = threading.Thread(target=self.server.serve_forever, kwargs={"timeout": 0.5}, daemon=True)
         self.thread.start()
         self.env = dict(env, FTP_HOST="127.0.0.1", FTP_USER=USER, FTP_PASSWORD=PASSWORD, FTP_SITE_DIR="/site",
@@ -93,6 +97,7 @@ class FtpBase:
     def tearDown(self):
         self.srv.close()
         self.server.close_all()
+        self.thread.join(10)
         for k, v in self.old_env.items():
             if v is None:
                 os.environ.pop(k, None)

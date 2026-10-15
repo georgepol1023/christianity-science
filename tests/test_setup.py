@@ -222,7 +222,10 @@ class FlowTest(unittest.TestCase):
         handler = type("H", (FTPHandler,), {"authorizer": self.auth})
         self.ftp = ThreadedFTPServer(("127.0.0.1", 0), handler)
         self.ftp_port = self.ftp.socket.getsockname()[1]
-        threading.Thread(target=self.ftp.serve_forever, kwargs={"timeout": 0.5}, daemon=True).start()
+        self.ftp._exit = threading.Event()        # its own stop signal (pyftpdlib shares one between servers)
+        self.ftp._lock = threading.Lock()
+        self.ftp_thread = threading.Thread(target=self.ftp.serve_forever, kwargs={"timeout": 0.5}, daemon=True)
+        self.ftp_thread.start()
         self.da = FakeDirectAdmin(self.auth, self.home)
         self.da_base = self.da.start()
         self.php = None
@@ -239,6 +242,7 @@ class FlowTest(unittest.TestCase):
 
     def tearDown(self):
         self.ftp.close_all()
+        self.ftp_thread.join(10)
         self.da.shutdown()
         if self.php:
             self.php.terminate()

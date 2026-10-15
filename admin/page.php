@@ -303,6 +303,8 @@ progress { width:100%; height:12px; }
         return sendPiece(id, n, file, offset, size, tries);
       }
       if (r.network && tries < 6) {
+        // some servers just hang up on a request that is too big: after a second failure, smaller pieces
+        if (tries >= 1 && chunk > 256 * 1024) chunk = Math.max(256 * 1024, Math.floor(chunk / 2));
         return new Promise(function (res) { setTimeout(res, 2000 * (tries + 1)); })
           .then(function () { return call("piece", new Blob([]), { raw: true, query: "&id=" + id + "&n=" + n + "&offset=-1" }); })
           .then(function (q) { return q.ok ? sendPiece(id, n, file, q.size, size, tries + 1) : sendPiece(id, n, file, offset, size, tries + 1); });
