@@ -88,6 +88,8 @@ Publishing tools (Python standard library only, so they keep working without upd
 - `inbox.py` publishes what the upload page hands in;
 - `titles.py` fills in English titles (the site's memory of its series, then DeepL) and topics (from
   similar broadcasts on the site); `python tools/titles.py --evaluate` measures the topics;
+- `greeklish.py` turns Greeklish file names into Greek titles, spelled as the site spells them
+  (`--evaluate` measures it on the site's own mp3 names);
 - `mailwatch.py` fetches the recordings emailed to science@christianity.gr (WeTransfer links), read-only,
   and hands them to the inbox;
 - `deploy.py` puts the changed files on the server by FTP;

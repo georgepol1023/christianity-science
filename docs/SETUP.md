@@ -128,6 +128,13 @@ Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwat
   - **The topics:** taken from the most similar broadcasts already on the site. Measured on the site's
     own broadcasts, each hidden together with its whole series: topics are guessed for 80% of them, with
     the first topic right 83% of the time. The rest are left for the admin.
+- **Title from the file names.** When the email has no title, as with WeTransfer's own emails, the robot
+  reads it from the recordings' Greeklish names (`tools/greeklish.py`). For example,
+  `1_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3` gives «Παγκόσμια μέρα ψυχικής υγείας». Each word is
+  looked up among the ~250,000 Greek words on the site's pages, and spelled the way the station typed it
+  and the site writes it. Measured on the site's own mp3 names (each title left out of the dictionary):
+  titles where every word is sure come out spelled exactly right 98.6% of the time. Otherwise (a word the
+  site never used, or "Ti…" that may be «Τι» or «τη»), the title is suggested, not used.
 - **When unsure, it waits.** If the title or the date is unclear, the recordings wait in the upload page's
   **«Από email»** tab, and the admin is emailed. With a Claude key, the title box is pre-filled with a Greek
   title made from the file names (e.g. `1_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3`), for the admin to

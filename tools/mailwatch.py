@@ -13,7 +13,9 @@ For each new email with recordings:
   1. the recordings are downloaded (WeTransfer link, or attachments); other audio (wav, m4a, flac…) is
      converted to mp3; the parts are put in order by their file names;
   2. the title and the date are read from the email (subject, the transfer's title, the text). The date may
-     also be the broadcast day just before the email (broadcasts are every second Thursday);
+     also be the broadcast day just before the email (broadcasts are every second Thursday). Without a title in
+     the email, it is read from the recordings' Greeklish names ("1_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3" →
+     «Παγκόσμια μέρα ψυχικής υγείας», tools/greeklish.py), if every word is one the site clearly spells that way;
   3. if both are clear, the broadcast goes to the inbox and is published automatically (with all of
      inbox.py's checks: never twice, real recordings…). If not, it waits in private/drafts/ and the admin
      is emailed to finish it on the upload page («Από email») with one click.
@@ -33,7 +35,7 @@ import shutil, ssl, subprocess, sys, tempfile, time, unicodedata, urllib.error, 
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import inbox, serverfs
+import greeklish, inbox, serverfs
 
 ROOT = os.path.dirname(HERE)
 SEEN = "state/mail-seen.json"
@@ -558,8 +560,9 @@ def hand_over(srv, files, fields, folder):
 
 
 class Watch:
-    def __init__(self, srv, mailbox, trust, root=ROOT, log=print, wetransfer=None, notify=None, verify=None):
+    def __init__(self, srv, mailbox, trust, root=ROOT, log=print, wetransfer=None, notify=None, verify=None, words_root=None):
         self.srv, self.mailbox, self.trust, self.root, self.log = srv, mailbox, trust, root, log
+        self.words_root = words_root or root                  # whose pages teach Greek spelling (tools/greeklish.py)
         self.verify = verify or genuine
         self.wetransfer = wetransfer or WeTransfer
         self.notify = notify or tell_admin
@@ -633,7 +636,13 @@ class Watch:
                 fields = {"date": date.isoformat() if date else "", "title": title, "title_en": "", "tags": [],
                           "replace": False, "email": "", "from_email": {"from": who, "subject": subject, "date_from": how}}
                 if not title:                               # e.g. "1_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3"
-                    fields["title_suggestion"] = suggest_title(files, site) or ""
+                    named, named_sure = greeklish.title(os.path.basename(files[0]), self.words_root)
+                    if named_sure:                          # every word one the site spells this way: the title
+                        title = fields["title"] = named
+                        fields["from_email"]["title_from"] = "the file names"
+                        self.log("  title from the file names: %s" % named)
+                    else:
+                        fields["title_suggestion"] = named or suggest_title(files, site) or ""
                 # published by itself only when everything is clear: a Greek title (like every title on the site),
                 # a date, and an email whose signature was checked
                 sure = bool(title and re.search(r"[α-ωά-ώΑ-Ω]", title) and date and verified)
