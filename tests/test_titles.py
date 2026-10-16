@@ -92,6 +92,8 @@ class EnglishTest(unittest.TestCase):
     def test_title_case_becomes_sentence_case_but_names_stay(self):
         cases = {"“From One Blood”: The Races Of Mankind": "“From one blood”: the races of mankind",   # as DeepL answered
                  "The Big Bang And The Creator": "The Big Bang and the Creator",
+                 "World Mental Health Day": "World Mental Health Day",                              # a named day
+                 "International Day Of Peace And The Gospel": "International Day of Peace and the Gospel",
                  "God’s Creation – Part 2": "God’s Creation – Part 2",
                  "DNA and the design of life": "DNA and the design of life",                      # already right
                  "The Resurrection of Jesus Christ and the historical evidence":

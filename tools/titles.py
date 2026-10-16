@@ -138,6 +138,9 @@ def sentence_case(en, site):
     if len(long_words) < 2 or sum(w[0].isupper() for w in long_words) < 0.7 * len(long_words):
         return en                                          # not Title Case: leave it as DeepL wrote it
     keep = capitalised_words(site)
+    # named days keep their capitals: "World Mental Health Day", "International Day of Peace"
+    named = [m.span() for m in re.finditer(r"\b(?:World|International|European|National|Global)(?: [A-Z][a-z]+)* Day\b"
+                                            r"(?: (?i:of)(?: (?i:the))? [A-Z][a-z]+)?", en)]
     first = [True]
 
     def fix(m):
@@ -145,6 +148,8 @@ def sentence_case(en, site):
         if first[0]:
             first[0] = False
             return w
+        if any(a <= m.start() < b for a, b in named):
+            return w.lower() if w.lower() in SMALL else w
         if w.lower() in keep or (w.isupper() and len(w) > 1):   # names, and abbreviations like DNA, CERN
             return w
         return w.lower()
