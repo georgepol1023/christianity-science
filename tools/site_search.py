@@ -124,7 +124,11 @@ def pages():
 def main():
     index = build_index()
     data = json.dumps(index, ensure_ascii=False, separators=(",", ":"))
-    version = hashlib.sha1(data.encode("utf-8")).hexdigest()[:10]
+    # The pages carry the version of the search's code only (js/search.js, which rarely changes), not of the list:
+    # a new broadcast changes the list, and if its version were in every page, every page would change with it
+    # (592 files to upload instead of a dozen). The list is fetched afresh at most once an hour (js/sitesearch.js).
+    with open(os.path.join(ROOT, "js", "search.js"), "rb") as f:
+        version = hashlib.sha1(f.read()).hexdigest()[:10]
     with open(os.path.join(ROOT, "js", "search-index.js"), "w", encoding="utf-8", newline="\n") as f:
         f.write("/* Made by tools/site_search.py: everything the site-wide search can find.\n"
                 " * k kind (B broadcast, C column article, T topic, M media, Q question, A articles & sources),\n"
