@@ -570,7 +570,8 @@ class Inbox:
 
         verb = "Αντικατάσταση" if old else "Νέα εκπομπή"
         try:
-            self.change_site("%s %s: %s (from the upload page)" % ("Replace broadcast" if old else "Broadcast", date, title), apply)
+            source = "from email" if req.get("user") == "email" and not req.get("approved_by") else "from the upload page"
+            self.change_site("%s %s: %s (%s)" % ("Replace broadcast" if old else "Broadcast", date, title, source), apply)
         except Exception:
             undo()
             raise
