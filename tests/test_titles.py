@@ -82,6 +82,23 @@ class EnglishTest(unittest.TestCase):
         self.assertEqual(en, "“The Lord is my shepherd”: hope")
         self.assertIn("King James", note)
 
+    def test_a_quotation_the_site_already_uses_keeps_its_wording(self):
+        g = "«Υψώνω τους οφθαλμούς μου προς τα όρη»: Η ελπίδα σήμερα"
+        self.deepl.answers[g] = "‘I lift up my eyes to the hills’: Hope today"          # as DeepL really answered
+        en, how, note = titles.english(g, SITE)
+        self.assertEqual(en, "“I will lift up mine eyes unto the hills”: Hope today")
+        self.assertEqual(note, "")
+
+    def test_title_case_becomes_sentence_case_but_names_stay(self):
+        cases = {"“From One Blood”: The Races Of Mankind": "“From one blood”: the races of mankind",   # as DeepL answered
+                 "The Big Bang And The Creator": "The Big Bang and the Creator",
+                 "God’s Creation – Part 2": "God’s Creation – Part 2",
+                 "DNA and the design of life": "DNA and the design of life",                      # already right
+                 "The Resurrection of Jesus Christ and the historical evidence":
+                     "The Resurrection of Jesus Christ and the historical evidence"}
+        for given, wanted in cases.items():
+            self.assertEqual(titles.house_style(titles.sentence_case(titles.house_style(given), SITE)), wanted, given)
+
     def test_when_deepl_fails_the_title_is_left_empty(self):
         for code, words in ((403, "key is wrong"), (456, "used up"), (500, "error 500")):
             self.deepl.fail = code
@@ -98,6 +115,8 @@ class EnglishTest(unittest.TestCase):
                  "The origin of everything 3rd part": "The origin of everything – Part 3",
                  "The wonder of the body - Part 3: the immune system": "The wonder of the body – Part 3: the immune system",
                  '"Of one blood" - Part 1': "“Of one blood” – Part 1",
+                 "‘I lift up my eyes’: hope": "“I lift up my eyes”: hope",
+                 "The Lord’s Supper and God's word": "The Lord’s Supper and God's word",
                  "«Of one blood»": "“Of one blood”",
                  "world mental health day": "World mental health day"}
         for given, wanted in cases.items():

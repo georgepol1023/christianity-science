@@ -69,6 +69,8 @@ def house_style(en):
     en = re.sub(r"[«“]\s*", "“", en)
     en = re.sub(r"\s*[»”]", "”", en)
     en = re.sub(r'"([^"]+)"', r"“\1”", en)
+    # single quotes around a quotation (‘…’ or '…') become double ones; apostrophes (Lord’s, God's) stay
+    en = re.sub(r"(^|[\s(\[–—:])[‘']([^‘’']+?)[’'](?=$|[\s.,;:!?)\]–—])", r"\1“\2”", en)
     # parts: "- Part 2", "Part 2nd", "2nd part", "Part Two" → " – Part 2"
     en = re.sub(r"(?i)\b(?:the\s+)?(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth)\s+part\b",
                 lambda m: "Part %d" % ORDINALS[m.group(1).lower()], en)
@@ -103,6 +105,52 @@ def deepl(greek, key, log=print):
     return None
 
 
+def known_quotations(site):
+    """{Greek quotation: its English on the site} from titles already translated («…» ↔ “…”)."""
+    out = {}
+    for g, e in pairs(site):
+        gq, eq = re.findall(r"«([^»]+)»", g), re.findall(r"“([^”]+)”", e)
+        if len(gq) == len(eq):
+            for a, b in zip(gq, eq):
+                out[re.sub(r"\s+", " ", a).strip().lower()] = b
+    return out
+
+
+SMALL = set("a an and as at but by for from in into of on or the to with nor via vs".split())
+
+
+def capitalised_words(site):
+    """Words the site's English titles capitalise in the middle of a title: names (God, Christ, Genesis…)."""
+    caps, lower = Counter(), Counter()
+    for _, e in pairs(site):
+        for m in re.finditer(r"[A-Za-z][A-Za-z’']*", e):
+            before = e[:m.start()].rstrip()
+            if not before or before[-1] in ":–—“(?!.":      # a title's or a part's first word: capital anyway
+                continue
+            (caps if m.group(0)[0].isupper() else lower)[m.group(0).lower()] += 1
+    return {w for w, n in caps.items() if n > lower.get(w, 0)}
+
+
+def sentence_case(en, site):
+    """'The Races Of Mankind' → 'The races of mankind' (the site writes titles in sentence case); names stay."""
+    words_ = re.findall(r"[A-Za-z][A-Za-z’']*", en)
+    long_words = [w for w in words_[1:] if w.lower() not in SMALL]
+    if len(long_words) < 2 or sum(w[0].isupper() for w in long_words) < 0.7 * len(long_words):
+        return en                                          # not Title Case: leave it as DeepL wrote it
+    keep = capitalised_words(site)
+    first = [True]
+
+    def fix(m):
+        w = m.group(0)
+        if first[0]:
+            first[0] = False
+            return w
+        if w.lower() in keep or (w.isupper() and len(w) > 1):   # names, and abbreviations like DNA, CERN
+            return w
+        return w.lower()
+    return re.sub(r"[A-Za-z][A-Za-z’']*", fix, en)
+
+
 def english(greek, site, log=print):
     """(English title or "", how it was found, a note for the admin or "")."""
     known = from_memory(greek, site)
@@ -111,10 +159,19 @@ def english(greek, site, log=print):
     t = deepl(greek, os.environ.get("DEEPL_API_KEY", ""), log)
     if not t:
         return "", "", ""
-    note = ""
-    if "«" in greek:
-        note = "ο αγγλικός τίτλος περιέχει παράθεμα: ελέγξτε ότι ακολουθεί τη μετάφραση King James"
-    return house_style(t), "deepl", note
+    en, how, note = house_style(sentence_case(house_style(t), site)), "deepl", ""
+    quotes = re.findall(r"«([^»]+)»", greek)
+    if quotes:
+        known_q = known_quotations(site)
+        found = [known_q.get(re.sub(r"\s+", " ", q).strip().lower()) for q in quotes]
+        translated = re.findall(r"“[^”]+”", en)
+        if all(found) and len(translated) == len(quotes):
+            for old, new in zip(translated, found):          # the wording the site already uses (King James)
+                en = en.replace(old, "“%s”" % new, 1)
+            how = "deepl + the site's quotation"
+        else:
+            note = "ο αγγλικός τίτλος περιέχει παράθεμα: ελέγξτε ότι ακολουθεί τη μετάφραση King James"
+    return en, how, note
 
 
 # ---------------------------------------------------------------- topics, learnt from the site itself
