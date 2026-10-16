@@ -505,7 +505,10 @@ progress { width:100%; height:12px; }
     var p = $("pending"), q = $("results"); p.textContent = ""; q.textContent = "";
     (S.pending || []).forEach(function (r) { p.appendChild(item(r.state, head(r), "", "")); });
     (S.results || []).forEach(function (r) {
-      q.appendChild(item(r.status, head(r), r.message, new Date(r.time * 1000).toLocaleString("el-GR"), r.status === "published" ? r.link : ""));
+      // the broadcast on the site this page belongs to (the trial folder, the live site): one level up from the page
+      var link = r.status === "published" && r.type === "broadcast" && /^\d{4}-\d\d-\d\d$/.test(r.date || "")
+        ? "../index.html#e-" + r.date.replace(/-/g, "_") : "";
+      q.appendChild(item(r.status, head(r), r.message, new Date(r.time * 1000).toLocaleString("el-GR"), link));
     });
     if (!(S.pending || []).length && !(S.results || []).length) q.appendChild(item("", "Δεν υπάρχει τίποτα ακόμα.", "", ""));
     $("pendingCount").textContent = (S.pending || []).length ? "(" + S.pending.length + ")" : "";
