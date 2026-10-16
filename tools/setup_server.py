@@ -30,7 +30,7 @@ TEST_FOLDER = "new-site-test"
 FTP_NAME = "publish"           # → publish@christianity-science.gr
 MAIL_NAME = "ekpompes"         # → ekpompes@christianity-science.gr
 INCOMING = "science@christianity.gr"           # where the station emails the recordings
-INCOMING_HOST = "app.christianity.gr"         # its mail server (the name in its certificate)
+INCOMING_HOST = "mail.christianity.gr"         # its mail server (the name in its certificate)
 
 
 class Stop(Exception):

@@ -23,7 +23,7 @@ not an official one) is tried again on the next runs; after a day the admin is e
 Settings (GitHub secrets):
   MAIL_IMAP_USER        science@christianity.gr
   MAIL_IMAP_PASSWORD    its password
-  MAIL_IMAP_HOST        app.christianity.gr (default: the name in the mail server's certificate)
+  MAIL_IMAP_HOST        mail.christianity.gr (default: the name in the mail server's certificate)
   MAIL_IMAP_PORT        993 (default)        MAIL_IMAP_SSL   1 (default)
   MAIL_TRUSTED_SENDERS  who may send recordings: addresses or whole domains, e.g. "radio@christianity.gr, @christianity.gr"
 plus the server settings (tools/serverfs.py) and, for the emails to the admin, the SMTP settings (tools/inbox.py).
@@ -61,7 +61,7 @@ class Mailbox:
                 else imaplib.IMAP4(host, port, timeout=60)
         except ssl.SSLCertVerificationError as ex:
             raise SystemExit("The mail server's certificate is not for %s (%s); set MAIL_IMAP_HOST to the name it is for "
-                             "(e.g. app.christianity.gr)." % (host, ex.verify_message))
+                             "(e.g. mail.christianity.gr)." % (host, ex.verify_message))
         except OSError as ex:
             raise serverfs.ServerError("could not reach the mail server %s: %s" % (host, ex))
         try:
@@ -552,7 +552,7 @@ def from_env():
     user = os.environ.get("MAIL_IMAP_USER")
     if not (user and os.environ.get("MAIL_IMAP_PASSWORD")):
         return None, []
-    box = Mailbox(os.environ.get("MAIL_IMAP_HOST") or "app.christianity.gr", int(os.environ.get("MAIL_IMAP_PORT") or 993),
+    box = Mailbox(os.environ.get("MAIL_IMAP_HOST") or "mail.christianity.gr", int(os.environ.get("MAIL_IMAP_PORT") or 993),
                   user, os.environ["MAIL_IMAP_PASSWORD"], os.environ.get("MAIL_IMAP_SSL", "1") != "0",
                   os.environ.get("MAIL_IMAP_FOLDER") or "INBOX")
     trust = [t for t in re.split(r"[,\s;]+", os.environ.get("MAIL_TRUSTED_SENDERS", "")) if t]

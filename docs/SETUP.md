@@ -123,7 +123,7 @@ Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwat
 - **Each email only once.** Every email is handled once, and the robot remembers which.
 
 The settings are the secrets `MAIL_IMAP_USER`, `MAIL_IMAP_PASSWORD`, `MAIL_IMAP_HOST`
-(`app.christianity.gr`) and `MAIL_TRUSTED_SENDERS` (e.g. `radio@christianity.gr, @studio.gr`). The setup
+(`mail.christianity.gr`) and `MAIL_TRUSTED_SENDERS` (e.g. `radio@christianity.gr, @studio.gr`). The setup
 sets them.
 
 ## Make it last

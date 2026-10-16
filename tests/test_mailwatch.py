@@ -223,7 +223,7 @@ class MailWatchTest(unittest.TestCase):
         self.box.messages += [
             make_email(frm="someone@example.com", subject="Εκπομπή 15/10/2026 Ψεύτικη", body=link),
             make_email(frm="radio@christianity.gr", subject="Εκπομπή 15/10/2026 Πλαστή", body=link,
-                       headers=[("Authentication-Results", "app.christianity.gr; spf=fail smtp.mailfrom=christianity.gr; dkim=none")]),
+                       headers=[("Authentication-Results", "mail.christianity.gr; spf=fail smtp.mailfrom=christianity.gr; dkim=none")]),
             make_email(frm="radio@christianity.gr", subject="Ερώτηση ακροατή", body="Χωρίς σύνδεσμο."),
             make_email(frm="Studio <tech@studio.example>", subject="Εκπομπή 15/10/2026 Από το στούντιο", body=link),
         ]

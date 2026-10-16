@@ -401,8 +401,8 @@ class FlowTest(unittest.TestCase):
         finally:
             if not self.php:
                 setup_server.check_online = real
-        self.assertEqual(logins, [("app.christianity.gr", "science@christianity.gr", "wrong"),
-                                  ("app.christianity.gr", "science@christianity.gr", "right")])
+        self.assertEqual(logins, [("mail.christianity.gr", "science@christianity.gr", "wrong"),
+                                  ("mail.christianity.gr", "science@christianity.gr", "right")])
         self.assertEqual((gh.secrets["MAIL_IMAP_USER"], gh.secrets["MAIL_IMAP_PASSWORD"], gh.secrets["MAIL_TRUSTED_SENDERS"]),
                          ("science@christianity.gr", "right", "radio@christianity.gr, @studio.example"))
         self.assertIn("2 emails in the last 10 days, 1 from the trusted senders, 1 with recordings", "\n".join(s.con.said))
