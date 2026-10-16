@@ -459,6 +459,11 @@ progress { width:100%; height:12px; }
         var hint = document.createElement("em"); hint.textContent = "Πρόταση από τα ονόματα των αρχείων: ελέγξτε τη πριν τη δημοσίευση."; f2.appendChild(hint);
       }
       row.appendChild(f1); row.appendChild(f2); card.appendChild(row);
+      var f3 = document.createElement("label"); f3.className = "f";
+      f3.innerHTML = "<span>Αγγλικός τίτλος (προαιρετικά)</span>";
+      var en = document.createElement("input"); en.type = "text"; en.maxLength = 200; f3.appendChild(en);
+      var enHint = document.createElement("em"); enHint.textContent = "Αν μείνει κενό, προτείνεται αυτόματα."; f3.appendChild(enHint);
+      card.appendChild(f3);
       var tagsBox = document.createElement("div"); tagsBox.className = "chips"; chips(tagsBox, []);
       var tf = document.createElement("div"); tf.className = "f"; tf.innerHTML = "<span>Θέματα (προαιρετικά)</span>"; tf.appendChild(tagsBox);
       card.appendChild(tf);
@@ -485,7 +490,7 @@ progress { width:100%; height:12px; }
       });
       go.addEventListener("click", function () {
         go.disabled = true;
-        call("draft_publish", { id: d.id, date: date.value, title: title.value.trim(), title_en: "", tags: picked(tagsBox) }).then(function (r) {
+        call("draft_publish", { id: d.id, date: date.value, title: title.value.trim(), title_en: en.value.trim(), tags: picked(tagsBox) }).then(function (r) {
           go.disabled = false;
           if (r.ok) { show(msg, "Παραλήφθηκε· δημοσιεύεται σε λίγα λεπτά.", "ok"); draftShown = ""; setTimeout(refresh, 1500); }
           else show(msg, r.error, "bad");
