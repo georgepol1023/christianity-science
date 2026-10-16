@@ -15,6 +15,16 @@ DATA_FILES = ["js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js", "data/pod
 _mp3_cache = {}
 
 
+def wipe(path):
+    """Remove a test folder, git's read-only files too (Windows), so no test leaves anything behind."""
+    import stat
+
+    def again(func, p, _):
+        os.chmod(p, stat.S_IWRITE)
+        func(p)
+    shutil.rmtree(path, onerror=again)
+
+
 def make_mp3(path, freq, seconds=61):
     """A short mono mp3 (a tone); the same frequency gives the same file."""
     key = (freq, seconds)
@@ -40,7 +50,7 @@ class InboxTest(unittest.TestCase):
         self.n = 0
 
     def tearDown(self):
-        shutil.rmtree(self.tmp, ignore_errors=True)
+        wipe(self.tmp)
 
     # -- helpers
     def submit(self, req, freqs=(), files=None):
@@ -488,7 +498,7 @@ class GitRaceTest(unittest.TestCase):
         self.srv = serverfs.connect(os.path.join(self.tmp, "server"))
 
     def tearDown(self):
-        shutil.rmtree(self.tmp, ignore_errors=True)
+        wipe(self.tmp)
 
     def request(self, date, freq):
         d = os.path.join(self.tmp, "server", "private", "inbox", "20261015-120000-%d" % freq)
