@@ -11,7 +11,7 @@ The file goes to the PRIVATE folder on the server (cs-admin/config.php, next to 
 public_html), by DirectAdmin's File Manager or FTP. Keep a copy in a password manager, not in git.
 It is printed to the screen (and to a file if --out is given); nothing is sent anywhere.
 """
-import argparse, base64, getpass, hashlib, json, os, re, secrets, sys, urllib.parse
+import argparse, base64, getpass, hashlib, re, secrets, sys, urllib.parse
 
 ITERATIONS = 600_000
 

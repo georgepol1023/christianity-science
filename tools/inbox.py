@@ -207,12 +207,22 @@ def clean_tags(tags, known):
     return tags
 
 
+def season_window(span):
+    """The dates a season covers: "2026 – 2027" from August 2026 to July 2027; a half season such as "2018"
+    (the programme's start in 2008, the return in March 2018) from January to July of that year."""
+    years = [int(y) for y in re.findall(r"\d{4}", span)]
+    if len(years) >= 2:
+        return datetime.date(years[0], 8, 1), datetime.date(years[1], 7, 31)
+    return datetime.date(years[0], 1, 1), datetime.date(years[0], 7, 31)
+
+
 def season_for(date, site):
     """(season number, span, is_new) for a broadcast date. A season runs from August to July."""
     d = datetime.date.fromisoformat(date)
     start = d.year if d.month >= 8 else d.year - 1
     for s in site["seasons"]:
-        if s["span"].startswith(str(start) + " "):
+        first, last = season_window(s["span"])
+        if first <= d <= last:
             return s["n"], s["span"], False
     top = site["seasons"][0]
     top_start = int(top["span"][:4])

@@ -5,7 +5,7 @@
 Each test works on a copy of the site's data files and a folder standing in for the server, with short
 generated recordings (needs ffmpeg and node, like the tools themselves). Nothing real is touched.
 """
-import json, os, re, shutil, subprocess, sys, tempfile, time, unittest
+import json, os, shutil, subprocess, sys, tempfile, time, unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
@@ -264,7 +264,7 @@ class InboxTest(unittest.TestCase):
                  ({"date": "2026-10-15", "tags": ["nonsense"]}, (701,), "Άγνωστα θέματα"),
                  ({"date": "2026-10-15", "tags": ["bible", "christ", "cosmos", "body"]}, (702,), "έως 3"),
                  ({"date": "2026-10-15", "title": ""}, (703,), "τίτλος"),
-                 ({"date": "2008-01-01"}, (704,), "κύκλο")]
+                 ({"date": "2007-10-01"}, (704,), "κύκλο")]
         for fields, freqs, word in cases:
             req = dict({"title": "Τίτλος"}, **fields)
             ident = self.submit(req, freqs=freqs)
@@ -530,7 +530,7 @@ class GitRaceTest(unittest.TestCase):
         self.assertEqual(open(os.path.join(self.b, "js", "broadcasts.js"), encoding="utf-8").read().count('ep("2026-10-15"'), 1)
 
     def test_other_changes_pushed_meanwhile_are_kept(self):
-        ident = self.request("2026-10-15", 810)
+        self.request("2026-10-15", 810)
         self.b_adds("2026-10-29")
         box = inbox.Inbox(self.srv, self.a, push=True, build=False, keep_local=False, log=lambda *a: None)
         self.assertEqual(box.run(), 0)

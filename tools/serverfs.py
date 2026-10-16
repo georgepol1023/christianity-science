@@ -232,7 +232,7 @@ class FtpServer:
         if not getattr(self, "no_mlsd", False):
             try:
                 entries = self._do(lambda: list(self.ftp.mlsd(d, ["type", "size"])))
-            except (ftplib.error_perm, ftplib.error_temp) as ex:
+            except (ftplib.error_perm, ftplib.error_temp):
                 # servers answer "no such folder" and "MLSD not supported" with various codes: find out which
                 if not self._dir_exists(d):
                     return {}

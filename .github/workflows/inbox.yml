@@ -34,6 +34,8 @@ env:
   SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
   MAIL_FROM: ${{ secrets.MAIL_FROM }}
   MAIL_TO: ${{ secrets.MAIL_TO }}
+  DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}           # English titles (tools/titles.py)
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: Greek titles from Greeklish names, suggestions
 
 jobs:
   publish:
@@ -66,9 +68,6 @@ jobs:
         run: python tools/mailwatch.py
       - name: Publish
         if: (steps.mail.outputs.mail && steps.mail.outputs.mail != '0') || (steps.look.outputs.waiting && steps.look.outputs.waiting != '0')
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
         run: |
           git config user.name "Upload page"
           git config user.email "148995294+georgepol1023@users.noreply.github.com"

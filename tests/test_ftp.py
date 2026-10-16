@@ -7,7 +7,7 @@ Three servers: plain FTP, plain FTP without MLSD (older servers), and FTP over T
 every connection (as most hosts do). On each: every file operation, reconnecting after the connection
 drops, and the deploy and the inbox from start to finish. Skipped where pyftpdlib is not installed.
 """
-import datetime, json, os, shutil, sys, tempfile, threading, time, unittest
+import datetime, json, os, shutil, sys, tempfile, threading, unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))

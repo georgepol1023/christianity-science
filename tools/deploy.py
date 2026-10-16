@@ -20,7 +20,7 @@ Safety: nothing happens if this copy looks incomplete (no index.html), and a dep
 more than 100 files stops and asks for --allow-removals (a damaged checkout must not empty the site).
 Server settings: see tools/serverfs.py.
 """
-import argparse, hashlib, json, os, posixpath, re, subprocess, sys
+import argparse, hashlib, json, os, re, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)

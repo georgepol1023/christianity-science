@@ -16,7 +16,7 @@ What the first-time setup does (each step says what it is doing, and stops with 
      the internet that the pages load and the upload page works. You get the addresses to look at.
 Needs: the GitHub CLI (gh), signed in (gh auth login), and this repository's folder.
 """
-import argparse, base64, getpass, json, os, re, secrets, smtplib, ssl, string, subprocess, sys, time
+import argparse, base64, getpass, os, re, secrets, smtplib, ssl, string, subprocess, sys, time
 from email.message import EmailMessage
 import urllib.error, urllib.parse, urllib.request
 

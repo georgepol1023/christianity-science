@@ -6,13 +6,13 @@ The flow test runs the whole first-time setup against a real FTP server (pyftpdl
 DirectAdmin that really creates the FTP account, a stand-in for the GitHub CLI that records the secrets,
 and (where php is installed) PHP's web server, so the checks over "the internet" really run.
 """
-import base64, http.server, json, os, re, shutil, socket, subprocess, sys, tempfile, threading, time, unittest
+import base64, http.server, os, re, shutil, socket, subprocess, sys, tempfile, threading, time, unittest
 import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tools"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import admin_user, deploy, serverfs, setup_server
+import admin_user, serverfs, setup_server
 from setup_server import Stop
 
 try:
