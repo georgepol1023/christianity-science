@@ -45,7 +45,7 @@ from email.message import EmailMessage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import serverfs
+import serverfs, titles
 from join_broadcasts import join_files
 
 ROOT = os.path.dirname(HERE)
@@ -534,11 +534,21 @@ class Inbox:
             undo()
             raise
 
-        # English title and topics: the admin's, else Claude's suggestion
+        # English title and topics: the admin's; else the site's memory and DeepL (English), and the site's own
+        # broadcasts (topics: titles.py); Claude only for what is still missing, if a key is set
+        en_note = ""
+        if not title_en:
+            title_en, how, en_note = titles.english(title, site, log=self.log)
+            if title_en:
+                self.log("  English title (%s): %s" % (how, title_en))
+        names = topic_names(self.root)
+        if not tags:
+            tags, sim = titles.Topics(site, names).suggest(title, title_en)
+            if tags:
+                self.log("  topics from similar broadcasts: %s" % " ".join(tags))
         if not title_en or not tags:
-            topics = topic_names(self.root)
             examples = [(site["by_date"][d]["title"], t) for d, t in list(site["en"].items())[:20] if d in site["by_date"]]
-            s = suggest(title, topics, examples) or {}
+            s = suggest(title, names, examples) or {}
             title_en = title_en or s.get("title_en", "")
             tags = tags or s.get("tags", [])
 
@@ -571,7 +581,7 @@ class Inbox:
             os.makedirs(here, exist_ok=True)
             for path, name, m in uploads:
                 shutil.copyfile(path, os.path.join(here, name))
-        notes = []
+        notes = [en_note] if en_note else []
         if not title_en:
             notes.append("δεν έχει αγγλικό τίτλο (στα αγγλικά φαίνεται ο ελληνικός)")
         if not tags:

@@ -264,7 +264,7 @@ class FlowTest(unittest.TestCase):
                 ("plain FTP", "y"),
                 ("User name", "maria"), ("Full name", "Μαρία"), ("Email", "maria@example.com"),
                 ("Password", "a very long password"), ("Password again", "a very long password"),
-                ("Send an email", "y"), ("Fetch recordings emailed", "n"), ("Claude API key", "")]
+                ("Send an email", "y"), ("Fetch recordings emailed", "n"), ("DeepL API key", ""), ("Claude API key", "")]
 
     def test_first_time_setup_from_start_to_finish(self):
         gh = FakeGh()
@@ -318,7 +318,7 @@ class FlowTest(unittest.TestCase):
         gh = FakeGh()
         answers = [("new FTP account", "n"), ("FTP server", "127.0.0.1"), ("FTP user", "publish@christianity-science.gr"),
                    ("FTP password", self.ftp_password()), ("plain FTP", "y"),
-                   ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("Claude API key", "")]
+                   ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("DeepL API key", ""), ("Claude API key", "")]
         s = self.setup(answers, gh)
         if not self.php:
             setup_server.check_online, real = (lambda *a: []), setup_server.check_online
@@ -334,7 +334,7 @@ class FlowTest(unittest.TestCase):
         self.test_first_time_setup_from_start_to_finish()
         answers = [("new FTP account", "y"), ("DirectAdmin user", "admin"), ("DirectAdmin password", "da-pass"),
                    ("FTP server", "127.0.0.1"), ("FTP user", ""), ("FTP password", self.ftp_password()), ("plain FTP", "y"),
-                   ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("Claude API key", "")]
+                   ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("DeepL API key", ""), ("Claude API key", "")]
         s = self.setup(answers, FakeGh())
         if not self.php:
             setup_server.check_online, real = (lambda *a: []), setup_server.check_online
@@ -349,7 +349,7 @@ class FlowTest(unittest.TestCase):
         self.test_first_time_setup_from_start_to_finish()
         gh = FakeGh({"LIVE_URL": "https://www.christianity-science.gr/"})
         answers = [("new FTP account", "n"), ("FTP server", "127.0.0.1"), ("FTP user", "publish@christianity-science.gr"),
-                   ("FTP password", self.ftp_password()), ("plain FTP", "y"), ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("Claude API key", "")]
+                   ("FTP password", self.ftp_password()), ("plain FTP", "y"), ("Send an email", "n"), ("Fetch recordings emailed", "n"), ("DeepL API key", ""), ("Claude API key", "")]
         s = self.setup(answers, gh)
         trial = os.path.join(self.home, "public_html", "new-site-test")
         shutil.rmtree(trial)
@@ -391,7 +391,7 @@ class FlowTest(unittest.TestCase):
         answers[answers.index(("Send an email", "y")):] = [
             ("Send an email", "n"), ("Fetch recordings emailed", "y"), ("The mailbox", ""), ("mail server", ""),
             ("Who may send", "radio@christianity.gr, @studio.example"), ("Password of", "wrong"), ("Try another password", "y"),
-            ("Password of", "right"), ("Claude API key", "")]
+            ("Password of", "right"), ("DeepL API key", ""), ("Claude API key", "")]
         s = self.setup(answers, gh)
         s.mailbox_factory = FakeBox
         if not self.php:

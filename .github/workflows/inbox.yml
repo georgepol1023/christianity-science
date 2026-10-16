@@ -68,6 +68,7 @@ jobs:
         if: (steps.mail.outputs.mail && steps.mail.outputs.mail != '0') || (steps.look.outputs.waiting && steps.look.outputs.waiting != '0')
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}
         run: |
           git config user.name "Upload page"
           git config user.email "148995294+georgepol1023@users.noreply.github.com"

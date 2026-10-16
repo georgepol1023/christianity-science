@@ -86,6 +86,8 @@ After any change to pages, `css/` or `js/`, run `python tools/build_all.py`. In 
 
 Publishing tools (Python standard library only, so they keep working without updates):
 - `inbox.py` publishes what the upload page hands in;
+- `titles.py` fills in English titles (the site's memory of its series, then DeepL) and topics (from
+  similar broadcasts on the site); `python tools/titles.py --evaluate` measures the topics;
 - `mailwatch.py` fetches the recordings emailed to science@christianity.gr (WeTransfer links), read-only,
   and hands them to the inbox;
 - `deploy.py` puts the changed files on the server by FTP;

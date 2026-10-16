@@ -10,7 +10,7 @@ What the first-time setup does (each step says what it is doing, and stops with 
   2. finds the site's folder on the server and makes the private folder next to it (cs-admin);
   3. your sign-in for the upload page: name, password, and a code for your phone's authenticator app;
   4. optional: result emails (a mailbox is made for you), recordings emailed to science@christianity.gr
-     (its login is checked now, read-only), and suggested English titles (a Claude API key);
+     (its login is checked now, read-only), English titles by DeepL (its key is tried now), and a Claude key;
   5. puts everything GitHub needs into the repository's secrets (with the GitHub CLI, gh);
   6. puts the new site into a TEST folder on the server (the live site is not touched) and checks over
      the internet that the pages load and the upload page works. You get the addresses to look at.
@@ -22,7 +22,7 @@ import urllib.error, urllib.parse, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import admin_user, deploy, mailwatch, serverfs
+import admin_user, deploy, mailwatch, serverfs, titles
 
 ROOT = os.path.dirname(HERE)
 DOMAIN = "christianity-science.gr"
@@ -438,6 +438,22 @@ class Setup:
         return {"MAIL_IMAP_HOST": host, "MAIL_IMAP_USER": addr, "MAIL_IMAP_PASSWORD": password,
                 "MAIL_TRUSTED_SENDERS": ", ".join(trust_list)}
 
+    def deepl_key(self):
+        """The DeepL key for English titles, checked now with one real translation."""
+        while True:
+            key = self.con.ask("  DeepL API key for the English titles (deepl.com, plan «API Free»; Enter to skip)",
+                               secret=True, optional=True)
+            if not key:
+                return ""
+            said = []
+            en = titles.deepl("Παγκόσμια ημέρα ψυχικής υγείας", key, log=said.append)
+            if en:
+                self.say("  ✓ DeepL works: «Παγκόσμια ημέρα ψυχικής υγείας» → %s" % titles.house_style(en))
+                return key
+            self.say("  ✗ DeepL did not translate (%s)" % (" ".join(said).strip() or "no answer"))
+            if not self.con.yes("  Try another key?", True):
+                return ""
+
     def try_mail(self, mail, to):
         problem = self.mailer(mail, to)
         if problem:
@@ -474,12 +490,14 @@ class Setup:
                 mail["MAIL_TO"] = me[0]
                 self.try_mail(mail, me[0])
             incoming = self.email_inbox()
-            key = self.con.ask("  Claude API key for suggested English titles and topics (Enter to skip)", secret=True, optional=True)
+            deepl_key = self.deepl_key()
+            key = self.con.ask("  Claude API key (optional: Greek titles from Greeklish file names; Enter to skip)",
+                               secret=True, optional=True)
             test_dir = site.rstrip("/") + "/" + TEST_FOLDER
             target = site if live else test_dir
             set_secrets(repo, dict({"FTP_HOST": host, "FTP_USER": user, "FTP_PASSWORD": password, "FTP_SITE_DIR": target,
                                     "FTP_PRIVATE_DIR": private, "FTP_TLS": "1" if tls else "0", "ADMIN_PATH": admin_path,
-                                    "ANTHROPIC_API_KEY": key}, **mail, **incoming),
+                                    "ANTHROPIC_API_KEY": key, "DEEPL_API_KEY": deepl_key}, **mail, **incoming),
                         {"CS_FTP_HOST": host, "CS_FTP_USER": user, "CS_FTP_TLS": "1" if tls else "0",
                          "CS_SITE_DIR": site, "CS_PRIVATE_DIR": private}, self.runner)
             self.say("  ✓ GitHub secrets set" + ("" if live else " (publishing goes to the test folder until --go-live)"))

@@ -119,6 +119,15 @@ Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwat
   email (every second Thursday). WeTransfer's subject ("x sent you file.mp3 via WeTransfer") and its "Expires
   on…" date are never used. When the title (in Greek) and the date are clear, the broadcast is **published
   automatically**, through all the usual checks: never twice, real recordings, and so on.
+- **English title and topics.** When the admin leaves them empty, they are filled in by themselves
+  (`tools/titles.py`):
+  - **The English title:** a new part of a series reuses the English of its earlier parts. Any other title
+    is translated by **DeepL** (the free plan is plenty; the setup asks for its key and tries it), in
+    British English and in the site's style. A title that quotes Scripture is marked for a check, since the
+    English site uses the King James wording.
+  - **The topics:** taken from the most similar broadcasts already on the site. Measured on the site's
+    own broadcasts, each hidden together with its whole series: topics are guessed for 80% of them, with
+    the first topic right 83% of the time. The rest are left for the admin.
 - **When unsure, it waits.** If the title or the date is unclear, the recordings wait in the upload page's
   **«Από email»** tab, and the admin is emailed. With a Claude key, the title box is pre-filled with a Greek
   title made from the file names (e.g. `1_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3`), for the admin to

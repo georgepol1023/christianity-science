@@ -466,6 +466,7 @@ progress { width:100%; height:12px; }
       card.appendChild(f3);
       var tagsBox = document.createElement("div"); tagsBox.className = "chips"; chips(tagsBox, []);
       var tf = document.createElement("div"); tf.className = "f"; tf.innerHTML = "<span>Θέματα (προαιρετικά)</span>"; tf.appendChild(tagsBox);
+      var tfHint = document.createElement("em"); tfHint.textContent = "Αν δεν επιλέξετε, επιλέγονται αυτόματα από παρόμοιες εκπομπές."; tf.appendChild(tfHint);
       card.appendChild(tf);
       var files = document.createElement("div"); files.className = "files";
       d.files.forEach(function (f, i) {
