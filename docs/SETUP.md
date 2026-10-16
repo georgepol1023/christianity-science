@@ -106,16 +106,23 @@ Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwat
 
 - **Read-only.** The mailbox is opened in read-only mode, so the server itself refuses any change: nothing
   is marked as read, moved or deleted.
-- **Trusted senders only.** It looks only at emails from the trusted senders, and skips any that the mail
-  server marks as forged.
+- **Trusted senders only.** It looks only at emails from the trusted senders. WeTransfer's own emails come
+  from `noreply@wetransfer.com`; for those, the trusted sender is the person who made the transfer, which
+  WeTransfer puts in Reply-To.
+- **Never a fake.** An email counts only if its digital signature (DKIM) is valid for the domain it claims
+  to come from. A fake "WeTransfer" from another domain is ignored (the inbox already holds one), and so
+  is an email altered on the way. If the signature can't be checked, nothing is published by itself.
 - **Recordings.** It downloads WeTransfer transfers (or attached recordings), converts other audio formats
   to mp3, and orders the parts by file name.
 - **Title and date.** The title and the date come from the email: the subject, the transfer's title, or
   "15/10/2026", "15 Οκτωβρίου" or "της 15ης". Failing that, the date is the broadcast day just before the
-  email (every second Thursday). When both are clear, the broadcast is **published automatically**,
-  through all the usual checks: never twice, real recordings, and so on.
+  email (every second Thursday). WeTransfer's subject ("x sent you file.mp3 via WeTransfer") and its "Expires
+  on…" date are never used. When the title (in Greek) and the date are clear, the broadcast is **published
+  automatically**, through all the usual checks: never twice, real recordings, and so on.
 - **When unsure, it waits.** If the title or the date is unclear, the recordings wait in the upload page's
-  **«Από email»** tab, and the admin is emailed. There they can be played, completed and published with
+  **«Από email»** tab, and the admin is emailed. With a Claude key, the title box is pre-filled with a Greek
+  title made from the file names (e.g. `1_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3`), for the admin to
+  check. There they can be played, completed and published with
   one click, or discarded.
 - **Expired links.** A WeTransfer link that can't be downloaded is tried again every hour. After a day, the
   admin is emailed to upload the recordings by hand. WeTransfer's download interface isn't an official

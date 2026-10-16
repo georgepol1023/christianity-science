@@ -21,6 +21,29 @@ Only the Python standard library is used, so these tools keep working for years 
 import ftplib, io, os, posixpath, shutil, ssl, time
 
 
+CA_BUNDLES = [                                   # where else trusted certificates are found, if Python has none
+    "/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt", "/etc/ssl/cert.pem",
+    "C:/Program Files/Git/mingw64/etc/ssl/certs/ca-bundle.crt", "C:/Program Files/Git/usr/ssl/certs/ca-bundle.crt",
+    "C:/msys64/usr/ssl/certs/ca-bundle.crt", "C:/msys64/mingw64/etc/ssl/certs/ca-bundle.crt",
+]
+
+
+def tls_context(cafile=None):
+    """A TLS context that checks certificates. Some Python builds (e.g. MSYS2 on Windows) come without a list of
+    trusted certificates and would trust no server: then the computer's other lists are used."""
+    ctx = ssl.create_default_context(cafile=cafile)
+    if not ctx.cert_store_stats().get("x509_ca"):
+        try:
+            import certifi                          # if installed
+            ctx.load_verify_locations(certifi.where())
+        except ImportError:
+            for bundle in CA_BUNDLES:
+                if os.path.isfile(bundle):
+                    ctx.load_verify_locations(bundle)
+                    break
+    return ctx
+
+
 def configured():
     return all(os.environ.get(k) for k in ("FTP_HOST", "FTP_USER", "FTP_PASSWORD", "FTP_SITE_DIR", "FTP_PRIVATE_DIR"))
 
@@ -149,7 +172,7 @@ class FtpServer:
         for attempt in range(3):
             try:
                 if tls:
-                    ftp = _TLS(timeout=120, context=ssl.create_default_context(cafile=os.environ.get("FTP_TLS_CAFILE")))
+                    ftp = _TLS(timeout=120, context=tls_context(os.environ.get("FTP_TLS_CAFILE")))
                     ftp.connect(host, port)
                     try:
                         ftp.auth()

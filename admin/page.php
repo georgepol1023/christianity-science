@@ -454,7 +454,10 @@ progress { width:100%; height:12px; }
       var date = document.createElement("input"); date.type = "date"; date.value = d.date || ""; f1.appendChild(date);
       var f2 = document.createElement("label"); f2.className = "f";
       f2.innerHTML = "<span>Τίτλος</span>";
-      var title = document.createElement("input"); title.type = "text"; title.maxLength = 200; title.value = d.title || ""; f2.appendChild(title);
+      var title = document.createElement("input"); title.type = "text"; title.maxLength = 200; title.value = d.title || d.suggestion || ""; f2.appendChild(title);
+      if (!d.title && d.suggestion) {
+        var hint = document.createElement("em"); hint.textContent = "Πρόταση από τα ονόματα των αρχείων: ελέγξτε τη πριν τη δημοσίευση."; f2.appendChild(hint);
+      }
       row.appendChild(f1); row.appendChild(f2); card.appendChild(row);
       var tagsBox = document.createElement("div"); tagsBox.className = "chips"; chips(tagsBox, []);
       var tf = document.createElement("div"); tf.className = "f"; tf.innerHTML = "<span>Θέματα (προαιρετικά)</span>"; tf.appendChild(tagsBox);

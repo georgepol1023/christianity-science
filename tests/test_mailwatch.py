@@ -135,7 +135,9 @@ class MailWatchTest(unittest.TestCase):
         self.told = []
         self.logs = []
         self.watch = mailwatch.Watch(self.srv, self.box, TRUST, root=self.root, log=self.logs.append,
-                                     notify=lambda subject, text: self.told.append((subject, text)))
+                                     notify=lambda subject, text: self.told.append((subject, text)),
+                                     verify=lambda raw, msg: self.signature)
+        self.signature = True          # as if every email's DKIM signature were valid (the real check: SignatureTest)
 
     def tearDown(self):
         os.environ.pop("WETRANSFER_BASE", None)
@@ -230,7 +232,7 @@ class MailWatchTest(unittest.TestCase):
         self.watch.run()
         (ident, req), = self.requests()
         self.assertEqual(req["title"], "Από το στούντιο")
-        self.assertTrue(any("forged" in l for l in self.logs))
+        self.assertTrue(any("not really from" in l for l in self.logs))
 
     def test_trust_rules(self):
         self.assertTrue(mailwatch.trusted("Radio@Christianity.gr", ["radio@christianity.gr"]))
@@ -290,6 +292,79 @@ class MailWatchTest(unittest.TestCase):
         self.assertEqual(sorted(f["original"] for f in req["files"]), ["also.mp3", "evil.mp3"])
         self.assertFalse(os.path.exists(os.path.join(self.tmp, "evil.mp3")))
 
+    # -- the way WeTransfer's emails really look (as in science@christianity.gr, 15 Oct 2026)
+    def wetransfer_email(self, reply_to, link, frm="WeTransfer <noreply@wetransfer.com>", name="1_EPISTIMI_X.mp3"):
+        many = "%s?t_exp=1&t_lsid=a&utm_source=x  %s?t_exp=1&t_lsid=b  %s?utm_campaign=y" % (link, link, link)
+        return make_email(frm=frm, subject="%s sent you %s via WeTransfer" % (reply_to, name),
+                          body="%s sent you %s 4 items, 138 MB in total - Expires on 18 October, 2026 Get your files %s"
+                               % (reply_to, name, many), headers=[("Reply-To", reply_to)])
+
+    def test_a_real_wetransfer_email_counts_by_who_made_the_transfer(self):
+        files = [("%d_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3" % i, mp3_bytes(1200 + i)) for i in (2, 1, 4, 3)]
+        self.transfer("a432523b", files)
+        link = "https://wetransfer.com/downloads/a432523b/%s" % self.wt.transfers["a432523b"]["hash"]
+        self.box.messages.append(self.wetransfer_email("radio@christianity.gr", link))
+        self.watch.run()
+        (ident, req), = self.requests("drafts")             # no title in such an email: it waits, date filled in
+        self.assertEqual(req["date"], "2026-10-15")
+        self.assertEqual(req["from_email"]["from"], "radio@christianity.gr")
+        self.assertEqual([f["original"] for f in req["files"]],
+                         ["%d_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3" % i for i in (1, 2, 3, 4)])
+        downloads = [c for c in self.wt.calls if c[0] == "POST" and c[1].endswith("/download")]
+        self.assertEqual(len(downloads), 1)                 # the link three times in the email: fetched once
+        self.assertIn("radio@christianity.gr", self.told[0][1])
+
+    def test_a_cut_off_or_broken_link_does_not_spoil_the_good_one(self):
+        self.transfer("b0b0", [("1_X.mp3", mp3_bytes(1240)), ("2_X.mp3", mp3_bytes(1241))])
+        good = "https://wetransfer.com/downloads/b0b0/%s" % self.wt.transfers["b0b0"]["hash"]
+        broken = "https://wetransfer.com/downloads/dead0000/ffff0000"          # a whole link, but to nothing
+        raw = make_email(frm="WeTransfer <noreply@wetransfer.com>", subject="radio@christianity.gr sent you 1_X.mp3 via WeTransfer",
+                         body="Get your files https://wetransfer.com/downloads/b0b\nmore text %s and %s" % (broken, good),
+                         headers=[("Reply-To", "radio@christianity.gr")])
+        self.assertEqual(mailwatch.wetransfer_links(mailwatch.parse(raw)), [broken, good])   # the cut-off one is not a link
+        self.box.messages.append(raw)
+        self.watch.run()
+        (ident, req), = self.requests("drafts")
+        self.assertEqual(len(req["files"]), 2)
+
+    def test_wetransfer_emails_for_others_and_fake_wetransfer_emails_are_ignored(self):
+        link = self.transfer("f00d", [("a.mp3", mp3_bytes(1210))])
+        self.box.messages += [self.wetransfer_email("stranger@example.com", link),
+                              self.wetransfer_email("radio@christianity.gr", link, frm="WeTransfer <info@romankitchens.uk>")]
+        self.watch.run()
+        self.assertEqual((self.requests(), self.requests("drafts")), ([], []))
+
+    def test_a_forged_signature_is_ignored_and_an_unchecked_one_waits(self):
+        link = self.transfer("beef", [("a.mp3", mp3_bytes(1220))])
+        self.box.messages.append(make_email(subject="Εκπομπή 15/10/2026 Υπογραφή", body=link))
+        self.signature = False
+        self.watch.run()
+        self.assertEqual((self.requests(), self.requests("drafts")), ([], []))
+        self.assertTrue(any("not really from" in l for l in self.logs))
+        self.signature = None                               # dkimpy missing: never published by itself
+        self.watch.run()
+        self.assertEqual(self.requests(), [])
+        (ident, req), = self.requests("drafts")
+        self.assertEqual(req["title"], "Υπογραφή")
+        self.assertIn("υπογραφή", self.told[0][1])
+
+    def test_titles_suggested_from_file_names(self):
+        self.assertEqual(mailwatch.name_stem(["1_EPISTIMI_PAGKOSMIA_MERA.mp3", "2_EPISTIMI_PAGKOSMIA_MERA.mp3"]),
+                         "EPISTIMI PAGKOSMIA MERA")
+        self.assertEqual(mailwatch.name_stem(["Η δημιουργία - 1.mp3", "Η δημιουργία - 2.mp3"]), "Η δημιουργία")
+        self.assertEqual(mailwatch.name_stem(["a.mp3", "b.mp3"]), "")
+        site = inbox.load_site(self.root)
+        os.environ.pop("ANTHROPIC_API_KEY", None)
+        self.assertEqual(mailwatch.suggest_title(["Η δημιουργία (1).mp3", "Η δημιουργία (2).mp3"], site), "Η δημιουργία")
+        self.assertEqual(mailwatch.suggest_title(["Εκπομπή (1).mp3", "Εκπομπή (2).mp3"], site), "")
+        self.assertEqual(mailwatch.suggest_title(["1_EPISTIMI_X_Y.mp3"], site), "")      # Greeklish needs Claude
+        self.transfer("cafe", [("Οι άγγελοι (%d).mp3" % i, mp3_bytes(1230 + i)) for i in (1, 2)])
+        link = "https://wetransfer.com/downloads/cafe/%s" % self.wt.transfers["cafe"]["hash"]
+        self.box.messages.append(self.wetransfer_email("radio@christianity.gr", link, name="2 files"))
+        self.watch.run()
+        (ident, req), = self.requests("drafts")
+        self.assertEqual(req["title_suggestion"], "Οι άγγελοι")
+
     # -- reading titles and dates
     def test_titles_and_dates_from_subjects(self):
         d = datetime.date(2026, 10, 16)
@@ -309,6 +384,41 @@ class MailWatchTest(unittest.TestCase):
         self.assertEqual(mailwatch.schedule_day(datetime.date(2026, 10, 28), nb), datetime.date(2026, 10, 15))
         self.assertEqual(mailwatch.schedule_day(datetime.date(2026, 10, 29), nb), datetime.date(2026, 10, 29))
         self.assertEqual(mailwatch.schedule_day(datetime.date(2026, 10, 10), nb), datetime.date(2026, 10, 1))
+
+
+try:
+    import base64, dkim
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+except ImportError:
+    dkim = None
+
+
+@unittest.skipUnless(dkim, "dkimpy is not installed")
+class SignatureTest(unittest.TestCase):
+    """The real DKIM check, with a key made here and its "DNS record" handed to the check."""
+
+    def setUp(self):
+        key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        self.private = key.private_bytes(serialization.Encoding.PEM, serialization.PrivateFormat.TraditionalOpenSSL,
+                                         serialization.NoEncryption())
+        pub = key.public_key().public_bytes(serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo)
+        record = b"v=DKIM1; k=rsa; p=" + base64.b64encode(pub)
+        self.dns = lambda name, timeout=5: record if name == b"s1._domainkey.wetransfer.com." else None
+
+    def signed(self, raw, domain=b"wetransfer.com"):
+        return dkim.sign(raw, b"s1", domain, self.private, include_headers=[b"from", b"subject", b"reply-to", b"date"]) + raw
+
+    def test_signed_by_wetransfer(self):
+        raw = make_email(frm="WeTransfer <noreply@wetransfer.com>", subject="a@b.gr sent you x.mp3 via WeTransfer",
+                         headers=[("Reply-To", "a@b.gr")])
+        good = self.signed(raw)
+        self.assertTrue(mailwatch.genuine(good, mailwatch.parse(good), dnsfunc=self.dns))
+        bad = good.replace(b"Reply-To: a@b.gr", b"Reply-To: x@y.gr")         # changed after signing
+        self.assertFalse(mailwatch.genuine(bad, mailwatch.parse(bad), dnsfunc=self.dns))
+        self.assertFalse(mailwatch.genuine(raw, mailwatch.parse(raw), dnsfunc=self.dns))   # not signed
+        other = self.signed(make_email(frm="WeTransfer <info@romankitchens.uk>", subject="x"))
+        self.assertFalse(mailwatch.genuine(other, mailwatch.parse(other), dnsfunc=self.dns))   # signed for another domain
 
 
 @unittest.skipUnless(os.environ.get("CS_IMAP_TEST_HOST"), "no test mail server (CS_IMAP_TEST_HOST)")

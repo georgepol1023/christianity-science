@@ -33,7 +33,7 @@ jobs:
         run: |
           sudo apt-get update -q
           sudo apt-get install -y -q ffmpeg
-          pip install -q pyftpdlib pyopenssl
+          pip install -q pyftpdlib pyopenssl dkimpy
       - name: PHP syntax of the upload page
         run: |
           php -v

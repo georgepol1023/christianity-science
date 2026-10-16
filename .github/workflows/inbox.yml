@@ -44,6 +44,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: The email signature checker (DKIM)
+        run: pip install -q dkimpy
       - name: New recordings by email?
         id: mail
         continue-on-error: true          # the mailbox being unreachable must not stop the rest

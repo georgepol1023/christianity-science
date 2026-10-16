@@ -414,6 +414,7 @@ function cs_drafts(): array
         $r = json_decode((string)file_get_contents($f), true) ?: [];
         $mail = is_array($r['from_email'] ?? null) ? $r['from_email'] : [];
         $out[] = ['id' => $id, 'date' => (string)($r['date'] ?? ''), 'title' => (string)($r['title'] ?? ''),
+                  'suggestion' => (string)($r['title_suggestion'] ?? ''),
                   'from' => (string)($mail['from'] ?? ''), 'subject' => (string)($mail['subject'] ?? ''),
                   'files' => array_map(function ($x) { return ['original' => (string)($x['original'] ?? ''), 'bytes' => (int)($x['bytes'] ?? 0)]; },
                                        is_array($r['files'] ?? null) ? $r['files'] : [])];

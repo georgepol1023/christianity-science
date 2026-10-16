@@ -57,7 +57,7 @@ class Mailbox:
         """[raw email bytes] received in the last `days` days. The mailbox is opened read-only."""
         host, port, user, password, use_ssl, folder = self.args
         try:
-            imap = imaplib.IMAP4_SSL(host, port, ssl_context=ssl.create_default_context(), timeout=60) if use_ssl \
+            imap = imaplib.IMAP4_SSL(host, port, ssl_context=serverfs.tls_context(), timeout=60) if use_ssl \
                 else imaplib.IMAP4(host, port, timeout=60)
         except ssl.SSLCertVerificationError as ex:
             raise SystemExit("The mail server's certificate is not for %s (%s); set MAIL_IMAP_HOST to the name it is for "
@@ -93,7 +93,41 @@ def parse(raw):
 
 
 def sender(msg):
+    """The address in From (for a WeTransfer email: WeTransfer's own)."""
     return (email.utils.parseaddr(str(msg.get("From", "")))[1] or "").lower()
+
+
+WETRANSFER = "wetransfer.com"
+
+
+def real_sender(msg):
+    """Who sent the recordings. WeTransfer's emails come from noreply@wetransfer.com; the person who made the
+    transfer is in Reply-To (WeTransfer puts the address it checked there), and in the subject ("x@y sent you")."""
+    frm = sender(msg)
+    if not frm.endswith("@" + WETRANSFER):
+        return frm
+    rt = (email.utils.parseaddr(str(msg.get("Reply-To", "")))[1] or "").lower()
+    if rt:
+        return rt
+    m = re.match(r"\s*([^\s@]+@[^\s@]+)\s+(?:sent you|σας έστειλε)", str(msg.get("Subject", "")), re.I)
+    return m.group(1).lower() if m else ""
+
+
+def genuine(raw, msg, dnsfunc=None):
+    """Whether the email really comes from the domain in its From: a valid DKIM signature of that domain.
+    True / False, or None if it cannot be checked here (the dkimpy library is not installed)."""
+    try:
+        import dkim
+    except ImportError:
+        return None
+    try:
+        d = dkim.DKIM(raw)
+        ok = d.verify(dnsfunc=dnsfunc) if dnsfunc else d.verify()
+    except Exception:                                  # a broken or missing signature
+        return False
+    signed = (d.domain or b"").decode("ascii", "replace").lower()
+    domain = sender(msg).rsplit("@", 1)[-1]
+    return bool(ok and signed and (domain == signed or domain.endswith("." + signed)))
 
 
 def trusted(address, trust):
@@ -147,13 +181,19 @@ LINK = re.compile(r"https?://(?:we\.tl|(?:www\.)?wetransfer\.com|[a-z0-9-]+\.wet
 
 
 def wetransfer_links(msg):
-    seen = []
+    """The transfers linked in the email, each once (WeTransfer's emails repeat the link with other tracking codes)."""
+    seen, keys = [], set()
     for t in texts(msg):
         for m in LINK.finditer(t):
             u = m.group(0).rstrip(".,;")
-            if "/downloads/" in u or "we.tl/" in u.lower():
-                if u not in seen:
-                    seen.append(u)
+            p = urllib.parse.urlparse(u)
+            tid = re.search(r"/downloads/([0-9A-Za-z]+)/[0-9A-Za-z]+", p.path)
+            if not tid and not re.match(r"(?i)^/t-[0-9A-Za-z]+", p.path or ""):
+                continue                                   # not a whole download link (e.g. one cut off by a line break)
+            key = tid.group(1) if tid else p.netloc.lower() + p.path
+            if key not in keys:
+                keys.add(key)
+                seen.append(u)
     return seen
 
 
@@ -175,7 +215,8 @@ class WeTransfer:
     def __init__(self, base=None):
         self.base = (base or os.environ.get("WETRANSFER_BASE") or "https://wetransfer.com").rstrip("/")
         self.jar = http.cookiejar.CookieJar()
-        self.web = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar))
+        self.web = urllib.request.build_opener(urllib.request.HTTPSHandler(context=serverfs.tls_context()),
+                                               urllib.request.HTTPCookieProcessor(self.jar))
         self.web.addheaders = [("User-Agent", UA)]
         self.token = None
 
@@ -375,8 +416,8 @@ def find_date(text, around):
     return None, None
 
 
-SENT_FILES = re.compile(r"(?i)\bsent you (?:some )?files?\b|\bhas sent you\b|\byou(?:'ve)? received (?:some )?files?\b|"
-                        r"σας έστειλε|σου έστειλε|έλαβες αρχεία|λάβατε αρχεία")
+SENT_FILES = re.compile(r"(?i)\bsent you\b|\bvia wetransfer\b|\byou(?:'ve)? received\b|\bhas shared\b|"
+                        r"σας έστειλε|σου έστειλε|έλαβες|λάβατε|μέσω wetransfer")
 
 
 GENERIC = set("""η ο το τα οι τη την της του των και με για σε στο στη στην απο νεα νεο νεες νεος αρχεια αρχειο αρχειων
@@ -416,10 +457,20 @@ def schedule_day(received, next_broadcast):
     return day if 0 <= (received - day).days <= 13 else None
 
 
-def title_and_date(msg, transfer_title, site):
-    """(title or "", date or None, how the date was found)."""
+def title_and_date(msg, transfer_title, site, names=()):
+    """(title or "", date or None, how the date was found).
+
+    WeTransfer's own emails are a template ("x@y sent you file.mp3 via WeTransfer … Expires on 18 October"): only the
+    transfer's title is read from them, and only if it is not just one of the file names (WeTransfer uses the first
+    file's name when the sender gives no title)."""
     received = received_date(msg)
-    candidates = [str(msg.get("Subject", "")), transfer_title or ""] + texts(msg)[:1]
+    stems = {os.path.splitext(os.path.basename(n))[0].lower() for n in names} | {os.path.basename(n).lower() for n in names}
+    if transfer_title and transfer_title.strip().lower() in stems:
+        transfer_title = ""
+    if sender(msg).endswith("@" + WETRANSFER):
+        candidates = [transfer_title or ""]
+    else:
+        candidates = [str(msg.get("Subject", "")), transfer_title or ""] + texts(msg)[:1]
     date, how = None, ""
     for c in candidates:
         d, txt = find_date(c, received)
@@ -439,6 +490,57 @@ def title_and_date(msg, transfer_title, site):
 
 
 # ---------------------------------------------------------------- handing over to the inbox
+def name_stem(files):
+    """What the recordings' file names have in common, as words: "1_EPISTIMI_PAGKOSMIA_MERA.mp3",
+    "2_EPISTIMI_PAGKOSMIA_MERA.mp3" → "EPISTIMI PAGKOSMIA MERA". "" if they have nothing in common."""
+    stems = set()
+    for f in files:
+        s = os.path.splitext(os.path.basename(f))[0]
+        s = re.sub(r"(?i)^\s*(part|meros|μέρος)?[\s_.\-]*\(?\d{1,2}\)?[\s_.\-]+", "", s)       # leading part numbers
+        s = re.sub(r"(?i)[\s_.\-]*\(?(part|meros|μέρος)?[\s_.\-]*\d{1,2}\)?\s*$", "", s)       # trailing ones
+        stems.add(re.sub(r"\s+", " ", re.sub(r"[_\-.]+", " ", s)).strip())
+    return stems.pop() if len(stems) == 1 else ""
+
+
+def suggest_title(files, site):
+    """A Greek title suggested from the file names, for the admin to check («Από email»); "" if there is none.
+    Greek names are used as they are; names in Latin letters ("Greeklish") are put into proper Greek by Claude
+    (only with ANTHROPIC_API_KEY; never required)."""
+    stem = name_stem(files)
+    if not stem or len(re.findall(r"[^\W\d_]", stem)) < 4:
+        return ""
+    if re.search(r"[α-ωΑ-Ωά-ώ]", stem):
+        stem = clean_title(stem)                         # "Εκπομπή" alone is not a title
+        return stem[:1].upper() + stem[1:]
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        return ""
+    try:
+        import anthropic
+    except ImportError:
+        return ""
+    examples = "\n".join("- " + e["title"] for e in list(site["by_date"].values())[:15])
+    prompt = ("These are the recordings of a broadcast of the Greek radio programme «Χριστιανισμός & Επιστήμη». "
+              "Their file names, written in Latin letters (Greeklish), have this in common: %r.\n"
+              "Write the broadcast's title in proper Greek, with accents, in the same style as these earlier titles:\n%s\n\n"
+              "A leading EPISTIMI (Επιστήμη) or XRISTIANISMOS is the programme's name, not part of the title: leave it "
+              "out. If you cannot tell what the title is, answer with an empty title." % (stem, examples))
+    schema = {"type": "object", "additionalProperties": False, "required": ["title"], "properties": {"title": {"type": "string"}}}
+    try:
+        client = anthropic.Anthropic(timeout=120, max_retries=2)
+        r = client.beta.messages.create(
+            model="claude-opus-5-5", max_tokens=16000,
+            betas=["server-side-fallback-2026-07-01"], fallbacks="default",
+            output_config={"effort": "low", "format": {"type": "json_schema", "schema": schema}},
+            messages=[{"role": "user", "content": prompt}])
+        if r.stop_reason != "end_turn":
+            return ""
+        title = json.loads("".join(b.text for b in r.content if b.type == "text")).get("title", "")
+        return inbox.clean_text(title, "title", required=False)
+    except Exception as ex:                              # a suggestion is never required
+        print("  Claude: no title suggestion (%s)" % ex)
+        return ""
+
+
 def hand_over(srv, files, fields, folder):
     """Put a broadcast request (as the upload page makes it) into private/<folder>/<id>/, appearing in one step."""
     ident = time.strftime("%Y%m%d-%H%M%S-") + os.urandom(4).hex()
@@ -456,8 +558,9 @@ def hand_over(srv, files, fields, folder):
 
 
 class Watch:
-    def __init__(self, srv, mailbox, trust, root=ROOT, log=print, wetransfer=None, notify=None):
+    def __init__(self, srv, mailbox, trust, root=ROOT, log=print, wetransfer=None, notify=None, verify=None):
         self.srv, self.mailbox, self.trust, self.root, self.log = srv, mailbox, trust, root, log
+        self.verify = verify or genuine
         self.wetransfer = wetransfer or WeTransfer
         self.notify = notify or tell_admin
 
@@ -470,21 +573,28 @@ class Watch:
         self.srv.write("private", SEEN, json.dumps(seen, ensure_ascii=False, indent=1).encode())
 
     def new_emails(self):
-        """[(message id, message)] of trusted, unforged, not yet handled emails that carry recordings."""
+        """[(message id, message, verified)] of not yet handled emails with recordings from trusted senders.
+
+        For an email to count, the person behind it must be trusted (for WeTransfer's emails: the transfer's sender),
+        and the email must not be forged: its DKIM signature must be valid for the domain it comes from (WeTransfer's
+        own, for its emails). If signatures cannot be checked here, `verified` is None: such recordings are never
+        published automatically, they wait for the admin."""
         seen, out = self.load_seen(), []
         for raw in self.mailbox.recent():
             msg = parse(raw)
             mid = message_id(msg, raw)
             if seen.get(mid, {}).get("done"):
                 continue
-            who = sender(msg)
+            who = real_sender(msg)
             if not trusted(who, self.trust):
                 continue
-            if forged(msg):
-                self.log("ignored (the mail server says it is forged): %s %s" % (who, msg.get("Subject")))
+            if not (wetransfer_links(msg) or attachments(msg)):
                 continue
-            if wetransfer_links(msg) or attachments(msg):
-                out.append((mid, msg))
+            verified = self.verify(raw, msg)
+            if verified is False or forged(msg):
+                self.log("ignored (not really from %s): %s" % (sender(msg).rsplit("@", 1)[-1], msg.get("Subject")))
+                continue
+            out.append((mid, msg, verified))
         return out
 
     def run(self):
@@ -493,11 +603,12 @@ class Watch:
             return 0
         seen, problems = self.load_seen(), 0
         site = inbox.load_site(self.root)
-        for mid, msg in emails:
+        for mid, msg, verified in emails:
             entry = seen.setdefault(mid, {"first": time.time()})
             entry["time"] = time.time()
             subject = str(msg.get("Subject", ""))
-            self.log("email from %s: %s" % (sender(msg), subject))
+            who = real_sender(msg)
+            self.log("email from %s: %s" % (who, subject))
             work = tempfile.mkdtemp(prefix="cs-mail-")
             try:
                 files, transfer_title = [], ""
@@ -506,26 +617,36 @@ class Watch:
                     with open(p, "wb") as f:
                         f.write(data)
                     files.append(p)
+                failed = []
                 for link in wetransfer_links(msg):
-                    got, t = self.wetransfer().fetch(link, work)
+                    try:
+                        got, t = self.wetransfer().fetch(link, work)
+                    except Unusable as ex:                  # another link of the email may still work
+                        failed.append(str(ex))
+                        continue
                     files += got
                     transfer_title = transfer_title or t
                 if not files:
-                    raise Unusable("No recordings were found in the transfer.")
+                    raise Unusable(failed[0] if failed else "No recordings were found in the transfer.")
                 files = as_mp3(files, work)[:inbox.MAX_PARTS]
-                title, date, how = title_and_date(msg, transfer_title, site)
+                title, date, how = title_and_date(msg, transfer_title, site, names=files)
                 fields = {"date": date.isoformat() if date else "", "title": title, "title_en": "", "tags": [],
-                          "replace": False, "email": "", "from_email": {"from": sender(msg), "subject": subject, "date_from": how}}
-                sure = bool(title and date)
+                          "replace": False, "email": "", "from_email": {"from": who, "subject": subject, "date_from": how}}
+                if not title:                               # e.g. "1_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3"
+                    fields["title_suggestion"] = suggest_title(files, site) or ""
+                # published by itself only when everything is clear: a Greek title (like every title on the site),
+                # a date, and an email whose signature was checked
+                sure = bool(title and re.search(r"[α-ωά-ώΑ-Ω]", title) and date and verified)
                 where = "inbox" if sure else "drafts"
                 ident = hand_over(self.srv, files, fields, where)
                 entry.update(done=True, outcome=where, request=ident)
                 self.log("  -> %s (%d recordings, date %s, title %r)" % (where, len(files), fields["date"] or "?", title))
                 if not sure:
+                    why = ("δεν βρέθηκε ο τίτλος" if not title else "δεν βρέθηκε η ημερομηνία" if not date
+                           else "η υπογραφή του email δεν μπόρεσε να ελεγχθεί")
                     self.notify("Ηχογραφήσεις από email περιμένουν να συμπληρωθούν",
                                 "Ήρθαν %d ηχογραφήσεις με email από %s («%s»), αλλά %s. Ανοίξτε τη σελίδα διαχείρισης, "
-                                "καρτέλα «Από email», για να τις δημοσιεύσετε με ένα κλικ."
-                                % (len(files), sender(msg), subject, "δεν βρέθηκε ο τίτλος" if not title else "δεν βρέθηκε η ημερομηνία"))
+                                "καρτέλα «Από email», για να τις δημοσιεύσετε με ένα κλικ." % (len(files), who, subject, why))
             except Unusable as ex:                        # tried again next time; the admin is told after a day
                 entry["error"] = str(ex)
                 self.log("  could not fetch the recordings: %s" % ex)
@@ -533,7 +654,7 @@ class Watch:
                     entry.update(done=True, outcome="failed")
                     self.notify("Οι ηχογραφήσεις από email δεν μπόρεσαν να ληφθούν",
                                 "Το email από %s («%s») έχει σύνδεσμο WeTransfer, αλλά οι ηχογραφήσεις δεν μπόρεσαν να "
-                                "ληφθούν αυτόματα (%s). Ανεβάστε τις από τη σελίδα διαχείρισης, «Νέα εκπομπή»." % (sender(msg), subject, ex))
+                                "ληφθούν αυτόματα (%s). Ανεβάστε τις από τη σελίδα διαχείρισης, «Νέα εκπομπή»." % (who, subject, ex))
             finally:
                 shutil.rmtree(work, ignore_errors=True)
                 self.save_seen(seen)

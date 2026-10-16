@@ -69,7 +69,7 @@ def directadmin(base, user, password, command, fields, verify=True):
     data = urllib.parse.urlencode(fields).encode()
     req = urllib.request.Request(base.rstrip("/") + "/" + command, data=data, method="POST")
     req.add_header("Authorization", "Basic " + base64.b64encode(("%s:%s" % (user, password)).encode()).decode())
-    ctx = None if verify else ssl._create_unverified_context()
+    ctx = serverfs.tls_context() if verify else ssl._create_unverified_context()
     try:
         with urllib.request.urlopen(req, timeout=60, context=ctx) as r:
             text = r.read().decode("utf-8", "replace")
@@ -89,7 +89,7 @@ def directadmin_base(con, domain):
     """The DirectAdmin address, and whether its certificate can be checked."""
     base = "https://%s:2222" % domain
     try:
-        urllib.request.urlopen(base + "/", timeout=20)
+        urllib.request.urlopen(base + "/", timeout=20, context=serverfs.tls_context())
         return base, True
     except urllib.error.HTTPError:
         return base, True
@@ -193,7 +193,7 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 def fetch(url, cookie=None):
     """(status, headers, body) without following redirects."""
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (setup check)", **({"Cookie": cookie} if cookie else {})})
-    opener = urllib.request.build_opener(NoRedirect)
+    opener = urllib.request.build_opener(NoRedirect, urllib.request.HTTPSHandler(context=serverfs.tls_context()))
     try:
         with opener.open(req, timeout=60) as r:
             return r.status, r.headers, r.read()
@@ -428,7 +428,7 @@ class Setup:
                 self.say("  ✗ %s; email fetching is left out for now (run the setup again later)" % ex)
                 return {}
         msgs = [mailwatch.parse(r) for r in raws]
-        ours = [m for m in msgs if mailwatch.trusted(mailwatch.sender(m), trust_list)]
+        ours = [m for m in msgs if mailwatch.trusted(mailwatch.real_sender(m), trust_list)]
         links = [m for m in ours if mailwatch.wetransfer_links(m) or mailwatch.attachments(m)]
         self.say("  ✓ signed in to %s (read-only): %d emails in the last %d days, %d from the trusted senders, %d with recordings"
                  % (addr, len(msgs), mailwatch.DAYS, len(ours), len(links)))
