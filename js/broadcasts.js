@@ -45,9 +45,9 @@
     podcastParts: true,
     columnUrl: "column.html",
     latestColumn: {
-      month: "Σεπτεμβρίου 2026",
-      title: "Ανάσταση ή Ψηφιακή αθανασία;",
-      url: "column/2437.htm"
+      month: "Οκτωβρίου 2026",
+      title: "Τεχνητή νοημοσύνη και η ανθρώπινη κρίση",
+      url: "column/2442.htm"
     },
     youtubeId: "JW9gcjpt89o",
     mp3Base: "mp3/broadcasts/"

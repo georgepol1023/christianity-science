@@ -362,4 +362,4 @@ window.BROADCAST_TITLES_EN = {
   "2008-01-31": "Introductory broadcast"
 };
 
-window.COLUMN_TITLES_EN = {"column/2437.htm": "Resurrection or digital immortality?"};   // made by tools/build_en.py from translation/column/
+window.COLUMN_TITLES_EN = {};   // made by tools/build_en.py from translation/column/
