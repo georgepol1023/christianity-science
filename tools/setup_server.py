@@ -16,7 +16,7 @@ What the first-time setup does (each step says what it is doing, and stops with 
      the internet that the pages load and the upload page works. You get the addresses to look at.
 Needs: the GitHub CLI (gh), signed in (gh auth login), and this repository's folder.
 """
-import argparse, base64, getpass, os, re, secrets, smtplib, ssl, string, subprocess, sys, time
+import argparse, base64, getpass, os, re, secrets, smtplib, socket, ssl, string, subprocess, sys, time
 from email.message import EmailMessage
 import urllib.error, urllib.parse, urllib.request
 
@@ -306,6 +306,11 @@ class Setup:
             user = con.ask("  FTP user name")
             password = con.ask("  FTP password", secret=True)
             fresh = False
+        try:
+            socket.getaddrinfo(host, self.ftp_port)
+        except (socket.gaierror, UnicodeError):
+            raise Stop("There is no server called «%s». The FTP server is a name such as %s (not DirectAdmin's "
+                       "port 2222); run the setup again." % (host, self.ftp_host))
         tried = []
         for host_, tls in [(host, True)] + [(n, True) for n in cert_names(host, self.ftp_port) if n != host] + [(host, False)]:
             if host_ in [h for h, t in tried if t == tls]:
