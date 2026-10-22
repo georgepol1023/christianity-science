@@ -14,6 +14,12 @@ AddType font/woff2 .woff2
 
 <IfModule mod_rewrite.c>
   RewriteEngine On
+  # http:// → https:// (phones only offer their share menu on secure pages; old links and bookmarks use http://).
+  # Not /.well-known/: the certificate's renewal is checked over http://
+  RewriteCond %{HTTPS} !=on
+  RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
+  RewriteRule ^ https://www.christianity-science.gr%{REQUEST_URI} [R=301,L,NE]
   # Nothing in the media, picture and data folders may ever run as a program
   RewriteRule ^(mp3|files|pictures|fonts|data|css|js)/.*\.(php[0-9]?|phtml|phar|pl|py|cgi|sh)$ - [F,NC]
   # Hidden files and folders (.git and the like), except /.well-known/ (certificates)
