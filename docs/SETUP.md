@@ -138,10 +138,10 @@ Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwat
   titles where every word is sure come out spelled exactly right 98.6% of the time. Otherwise (a word the
   site never used, or "Ti…" that may be «Τι» or «τη»), the title is suggested, not used.
 - **When unsure, it waits.** If the title or the date is unclear, the recordings wait in the upload page's
-  **«Από email»** tab, and the admin is emailed. With a Claude key, the title box is pre-filled with a Greek
-  title made from the file names (e.g. `1_EPISTIMI_PAGKOSMIA_MERA_PSYXIKIS_YGEIAS.mp3`), for the admin to
-  check. There they can be played, completed and published with
-  one click, or discarded.
+  **«Από email»** tab, and the admin is emailed. The title box is pre-filled with the Greek read from the file
+  names, for the admin to check. Only when nothing can be read from them, and only with a Claude key (optional),
+  does Claude suggest one instead; it is never published by itself. There they can be played, completed and
+  published with one click, or discarded.
 - **Expired links.** A WeTransfer link that can't be downloaded is tried again every hour. After a day, the
   admin is emailed to upload the recordings by hand. WeTransfer's download interface isn't an official
   one, so if WeTransfer changes its site, this is what happens, and nothing else breaks.

@@ -35,7 +35,7 @@ env:
   MAIL_FROM: ${{ secrets.MAIL_FROM }}
   MAIL_TO: ${{ secrets.MAIL_TO }}
   DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}           # English titles (tools/titles.py)
-  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: Greek titles from Greeklish names, suggestions
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: a suggested title when the file names cannot be read
 
 jobs:
   publish:

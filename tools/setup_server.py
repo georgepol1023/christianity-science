@@ -496,7 +496,7 @@ class Setup:
                 self.try_mail(mail, me[0])
             incoming = self.email_inbox()
             deepl_key = self.deepl_key()
-            key = self.con.ask("  Claude API key (optional: Greek titles from Greeklish file names; Enter to skip)",
+            key = self.con.ask("  Claude API key (optional: a suggested title when the file names cannot be read; Enter to skip)",
                                secret=True, optional=True)
             test_dir = site.rstrip("/") + "/" + TEST_FOLDER
             target = site if live else test_dir
