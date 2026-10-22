@@ -279,7 +279,7 @@ class Setup:
     def ftp_account(self):
         """(host, user, password, tls) of a working FTP account."""
         con = self.con
-        if con.yes("  Make a new FTP account for publishing now, with your DirectAdmin login?", True):
+        if con.yes("  Make a new FTP account for publishing now, with your DirectAdmin login?", False):
             base, da_user, da_pw, verify = self.ask_directadmin()
             password = strong_password()
             user = "%s@%s" % (FTP_NAME, self.domain)
@@ -387,7 +387,7 @@ class Setup:
         con = self.con
         if not con.yes("  Send an email after each broadcast is published (from %s@%s)?" % (MAIL_NAME, self.domain), True):
             return {}
-        if self.da or con.yes("  Make that mailbox now with your DirectAdmin login?", True):
+        if self.da or con.yes("  Make that mailbox now with your DirectAdmin login?", False):
             base, da_user, da_pw, verify = self.ask_directadmin()
             password = strong_password()
             try:

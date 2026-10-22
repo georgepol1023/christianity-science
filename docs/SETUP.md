@@ -39,11 +39,13 @@ DirectAdmin user name and password.
    ```
    python tools/setup_server.py
    ```
-   It asks for your DirectAdmin login (used once, not stored), then your name, email and a password for
+   It asks for an existing FTP account's login, then your name, email and a password for
    the upload page, whether to send result emails, and whether to fetch the recordings emailed to
    science@christianity.gr. For that it needs that mailbox's password and who may send recordings. It
    then:
-   - makes an FTP account just for publishing (`publish@…`), and a mailbox for the emails (`ekpompes@…`);
+   - makes no new accounts unless you answer yes: it can make an FTP account just for publishing
+     (`publish@…`) and a mailbox for the result emails (`ekpompes@…`) with your DirectAdmin login (used
+     once, not stored); otherwise it uses the FTP account and mailbox you give it;
    - finds the site's folder and makes the private folder `cs-admin` next to it;
    - makes the upload page's settings (with a code for your phone's authenticator app);
    - sets all of GitHub's secrets;
