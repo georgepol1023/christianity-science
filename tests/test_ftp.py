@@ -161,6 +161,20 @@ class FtpBase:
         self.srv.write("site", "y.txt", b"2")
         self.assertEqual(self.srv.list("site", ""), {"x.txt": 1, "y.txt": 1})
 
+    def test_the_connection_drops_after_a_rename(self):
+        """The server renames the upload into place, then hangs up before answering (seen on webleaders): asking
+        again finds nothing to rename. The upload is done, and the file is never removed."""
+        ftp, real = self.srv.ftp, self.srv.ftp.rename
+        def rename_then_hang_up(a, b):
+            ftp.rename = real                       # once
+            real(a, b)
+            ftp.sock.close()
+            raise EOFError
+        ftp.rename = rename_then_hang_up
+        self.srv.write("site", "z.txt", b"new!")
+        self.assertEqual(self.srv.read("site", "z.txt"), b"new!")
+        self.assertEqual(self.srv.list("site", ""), {"z.txt": 4})
+
     # -- the tools from start to finish
     def test_deploy_over_ftp(self):
         with open(self.disk("site", "index.html"), "w") as f:

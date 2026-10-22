@@ -333,12 +333,18 @@ class FtpServer:
         got = self.size_abs(tmp)
         if got is not None and got != size:
             raise ServerError("%s: the server has %d bytes, should be %d" % (path, got, size))
-        self._replace(tmp, p)
+        self._replace(tmp, p, size)
 
-    def _replace(self, tmp, p):
+    def _replace(self, tmp, p, size):
         try:
             self._do(lambda: self.ftp.rename(tmp, p))
         except ANSWER:
+            if self.size_abs(tmp) is None:
+                # the temporary file is gone: the rename went through, and the connection dropped before the
+                # answer (seen on webleaders); asking again finds nothing to rename. Never remove p then.
+                if self.size_abs(p) == size:
+                    return
+                raise ServerError("could not put %s in place: its upload is gone" % p)
             # some servers will not rename over an existing file: remove it, then rename
             try:
                 self._do(lambda: self.ftp.delete(p))
