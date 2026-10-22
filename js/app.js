@@ -226,8 +226,10 @@
     dl: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
     link: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1.2 1.2"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2"/></svg>'
   };
-  // phones and tablets share through their own menu (WhatsApp, Viber, e-mail…); computers copy the link
-  var SHARE = !!navigator.share && matchMedia("(pointer: coarse)").matches;
+  // phones and tablets share through their own menu (WhatsApp, Viber, e-mail…); computers copy the link, and so do
+  // phones whose browser has no such menu (a page opened over http://, or inside another app such as Gmail)
+  var PHONE = matchMedia("(pointer: coarse)").matches;
+  var SHARE = !!navigator.share && PHONE;
   // the phone's own share symbol: the box with an arrow on iPhone and iPad, the three dots on Android
   var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   var SHARE_ICON = IOS
@@ -236,6 +238,11 @@
   function shareEp(ep) {
     var url = PAGE.split("#")[0] + "#e-" + ep.id;
     navigator.share({ title: ep.title + " – " + T.site, url: url }).catch(function () {});
+  }
+  function copyLink(url) {
+    (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(
+      function () { toast(T.copied); },
+      function () { prompt(T.copyPrompt, url); });
   }
 
   function partsHTML(ep) {
@@ -430,10 +437,7 @@
     }
     if ((t = e.target.closest("[data-share]"))) {
       var url = PAGE.split("#")[0] + "#e-" + t.dataset.share;
-      if (SHARE) { shareEp(BY_ID[t.dataset.share]); return; }
-      (navigator.clipboard ? navigator.clipboard.writeText(url) : Promise.reject()).then(
-        function () { toast(T.copied); },
-        function () { prompt(T.copyPrompt, url); });
+      if (SHARE) shareEp(BY_ID[t.dataset.share]); else copyLink(url);
       return;
     }
     if ((t = e.target.closest("[data-dl]"))) {
@@ -669,9 +673,13 @@
   ["timeupdate", "play", "pause", "loadedmetadata", "seeked"].forEach(function (t) { audio.addEventListener(t, miniSync); });
   // phones: share the broadcast that is playing, from the player bar
   var pShare = $("#pShare");
-  if (pShare && SHARE && window.parent === window) {
-    pShare.innerHTML = SHARE_ICON; pShare.hidden = false;
-    pShare.addEventListener("click", function () { if (player.ep) shareEp(player.ep); });
+  if (pShare && PHONE && window.parent === window) {
+    pShare.innerHTML = SHARE ? SHARE_ICON : I.link; pShare.hidden = false;
+    if (!SHARE) { pShare.setAttribute("aria-label", T.copyLink); pShare.title = T.copyLink; }
+    pShare.addEventListener("click", function () {
+      if (!player.ep) return;
+      if (SHARE) shareEp(player.ep); else copyLink(PAGE.split("#")[0] + "#e-" + player.ep.id);
+    });
   }
   // computers only: phones may report the feature but cannot open the window
   if (miniBtn && window.documentPictureInPicture && window.parent === window && !SHARE && matchMedia("(hover: hover) and (pointer: fine)").matches) {

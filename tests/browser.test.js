@@ -415,13 +415,15 @@ test("phone: no mini window button (phones may report the feature but cannot ope
 });
 
 test("phone: the player bar shares the playing broadcast, with the phone's own share symbol", async () => {
-  const phone = (ua) => async (p) => {
+  const phone = (ua, share = true) => async (p) => {
     await p.emulate({ viewport: { width: 390, height: 844, isMobile: true, hasTouch: true }, userAgent: ua });
-    await p.evaluateOnNewDocument(() => {
-      navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };
+    await p.evaluateOnNewDocument((share) => {
+      if (share) navigator.share = (d) => { window.__shared = d; return Promise.resolve(); };
+      else delete Navigator.prototype.share;
+      navigator.clipboard.writeText = (t) => { window.__copied = t; return Promise.resolve(); };
       const mm = window.matchMedia.bind(window);
       window.matchMedia = (q) => (q === "(pointer: coarse)" ? { matches: true, media: q, addEventListener() {}, removeEventListener() {} } : mm(q));
-    });
+    }, share);
   };
   const android = await open("index.html", { before: phone("Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36") });
   await android.$eval("#e-2008_02_14 .ep__play", (b) => b.click());
@@ -437,6 +439,15 @@ test("phone: the player bar shares the playing broadcast, with the phone's own s
   assert.equal(await iphone.$$eval("#pShare svg circle", (c) => c.length), 0, "iPhone: the box with an arrow");
   assert.equal(await iphone.$$eval("#pShare svg path", (c) => c.length), 2);
   await iphone.close2();
+  // an iPhone whose browser has no share menu (the page over http://, or inside Gmail or WhatsApp): copy the link
+  const inApp = await open("index.html", { before: phone("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148", false) });
+  await inApp.$eval("#e-2008_02_14 .ep__play", (b) => b.click());
+  assert.equal(await inApp.$eval("#pShare", (b) => getComputedStyle(b).display !== "none"), true, "no share menu: the button is still there");
+  assert.equal(await inApp.$eval("#pShare", (b) => b.getAttribute("aria-label")), "Αντιγραφή συνδέσμου");
+  await inApp.$eval("#pShare", (b) => b.click());
+  await inApp.waitForFunction(() => window.__copied);
+  assert.equal(await inApp.evaluate(() => window.__copied), BASE + "index.html#e-2008_02_14");
+  await inApp.close2();
   const computer = await open("index.html");
   assert.equal(await computer.$eval("#pShare", (b) => getComputedStyle(b).display !== "none"), false, "computers keep the mini window button instead");
   await computer.close2();
