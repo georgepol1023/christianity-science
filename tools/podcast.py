@@ -209,6 +209,7 @@ def main():
     <title>%(name)s</title>
     <link>%(site)s</link>
     <atom:link href="%(site)spodcast.xml" rel="self" type="application/rss+xml"/>
+    <itunes:new-feed-url>%(site)spodcast.xml</itunes:new-feed-url>
     <description>%(desc)s</description>
     <language>el</language>
     <copyright>%(name)s</copyright>
