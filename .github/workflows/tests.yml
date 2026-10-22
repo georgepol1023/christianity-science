@@ -1,0 +1,53 @@
+# The publishing tools' tests (inbox, deploy, upload page) on every push that touches them.
+name: Publishing tests
+
+on:
+  push:
+    paths:
+      - "tools/**"
+      - "admin/**"
+      - "tests/test_*.py"
+      - ".github/workflows/**"
+      - ".htaccess"
+  pull_request: {}
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mail:                                  # a real mail server for the email tests (any user, any password)
+        image: greenmail/standalone:2.0.1
+        env:
+          GREENMAIL_OPTS: "-Dgreenmail.setup.test.all -Dgreenmail.hostname=0.0.0.0 -Dgreenmail.auth.disabled"
+        ports:
+          - 3025:3025
+          - 3143:3143
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ffmpeg, and an FTP server for the tests
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg
+          pip install -q pyftpdlib pyopenssl dkimpy
+      - name: PHP syntax of the upload page
+        run: |
+          php -v
+          for f in admin/*.php; do php -l "$f"; done
+      - name: Wait for the test mail server
+        run: for i in $(seq 1 30); do (echo > /dev/tcp/127.0.0.1/3143) 2>/dev/null && break; sleep 2; done
+      - name: Tests
+        env:
+          CS_IMAP_TEST_HOST: 127.0.0.1
+        run: |
+          git config --global user.name "Tests"
+          git config --global user.email "tests@example.invalid"
+          python -m unittest discover -s tests -p "test_*.py" -v
+      - name: The upload page in a real browser (Chrome)
+        run: |
+          npm install --prefix tests --no-save --silent puppeteer-core
+          node --test tests/admin_browser.test.js

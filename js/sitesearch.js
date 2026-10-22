@@ -34,10 +34,13 @@
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
-  function load(src) {
+  function load(src, hourly) {
     return new Promise(function (ok, fail) {
       var s = document.createElement("script");
-      s.src = ROOT + src + (VERSION ? "?v=" + VERSION : ""); s.onload = ok; s.onerror = fail;
+      // the list (search-index.js) changes with every new broadcast: asked for afresh at most once an hour,
+      // so the pages do not have to carry its version; the code (search.js) by the version the page carries
+      var v = hourly ? "h" + Math.floor(Date.now() / 3600000) : VERSION;
+      s.src = ROOT + src + (v ? "?v=" + v : ""); s.onload = ok; s.onerror = fail;
       document.head.appendChild(s);
     });
   }
@@ -46,7 +49,7 @@
     if (items) return Promise.resolve();
     if (!loading) {
       loading = (window.SiteSearch ? Promise.resolve() : load("js/search.js"))
-        .then(function () { return window.SITE_INDEX ? null : load("js/search-index.js"); })
+        .then(function () { return window.SITE_INDEX ? null : load("js/search-index.js", true); })
         .then(function () {
           var SS = window.SiteSearch;
           items = window.SITE_INDEX.map(function (r, i) {

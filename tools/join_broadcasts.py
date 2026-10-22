@@ -59,6 +59,11 @@ def join(e):
     out = os.path.join(ROOT, full_path(e))
     if os.path.exists(out) and os.path.getmtime(out) >= max(os.path.getmtime(p) for p in parts):
         return "ok"
+    return join_files(parts, out, e["title"], e["season"], e["date"])
+
+
+def join_files(parts, out, title, season, date):
+    """Join the mp3 files `parts` into `out`, tagged with the broadcast's title. Returns "joined…" or "failed: …"."""
     info = [probe(p) for p in parts]
     same = len({(sr, ch) for sr, ch, _ in info}) == 1
     with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as f:
@@ -66,9 +71,8 @@ def join(e):
             f.write("file '%s'\n" % p.replace("\\", "/").replace("'", r"'\''"))
         listing = f.name
     tmp = out + ".part"
-    year = e["date"][:4]
-    meta = ["-metadata", "title=" + e["title"], "-metadata", "artist=" + TEAM,
-            "-metadata", "album=%s – Κύκλος %d" % (TEAM, e["season"]), "-metadata", "date=" + year,
+    meta = ["-metadata", "title=" + title, "-metadata", "artist=" + TEAM,
+            "-metadata", "album=%s – Κύκλος %d" % (TEAM, season), "-metadata", "date=" + date[:4],
             "-metadata", "comment=christianity-science.gr"]
     codec = ["-c", "copy"] if same else ["-c:a", "libmp3lame", "-b:a", "%dk" % max(64, max(b for _, _, b in info) // 1000)]
     try:
@@ -78,7 +82,7 @@ def join(e):
         if r.returncode:
             if os.path.exists(tmp):
                 os.remove(tmp)
-            return "failed: " + r.stderr.decode("utf-8", "replace").strip().splitlines()[-1]
+            return "failed: " + (r.stderr.decode("utf-8", "replace").strip().splitlines() or ["ffmpeg failed"])[-1]
         os.replace(tmp, out)
         return "joined" if same else "joined (re-encoded: parts differ)"
     finally:

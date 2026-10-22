@@ -1,0 +1,32 @@
+# Every push to main goes onto the web server (tools/deploy.py: only the files that changed).
+# Changes made by the other workflows deploy themselves (GitHub does not start workflows from their pushes).
+name: Deploy to the web server
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: site-publish
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Deploy
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SITE_DIR: ${{ secrets.FTP_SITE_DIR }}
+          FTP_PRIVATE_DIR: ${{ secrets.FTP_PRIVATE_DIR }}
+          FTP_TLS: ${{ secrets.FTP_TLS }}
+          ADMIN_PATH: ${{ secrets.ADMIN_PATH }}
+        run: python tools/deploy.py

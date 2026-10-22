@@ -1,18 +1,24 @@
-# Every Monday: add new articles of the newspaper column to the site (and the home page box).
-# Commits only when something changed; Render then redeploys the demo automatically.
+# Every day: add new articles of the newspaper column to the site (and the home page box), then deploy.
+# Commits only when something changed. If the newspaper's site changes so that nothing can be read,
+# the run fails (and GitHub emails the repository's owner) instead of changing anything.
 name: Update newspaper column
 
 on:
   schedule:
-    - cron: "0 6 * * 1"      # Mondays 06:00 UTC (09:00 Greek summer time)
+    - cron: "0 6 * * *"      # every day 06:00 UTC (09:00 Greek summer time)
   workflow_dispatch: {}       # "Run workflow" button in the Actions tab
 
 permissions:
   contents: write
 
+concurrency:
+  group: site-publish
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,7 +35,18 @@ jobs:
             git config user.email "148995294+georgepol1023@users.noreply.github.com"
             git add -A
             git commit -m "Update newspaper column list"
+            git pull -q --rebase origin "${GITHUB_REF_NAME}"
             git push
           else
             echo "No new column articles."
           fi
+      - name: Put the changed pages on the server
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USER }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_SITE_DIR: ${{ secrets.FTP_SITE_DIR }}
+          FTP_PRIVATE_DIR: ${{ secrets.FTP_PRIVATE_DIR }}
+          FTP_TLS: ${{ secrets.FTP_TLS }}
+          ADMIN_PATH: ${{ secrets.ADMIN_PATH }}
+        run: python tools/deploy.py

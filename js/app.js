@@ -630,10 +630,15 @@
     if (mini || !window.documentPictureInPicture) return;
     documentPictureInPicture.requestWindow({ width: 360, height: 168 }).then(function (w) {
       mini = w;
-      var d = w.document, fonts = $('link[href*="fonts.googleapis.com/css"]');
+      var d = w.document, css = $('link[rel="stylesheet"][href*="site.css"]'), faces = "";
       d.title = T.site;
-      if (fonts) d.head.appendChild(fonts.cloneNode());
-      var st = d.createElement("style"); st.textContent = MINI_CSS; d.head.appendChild(st);
+      if (css) {      // the site's own Literata files, addressed from the stylesheet's place (works under en/ too)
+        ["greek", "latin"].forEach(function (sub) {
+          faces += "@font-face{font-family:Literata;font-weight:400 600;src:url(" + new URL("../fonts/literata-" + sub + ".woff2", css.href) +
+            ") format('woff2');unicode-range:" + (sub === "greek" ? "U+0370-03FF" : "U+0000-00FF,U+2013-2014,U+2018-201E") + "}";
+        });
+      }
+      var st = d.createElement("style"); st.textContent = faces + MINI_CSS; d.head.appendChild(st);
       d.documentElement.lang = LANG;
       d.body.innerHTML = '<div><p id="t"></p><p id="m"></p></div>' +
         '<div id="c"><button id="b" aria-label="' + esc($("#back15").getAttribute("aria-label")) + '">' + $("#back15").innerHTML + "</button>" +
