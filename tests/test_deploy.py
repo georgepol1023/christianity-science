@@ -54,6 +54,11 @@ class DeployTest(unittest.TestCase):
         self.assertEqual(self.get("site", "old_page.htm"), b"an old page the new site does not have")
         self.assertEqual(self.get("site", "mp3", "broadcasts", "Season_20", "2026_10_01", "x.mp3"), b"audio")
         self.assertEqual(self.get("site", "files", "x.pdf"), b"pdf")
+        # of mp3/ and files/, only the web pages kept in git go up (never a recording or a PDF)
+        media = [p for p in up if p.startswith(("mp3/", "files/"))]
+        self.assertIn("files/BigBangTheory.htm", media)
+        self.assertIn("mp3/polls/anxiety/Anxiety.htm", media)
+        self.assertTrue(all(p.endswith((".htm", ".html")) for p in media), media)
         for not_site in (("tools", "deploy.py"), ("tests", "test_deploy.py"), ("README.md",), ("admin", "index.php"),
                          (".github",)):
             self.assertIsNone(self.get("site", *not_site), not_site)

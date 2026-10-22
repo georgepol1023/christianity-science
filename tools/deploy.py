@@ -6,8 +6,9 @@
 
 What goes up: every file that git keeps, except what is not part of the site (tools, tests, translations,
 notes; see NOT_SITE). The upload page (admin/) goes to its secret address, ADMIN_PATH (a GitHub secret),
-and only if that is set. Never touched: mp3/ and files/ (they live on the server only), and anything the
-deploys did not put there themselves, so the old site's other pages keep working.
+and only if that is set. Never touched: the recordings and PDFs in mp3/ and files/ (they live on the server
+only; of those folders only the few web pages kept in git go up), and anything the deploys did not put there
+themselves, so the old site's other pages keep working.
 
 The record of what is on the server is private/deploy/<site folder>.json ({path: sha256}), one per
 destination (the test folder and the live site each have their own); comparing it with the files here
@@ -31,7 +32,8 @@ def manifest_path(srv):
     """The deploy record of the site folder srv points at (one record per destination folder)."""
     site = srv.roots["site"].replace("\\", "/").rstrip("/")
     return "deploy/" + (re.sub(r"[^A-Za-z0-9._-]+", "_", site).strip("_") or "root") + ".json"
-NOT_SITE_DIRS = (".github/", "tests/", "tools/", "translation/", "docs/", "admin/", "mp3/", "files/")
+NOT_SITE_DIRS = (".github/", "tests/", "tools/", "translation/", "docs/", "admin/")
+MEDIA_DIRS = ("mp3/", "files/")           # recordings and PDFs: on the server only; only their web pages are in git
 NOT_SITE_FILES = {"README.md", ".gitignore", ".gitattributes", "CLAUDE.md"}
 LAST = (".html", ".htm", ".xml", ".txt", ".ics")       # pages and feeds after everything they point to
 MAX_REMOVALS = 100
@@ -49,6 +51,8 @@ def site_files(root, admin_path):
                 files[admin_path + "/" + rel[len("admin/"):]] = rel
             continue
         if rel in NOT_SITE_FILES or rel.startswith(NOT_SITE_DIRS):
+            continue
+        if rel.startswith(MEDIA_DIRS) and not rel.endswith((".htm", ".html")):
             continue
         files[rel] = rel
     return files
