@@ -18,6 +18,10 @@ AddType font/woff2 .woff2
   RewriteRule ^(mp3|files|pictures|fonts|data|css|js)/.*\.(php[0-9]?|phtml|phar|pl|py|cgi|sh)$ - [F,NC]
   # Hidden files and folders (.git and the like), except /.well-known/ (certificates)
   RewriteRule (^|/)\.(?!well-known/) - [F]
+  # The trial copy (new-site-test/) has no recordings or PDFs of its own (tools/deploy.py never uploads them):
+  # they are taken from the live site's folders. Does nothing on the live site.
+  RewriteCond %{REQUEST_URI} ^/new-site-test/(mp3|files)/(.*)$
+  RewriteRule ^ /%1/%2 [R=302,L,NE]
 </IfModule>
 
 <IfModule mod_headers.c>
