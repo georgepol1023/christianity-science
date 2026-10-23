@@ -699,17 +699,18 @@ test("podcast: podcast.xml lists every broadcast (whole, or its half-hour parts)
     else assert.ok(rel.endsWith(id + "_full.mp3") || parts[id].length === 1, id + ": the whole broadcast");
     assert.equal(+enc[2], audio[rel].bytes, id + ": the measured size");
     assert.match(it, /<itunes:duration>\d+:\d\d:\d\d<\/itunes:duration>/);
-    // 22:00 Athens time; parts at 22:00–23:30, part 1 latest so apps list 1, 2, 3, 4 in order
+    // 22:00 Athens time; parts at the times they were on air, 22:00–23:30 (the apps list 4, 3, 2, 1, newest first)
     assert.match(it, /<pubDate>\w{3}, \d\d \w{3} \d{4} 2[23]:[03]0:00 \+0[23]00<\/pubDate>/, id + ": evening, Athens time");
   }
   if (cfg.podcastParts) {
     assert.match(items.find((it) => /-1</.test(guid(it)[0])), /<title>[^<]+\(1ο ημίωρο\)<\/title>/, "parts are named by their half-hour");
-    // within a broadcast: listed 4, 3, 2, 1 (Spotify shows a day's episodes in reverse order of the feed), part 1 latest
-    const newest = items.filter((it) => guid(it)[1] === order[0]).map((it) => +guid(it)[2]);
-    if (newest.length > 1) assert.deepEqual(newest, [...newest].sort().reverse(), "parts listed last to first");
+    // within a broadcast: newest first, 4, 3, 2, 1, each at the time it was on air (part 1 at 22:00, then every 30 minutes)
+    const newest = items.filter((it) => guid(it)[1] === order[0]);
     const at = (it) => it.match(/<pubDate>[^<]* (\d\d:\d\d):00 /)[1];
-    const first = items.find((it) => guid(it)[1] === order[0] && guid(it)[2] === "1");
-    if (newest.length > 1) assert.ok(items.filter((it) => guid(it)[1] === order[0]).every((it) => at(it) <= at(first)), "part 1 has the latest time");
+    if (newest.length > 1) {
+      assert.deepEqual(newest.map((it) => +guid(it)[2]), newest.map((_, i) => newest.length - i), "parts listed last to first");
+      assert.deepEqual(newest.map(at), newest.map((_, i) => ["22:00", "22:30", "23:00", "23:30", "24:00"][newest.length - 1 - i]));
+    }
   }
   assert.ok(xml.includes('<itunes:image href="' + site + 'pictures/podcast-cover.jpg"/>'), "the cover, at the site's address");
   assert.ok(xml.includes('<atom:link href="' + site + 'podcast.xml"'), "the feed's own address");

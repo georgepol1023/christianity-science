@@ -134,8 +134,8 @@ def item(e, rel, a, site, audio, n=None):
     if e.get("link") and not e["link"].startswith("http"):
         text.append("Άρθρα και πηγές: " + site + e["link"])
     text.append("Ολόκληρη η εκπομπή στην ιστοσελίδα: " + page)
-    # parts: part 1 gets the latest time, so the newest-first lists of the apps show 1, 2, 3, 4 in order
-    when = athens(e["date"], 30 * (of - n) if n else 0)
+    # parts: at the times they were on air (22:00, 22:30, …), so the newest-first lists show 4, 3, 2, 1
+    when = athens(e["date"], 30 * (n - 1) if n else 0)
     guid = "christianity-science-" + e["id"] + ("-%d" % n if n else "")
     return """    <item>
       <title>%s</title>
@@ -189,8 +189,7 @@ def main():
     # where the site is now (podcastSite), else its own address (tools/seo.py); the mp3s, if elsewhere
     site = (cfg["site"] or seo.SITE_URL).rstrip("/") + "/"
     audio = (cfg["audio"] or site).rstrip("/") + "/"
-    # a broadcast's parts are listed last to first (4, 3, 2, 1), and part 1 has the latest time: the apps that sort
-    # by time list 1, 2, 3, 4, and so does Spotify, which puts a day's episodes in reverse order of the feed
+    # newest first, as feeds should be: a broadcast's parts last to first (4, 3, 2, 1), the last part the latest
     wanted = [(e, n, rel) for e in episodes for n, rel in
               (list(enumerate(e["parts"], 1))[::-1] if cfg["parts"] else [(None, full_file(e))])]
     known, measured = measure([rel for _, _, rel in wanted])
