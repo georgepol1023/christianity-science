@@ -5,6 +5,7 @@
  * A broadcast without an English title is shown with its Greek title.
  */
 window.BROADCAST_TITLES_EN = {
+  "2026-10-15": "World mental health day",
   "2026-10-01": "Answers to atheist arguments",
   "2026-09-17": "Falling birth rates and the value of family",
   "2026-09-03": "Our minds at risk: more information, less thinking",

@@ -56,6 +56,7 @@
 
   window.BROADCASTS = [
     season(20, "2026 – 2027", [
+      ep("2026-10-15", "Παγκόσμια ημέρα ψυχικής υγείας", "Pagkosmia_imera_psyxikis_ygeias", { tags: "mind" }),
       ep("2026-10-01", "Απαντήσεις σε αθεϊστικά επιχειρήματα", "Atheistika_Epixeirimata", { cs: true, tags: "apologetics" }),
       ep("2026-09-17", "Το πρόβλημα της υπογεννητικότητας και η αξία της οικογένειας", "Ypogennitikotita", { tags: "family" }),
       ep("2026-09-03", "Ο νους μας σε κίνδυνο: περισσότερη πληροφορία, λιγότερη σκέψη", "Nous_se_kindyno", { tags: "tech mind" })
