@@ -238,6 +238,25 @@ class UploadPageTest(PageServer, unittest.TestCase):
         st, r = b.api("finish", {"id": ident})
         self.assertEqual(st, 200, r)
 
+    def test_pieces_sent_as_text_are_saved_as_the_same_bytes(self):
+        """The page sends pieces as base64 text (the host's filter refuses some stretches of audio as bytes)."""
+        b = self.signed_in(user="nikos", password="another long password", code="")
+        data = self.mp3(970)
+        st, r = b.api("start", {"date": "2026-11-19", "title": "Ως κείμενο", "tags": [],
+                                "files": [{"name": "a.mp3", "size": len(data)}]})
+        ident = r["id"]
+        st, r = b.api("piece", b"not base64 !!", query="&id=%s&n=1&offset=0&enc=b64" % ident, raw=True)
+        self.assertEqual(st, 400)
+        half = len(data) // 2
+        for part, offset in ((data[:half], 0), (data[half:], half)):
+            st, r = b.api("piece", base64.b64encode(part), query="&id=%s&n=1&offset=%d&enc=b64" % (ident, offset), raw=True)
+            self.assertEqual((st, r["size"]), (200, offset + len(part)), r)
+        st, r = b.api("finish", {"id": ident})
+        self.assertEqual(st, 200, r)
+        [folder] = [d for d in os.listdir(os.path.join(self.private, "inbox")) if ident in d]
+        with open(os.path.join(self.private, "inbox", folder, "part-1.mp3"), "rb") as f:
+            self.assertEqual(f.read(), data)
+
     def test_settings_and_corrections_go_to_the_inbox(self):
         b = self.signed_in()
         st, r = b.api("settings", {"youtube": "not a link"})

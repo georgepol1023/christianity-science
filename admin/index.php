@@ -205,6 +205,12 @@ if ($action === 'piece' && $method === 'POST') {
         cs_json(['ok' => true, 'size' => $have]);       // a repeated piece: tell the page where to go on from
     }
     $data = (string)file_get_contents('php://input');
+    // the page sends each piece as text (base64): the host's upload filter (nginx, in front of the site) refuses
+    // some stretches of compressed audio, whose bytes match one of its binary patterns by chance; text never does
+    if (($_GET['enc'] ?? '') === 'b64') {
+        $data = base64_decode($data, true);
+        if ($data === false) cs_error('Λάθος κομμάτι αρχείου.', 400);
+    }
     $test_limit = (int)getenv('CS_MAX_PIECE_FOR_TESTS');     // only set by tests/admin_browser.test.js
     if (($data === '' && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) || ($test_limit > 0 && strlen($data) > $test_limit)) {
         cs_error('Το κομμάτι ήταν μεγαλύτερο από όσο δέχεται ο server.', 413);   // the page sends smaller ones

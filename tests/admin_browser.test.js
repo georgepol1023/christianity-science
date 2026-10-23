@@ -169,6 +169,28 @@ test("upload page in a browser", missing ? { skip: "needs " + missing } : {}, as
     } finally { srv.stop(); }
   });
 
+  await t.test("pieces go as text, and one refused by the host's filter (nginx 403) is sent again", async () => {
+    const srv = await startServer({});
+    try {
+      const page = await signIn(browser, srv);
+      await page.setRequestInterception(true);
+      let pieces = 0, asText = 0;
+      page.on("request", (r) => {
+        if (r.url().includes("a=piece") && r.method() === "POST" && !r.url().includes("offset=-1")) {
+          pieces++;
+          if (r.url().includes("enc=b64")) asText++;
+          if (pieces === 2) return r.respond({ status: 403, contentType: "text/html", body: "<html><center><h1>403 Forbidden</h1></center><hr><center>nginx</center></html>" });
+        }
+        r.continue();
+      });
+      const msg = await sendBroadcast(page, files, "2026-10-15");
+      assert.match(msg.cls, /ok/, msg.text);
+      assert.equal(asText, pieces, "every piece goes as text");
+      const { dir, req } = inboxRequest(srv);
+      req.files.forEach((f, i) => assert.equal(sha(path.join(dir, f.name)), sha(files[i])));
+    } finally { srv.stop(); }
+  });
+
   await t.test("a date already on the site: warned, and sending is refused unless replacing", async () => {
     const srv = await startServer({});
     try {
