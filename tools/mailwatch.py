@@ -234,11 +234,23 @@ def wetransfer_links(msg):
 def attachments(msg):
     """[(file name, bytes)] of the audio files attached to the email."""
     out = []
-    for part in msg.iter_attachments():
+    for part in msg.walk():                       # also inside a forwarded email
+        if part.is_multipart() or part.get_content_type() == "message/rfc822":
+            continue
         name = os.path.basename(part.get_filename() or "")
         if name.lower().endswith(AUDIO):
             out.append((name, part.get_payload(decode=True) or b""))
     return out
+
+
+def contents(msg):
+    """What an email holds, for the log when no recordings are found in it: the websites it links to and the kinds
+    of files attached (never an address, a name or any text: the workflow's logs are public)."""
+    hosts = sorted({urllib.parse.urlparse(u).netloc.lower() for t in texts(msg)
+                    for u in re.findall(r"https?://[^\s<>\"')\]]+", t)} - {""})
+    files = sorted({(os.path.splitext(part.get_filename())[1].lower() or "?") + " " + part.get_content_type()
+                    for part in msg.walk() if part.get_filename()})
+    return "links to %s; attached: %s" % (", ".join(hosts[:12]) or "nothing", ", ".join(files) or "nothing")
 
 
 # ---------------------------------------------------------------- WeTransfer (its website's own interface)
@@ -624,6 +636,7 @@ class Watch:
             if not trusted(who, self.trust):
                 continue
             if not (wetransfer_links(msg) or attachments(msg)):
+                self.log("an email from a trusted sender without recordings found in it: " + contents(msg))
                 continue
             verified = self.verify(raw, msg)
             if verified is False or forged(msg):
