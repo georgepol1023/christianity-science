@@ -186,6 +186,7 @@ on to for is are with from by its it at as or be part how what why who""".split(
 
 
 def plain(s):
+    """Lower case, without accents: «Γένεση» → "γενεση"."""
     return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn")
 
 

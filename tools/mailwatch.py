@@ -34,11 +34,12 @@ Settings (GitHub secrets):
 plus the server settings (tools/serverfs.py) and, for the emails to the admin, the SMTP settings (tools/inbox.py).
 """
 import argparse, datetime, email, email.policy, email.utils, hashlib, html, http.cookiejar, imaplib, json, os, re
-import shutil, ssl, subprocess, sys, tempfile, time, unicodedata, urllib.error, urllib.parse, urllib.request, zipfile
+import shutil, ssl, subprocess, sys, tempfile, time, urllib.error, urllib.parse, urllib.request, zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import greeklish, inbox, serverfs
+from titles import plain
 
 ROOT = os.path.dirname(HERE)
 SEEN = "state/mail-seen.json"
@@ -404,10 +405,6 @@ MONTHS = {m: i for i, ms in enumerate([("ιανουαρ",), ("φεβρουαρ",
 NOISE = re.compile(r"(?i)^\s*((fwd?|re|προώθηση|απ|πρθ|σχετ)\s*:\s*)+|\bvia wetransfer\b|\bwetransfer\b|"
                    r"\byou(?:'ve)? received (?:some )?files?\b|\bsent you (?:some )?files?\b|\bhas sent you\b|"
                    r"^\s*(η\s+)?εκπομπ[ήη]\s*(της)?\s*[:\-–]?|^\s*της\s*[:\-–]?|\bχριστιανισμός\s*&\s*επιστήμη\b\s*[:\-–]?")
-
-
-def plain(s):
-    return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn")
 
 
 def nearest_year(day, month, around):

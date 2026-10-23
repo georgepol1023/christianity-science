@@ -26,6 +26,7 @@ from xml.sax.saxutils import escape
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import seo
+from inbox import athens_offset
 
 AUDIO = os.path.join(ROOT, "data", "podcast-audio.json")
 OUT = os.path.join(ROOT, "podcast.xml")
@@ -106,13 +107,7 @@ def measure(files):
 def athens(date, minutes):
     """22:00 Athens time on that day, plus some minutes (summer time from the last Sunday of March to the last
     Sunday of October)."""
-    y, m, d = map(int, date.split("-"))
-    def last_sunday(month):
-        day = datetime.date(y, month, 31)
-        return day - datetime.timedelta(days=(day.weekday() + 1) % 7)
-    summer = last_sunday(3) <= datetime.date(y, m, d) < last_sunday(10)
-    tz = datetime.timezone(datetime.timedelta(hours=3 if summer else 2))
-    return datetime.datetime(y, m, d, 22, 0, tzinfo=tz) + datetime.timedelta(minutes=minutes)
+    return datetime.datetime.fromisoformat("%sT22:00:00%s" % (date, athens_offset(date))) + datetime.timedelta(minutes=minutes)
 
 
 def duration(s):

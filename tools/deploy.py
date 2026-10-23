@@ -59,6 +59,7 @@ def site_files(root, admin_path):
 
 
 def sha256(path):
+    """The SHA-256 of a file on this computer (hex)."""
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for block in iter(lambda: f.read(1 << 20), b""):

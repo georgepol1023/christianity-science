@@ -39,13 +39,13 @@ Optional: ANTHROPIC_API_KEY (an English title and topics are suggested by Claude
 them empty), SMTP_HOST / SMTP_PORT / SMTP_USER / SMTP_PASSWORD / MAIL_FROM / MAIL_TO (emails).
 Server settings: see tools/serverfs.py.
 """
-import argparse, datetime, hashlib, json, os, posixpath, re, shutil, smtplib, socket, subprocess, sys, tempfile, time
-import unicodedata
+import argparse, datetime, json, os, posixpath, re, shutil, smtplib, socket, subprocess, sys, tempfile, time
 from email.message import EmailMessage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import serverfs, titles
+from deploy import sha256
 from join_broadcasts import join_files
 
 ROOT = os.path.dirname(HERE)
@@ -237,8 +237,7 @@ GREEK = dict(zip("αβγδεζηθικλμνξοπρσςτυφχψω", ["a", "b"
 
 def slugify(title):
     """A file-name-safe Latin version of the title, like the site's other mp3 names ("Nous_se_kindyno")."""
-    plain = "".join(c for c in unicodedata.normalize("NFD", title.lower()) if unicodedata.category(c) != "Mn")
-    latin = "".join(GREEK.get(c, c) for c in plain.replace("ου", "ou"))
+    latin = "".join(GREEK.get(c, c) for c in titles.plain(title).replace("ου", "ou"))
     words = re.findall(r"[a-z0-9]+", latin)[:4]
     slug = "_".join(words)[:40].strip("_")
     return (slug[:1].upper() + slug[1:]) if slug else "Ekpompi"
@@ -253,14 +252,6 @@ def probe(path):
         return round(float(f["duration"])), "mp3" in f.get("format_name", "")
     except (KeyError, ValueError, json.JSONDecodeError):
         return None, False
-
-
-def sha256(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for block in iter(lambda: f.read(1 << 20), b""):
-            h.update(block)
-    return h.hexdigest()
 
 
 def same_recording(audio, files, except_date=None):

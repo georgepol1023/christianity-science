@@ -10,8 +10,10 @@ alone cannot give the right word. The words are looked up instead, in every Gree
 sounds to the site's words, and the form the site uses most is taken. A word the site never used is not guessed:
 then the title is not sure, and a person completes it («Από email»). Only the Python standard library is used.
 """
-import argparse, glob, html, os, re, sys, unicodedata
+import argparse, glob, html, os, re, sys
 from collections import Counter, defaultdict
+
+from titles import plain
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -30,10 +32,6 @@ LATIN_ONE = {"a": "a", "b": "v", "c": "k", "d": "d", "e": "e", "f": "f", "g": "g
              "l": "l", "m": "m", "n": "n", "o": "o", "p": "p", "q": "k", "r": "r", "s": "s", "t": "t", "u": "u", "v": "v",
              "w": "o", "x": "x", "y": "i", "z": "z", "8": "8", "3": "ks", "9": "8"}
 PROGRAMME = {"epistimi", "episthmh", "episthmi", "xristianismos", "christianismos", "cs", "ekpompi", "ekpomph"}
-
-
-def plain(s):
-    return "".join(c for c in unicodedata.normalize("NFD", s.lower()) if unicodedata.category(c) != "Mn")
 
 
 def squeeze(key):

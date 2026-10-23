@@ -321,17 +321,11 @@ def html_escape(s):
 
 
 def lang_switch(src, href, label, lang, title):
-    """Add (or update) the ΕΛ/EN button in the top bar, and hreflang alternates in <head>."""
+    """Add (or update) the ΕΛ/EN button in the top bar (the hreflang links in <head> are tools/seo.py's)."""
     btn = '<a class="iconbtn langbtn" id="langSwitch" href="%s" hreflang="%s" lang="%s" title="%s">%s</a>' % (href, lang, lang, title, label)
     src = re.sub(r'\s*<a class="iconbtn langbtn"[^>]*>[^<]*</a>', "", src)
     src = src.replace('<div class="topbar__tools">', '<div class="topbar__tools">\n        ' + btn, 1)
     return src
-
-
-def alternates(src, el_href, en_href):
-    src = re.sub(r'\s*<link rel="alternate" hreflang="[^"]*" href="[^"]*">', "", src)
-    tags = '\n  <link rel="alternate" hreflang="el" href="%s">\n  <link rel="alternate" hreflang="en" href="%s">' % (el_href, en_href)
-    return src.replace("</title>", "</title>" + tags, 1)
 
 
 # Folders whose pages are translated too. A page gets its English version once ALL of its text is
