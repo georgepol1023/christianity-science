@@ -104,7 +104,7 @@ If a step fails, the setup stops and says what to do. Running it again picks up 
 
 ## Recordings by email
 
-Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwatch.py`).
+Once a day (05:17 UTC), the publishing robot reads `science@christianity.gr` (`tools/mailwatch.py`).
 
 - **Read-only.** The mailbox is opened in read-only mode, so the server itself refuses any change: nothing
   is marked as read, moved or deleted.
@@ -142,7 +142,7 @@ Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwat
   names, for the admin to check. Only when nothing can be read from them, and only with a Claude key (optional),
   does Claude suggest one instead; it is never published by itself. There they can be played, completed and
   published with one click, or discarded.
-- **Expired links.** A WeTransfer link that can't be downloaded is tried again every hour. After a day, the
+- **Expired links.** A WeTransfer link that can't be downloaded is tried again on the next day's run. If it still fails, the
   admin is emailed to upload the recordings by hand. WeTransfer's download interface isn't an official
   one, so if WeTransfer changes its site, this is what happens, and nothing else breaks.
 - **Each email only once.** Every email is handled once, and the robot remembers which.

@@ -1,12 +1,12 @@
 # Publishes new broadcasts: those sent through the upload page, and recordings emailed to science@christianity.gr
 # (tools/mailwatch.py → tools/inbox.py), then puts the changed pages on the server.
-# Started by the upload page right after something is sent, and every hour (which also checks the email and
+# Started by the upload page right after something is sent, and once a day (which also checks the email and
 # finishes any earlier deploy that did not complete).
 name: Publish from the upload page and email
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "17 5 * * *"     # every day 05:17 UTC (08:17 Greek summer time, 07:17 winter)
   workflow_dispatch: {}
 
 permissions:

@@ -111,7 +111,7 @@ Other tools: `update_column.py` (fetches new newspaper column articles), `join_b
   (https://christianity-science.onrender.com/), which forwards `/mp3/…` to the server.
 - **Audio:** the mp3s and PDFs live only on the server (and as a second copy in `mp3/` on the editor's
   computer: `tools/sync_mp3.py`).
-- **Recordings by email:** every hour the WeTransfer links emailed to science@christianity.gr by trusted
+- **Recordings by email:** once a day the WeTransfer links emailed to science@christianity.gr by trusted
   senders are fetched and published, or wait in the upload page's «Από email» tab if title or date is
   unclear.
 - **Upload page and inbox:** `admin/` at a secret address. It is invisible without a device key and
