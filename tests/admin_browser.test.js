@@ -19,6 +19,7 @@ const net = require("net");
 const { spawn, execFileSync } = require("child_process");
 
 const ROOT = path.resolve(__dirname, "..");
+const TEST_DATE = "2026-10-15";              // the made-up broadcast the tests send (TEST_DATE in tests/helpers.py)
 const which = (cmd) => { try { execFileSync(process.platform === "win32" ? "where" : "which", [cmd], { stdio: "ignore" }); return true; } catch { return false; } };
 const CHROME = process.env.CHROME || ["/usr/bin/google-chrome", "C:/Program Files/Google/Chrome/Application/chrome.exe",
   "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe"].find((p) => fs.existsSync(p));
@@ -50,9 +51,11 @@ function freePort() {
 async function startServer(env) {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "cs-admin-browser-"));
   const site = path.join(tmp, "site"), priv = path.join(tmp, "private");
+  // the site as it was before TEST_DATE, whose broadcast the tests send (as copy_site_data in tests/helpers.py)
+  const before = new RegExp(`^\\s*(ep\\(|)"${TEST_DATE}"[,:].*\\n`, "m");
   for (const rel of ["js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js", "404.html"]) {
     fs.mkdirSync(path.dirname(path.join(site, rel)), { recursive: true });
-    fs.copyFileSync(path.join(ROOT, rel), path.join(site, rel));
+    fs.writeFileSync(path.join(site, rel), fs.readFileSync(path.join(ROOT, rel), "utf8").replace(before, ""));
   }
   fs.cpSync(path.join(ROOT, "admin"), path.join(site, SECRET), { recursive: true });
   fs.mkdirSync(priv);
@@ -128,10 +131,10 @@ test("upload page in a browser", missing ? { skip: "needs " + missing } : {}, as
     const srv = await startServer({});
     try {
       const page = await signIn(browser, srv);
-      const msg = await sendBroadcast(page, files, "2026-10-15");
+      const msg = await sendBroadcast(page, files, TEST_DATE);
       assert.match(msg.cls, /ok/, msg.text);
       const { dir, req } = inboxRequest(srv);
-      assert.equal(req.date, "2026-10-15");
+      assert.equal(req.date, TEST_DATE);
       assert.deepEqual(req.files.map((f) => f.original), files.map((f) => path.basename(f)));
       req.files.forEach((f, i) => assert.equal(sha(path.join(dir, f.name)), sha(files[i])));
       assert.deepEqual(page.problems, []);
@@ -142,7 +145,7 @@ test("upload page in a browser", missing ? { skip: "needs " + missing } : {}, as
     const srv = await startServer({ CS_MAX_PIECE_FOR_TESTS: String(400 * 1024) });
     try {
       const page = await signIn(browser, srv);
-      const msg = await sendBroadcast(page, files, "2026-10-15");
+      const msg = await sendBroadcast(page, files, TEST_DATE);
       assert.match(msg.cls, /ok/, msg.text);
       const { dir, req } = inboxRequest(srv);
       req.files.forEach((f, i) => assert.equal(sha(path.join(dir, f.name)), sha(files[i])));
@@ -162,7 +165,7 @@ test("upload page in a browser", missing ? { skip: "needs " + missing } : {}, as
         }
         r.continue();
       });
-      const msg = await sendBroadcast(page, files, "2026-10-15");
+      const msg = await sendBroadcast(page, files, TEST_DATE);
       assert.match(msg.cls, /ok/, msg.text);
       const { dir, req } = inboxRequest(srv);
       req.files.forEach((f, i) => assert.equal(sha(path.join(dir, f.name)), sha(files[i])));
@@ -183,7 +186,7 @@ test("upload page in a browser", missing ? { skip: "needs " + missing } : {}, as
         }
         r.continue();
       });
-      const msg = await sendBroadcast(page, files, "2026-10-15");
+      const msg = await sendBroadcast(page, files, TEST_DATE);
       assert.match(msg.cls, /ok/, msg.text);
       assert.equal(asText, pieces, "every piece goes as text");
       const { dir, req } = inboxRequest(srv);
