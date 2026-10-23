@@ -189,8 +189,10 @@ def main():
     # where the site is now (podcastSite), else its own address (tools/seo.py); the mp3s, if elsewhere
     site = (cfg["site"] or seo.SITE_URL).rstrip("/") + "/"
     audio = (cfg["audio"] or site).rstrip("/") + "/"
+    # a broadcast's parts are listed last to first (4, 3, 2, 1), and part 1 has the latest time: the apps that sort
+    # by time list 1, 2, 3, 4, and so does Spotify, which puts a day's episodes in reverse order of the feed
     wanted = [(e, n, rel) for e in episodes for n, rel in
-              (list(enumerate(e["parts"], 1)) if cfg["parts"] else [(None, full_file(e))])]
+              (list(enumerate(e["parts"], 1))[::-1] if cfg["parts"] else [(None, full_file(e))])]
     known, measured = measure([rel for _, _, rel in wanted])
     items, urls, left_out = [], [], []
     for e, n, rel in wanted:                             # js/broadcasts.js is newest first, as feeds should be

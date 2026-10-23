@@ -119,7 +119,7 @@ test("data: every broadcast has a valid, unique date", () => {
     assert.ok(!seen.has(e.date), `duplicate date ${e.date}: "${seen.get(e.date)}" and "${e.title}" (ids are built from the date)`);
     seen.set(e.date, e.title);
   }
-  assert.equal(seen.size, 355);
+  assert.ok(seen.size >= 355, seen.size + " broadcasts (the archive has 355; new ones come from the upload page)");
 });
 
 test("data: broadcasts are newest-first and inside their season's years", () => {
@@ -153,7 +153,7 @@ test("data: every broadcast mp3 exists in mp3/ (apart from the known missing rec
   const { cfg, seasons } = loadData(), missing = [];
   for (const s of seasons) for (const e of s.episodes)
     for (const p of partPaths(cfg, s, e)) if (!fs.existsSync(path.join(ROOT, p))) missing.push(p);
-  assert.deepEqual(missing.filter((p) => !KNOWN_MISSING_MP3.includes(p)).slice(0, 10), [], `${missing.length} mp3 files missing`);
+  assert.deepEqual(missing.filter((p) => !KNOWN_MISSING_MP3.includes(p)).slice(0, 10), [], `${missing.length} mp3 files missing here (new broadcasts are on the server: python tools/sync_mp3.py copies them)`);
   for (const p of KNOWN_MISSING_MP3)
     if (fs.existsSync(path.join(ROOT, p))) assert.fail(p + " has been added — remove it from KNOWN_MISSING_MP3");
 });
@@ -702,7 +702,15 @@ test("podcast: podcast.xml lists every broadcast (whole, or its half-hour parts)
     // 22:00 Athens time; parts at 22:00–23:30, part 1 latest so apps list 1, 2, 3, 4 in order
     assert.match(it, /<pubDate>\w{3}, \d\d \w{3} \d{4} 2[23]:[03]0:00 \+0[23]00<\/pubDate>/, id + ": evening, Athens time");
   }
-  if (cfg.podcastParts) assert.match(items[0], /<title>[^<]+\(1ο ημίωρο\)<\/title>/, "parts are named by their half-hour");
+  if (cfg.podcastParts) {
+    assert.match(items.find((it) => /-1</.test(guid(it)[0])), /<title>[^<]+\(1ο ημίωρο\)<\/title>/, "parts are named by their half-hour");
+    // within a broadcast: listed 4, 3, 2, 1 (Spotify shows a day's episodes in reverse order of the feed), part 1 latest
+    const newest = items.filter((it) => guid(it)[1] === order[0]).map((it) => +guid(it)[2]);
+    if (newest.length > 1) assert.deepEqual(newest, [...newest].sort().reverse(), "parts listed last to first");
+    const at = (it) => it.match(/<pubDate>[^<]* (\d\d:\d\d):00 /)[1];
+    const first = items.find((it) => guid(it)[1] === order[0] && guid(it)[2] === "1");
+    if (newest.length > 1) assert.ok(items.filter((it) => guid(it)[1] === order[0]).every((it) => at(it) <= at(first)), "part 1 has the latest time");
+  }
   assert.ok(xml.includes('<itunes:image href="' + site + 'pictures/podcast-cover.jpg"/>'), "the cover, at the site's address");
   assert.ok(xml.includes('<atom:link href="' + site + 'podcast.xml"'), "the feed's own address");
   assert.ok(fs.statSync(path.join(ROOT, "pictures/podcast-cover.jpg")).size > 50000, "the cover exists");
