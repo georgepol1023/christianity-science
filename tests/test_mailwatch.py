@@ -100,6 +100,9 @@ class FakeMailbox:
     def recent(self, days=10):
         return list(self.messages)
 
+    def headers(self, days=3):
+        return [raw.split(b"\n\n", 1)[0] for raw in self.messages]
+
 
 def make_email(frm="Ραδιόφωνο <radio@christianity.gr>", subject="", body="", date=None, attach=(), headers=()):
     m = email.message.EmailMessage()
@@ -114,6 +117,51 @@ def make_email(frm="Ραδιόφωνο <radio@christianity.gr>", subject="", bod
     for name, data in attach:
         m.add_attachment(data, maintype="audio", subtype="mpeg", filename=name)
     return m.as_bytes()
+
+
+class AnnounceTest(unittest.TestCase):
+    """--announce: the contributor is told the sender and the subject of each new email, and nothing else."""
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="cs-announce-test-")
+        self.srv = serverfs.connect(os.path.join(self.tmp, "server"))
+        self.box = FakeMailbox()
+        self.sent = []
+        self.ok = True
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def send(self, to, subject, text):
+        if self.ok:
+            self.sent.append((to, subject, text))
+        return self.ok
+
+    def run_once(self):
+        return mailwatch.announce(self.srv, self.box, ["contributor@example.com"], send=self.send, log=lambda *a: None)
+
+    def test_only_new_emails_with_sender_and_subject(self):
+        self.box.messages.append(make_email(subject="Παλιό email"))
+        self.assertEqual(self.run_once(), 0)                  # the first time: what is there is only noted
+        self.assertEqual(self.sent, [])
+        self.box.messages.append(make_email(frm="Γιάννης <giannis@example.com>", subject="Ερώτηση για την εκπομπή",
+                                            body="Προσωπικό κείμενο που δεν πρέπει να σταλεί",
+                                            attach=[("1_EPISTIMI.mp3", b"ID3 audio")]))
+        self.assertEqual(self.run_once(), 1)
+        [(to, subject, text)] = self.sent
+        self.assertEqual(to, ["contributor@example.com"])
+        self.assertEqual(subject, "Νέο email στο science@: Ερώτηση για την εκπομπή")
+        self.assertEqual(text, "Από: Γιάννης <giannis@example.com>\nΘέμα: Ερώτηση για την εκπομπή")
+        self.assertEqual(self.run_once(), 0)                  # each email once
+        self.assertEqual(len(self.sent), 1)
+
+    def test_no_subject_and_a_failed_send_is_tried_again(self):
+        self.run_once()
+        self.box.messages.append(make_email(subject=""))
+        self.ok = False
+        self.assertEqual(self.run_once(), 0)
+        self.ok = True
+        self.assertEqual(self.run_once(), 1)
+        self.assertIn("Θέμα: (χωρίς θέμα)", self.sent[0][2])
 
 
 class MailWatchTest(unittest.TestCase):

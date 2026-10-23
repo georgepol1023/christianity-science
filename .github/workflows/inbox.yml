@@ -36,6 +36,7 @@ env:
   SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD || secrets.MAIL_IMAP_PASSWORD }}
   MAIL_FROM: ${{ secrets.MAIL_FROM || secrets.MAIL_IMAP_USER }}
   MAIL_TO: ${{ secrets.MAIL_TO }}
+  MAIL_NOTIFY: ${{ secrets.MAIL_NOTIFY }}                 # told about every new email in science@ (sender and subject)
   DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}           # English titles (tools/titles.py)
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: a suggested title when the file names cannot be read
 
@@ -54,6 +55,9 @@ jobs:
         id: mail
         continue-on-error: true          # the mailbox being unreachable must not stop the rest
         run: python tools/mailwatch.py --check
+      - name: Tell about new emails in science@ (sender and subject only)
+        continue-on-error: true
+        run: python tools/mailwatch.py --announce
       - name: Anything waiting in the inbox?
         id: look
         run: python tools/inbox.py --count

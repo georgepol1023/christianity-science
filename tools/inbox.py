@@ -786,19 +786,26 @@ def athens_offset(date):
 
 def notify(result, req):
     """Email the outcome to the admin who sent it (and MAIL_TO). Optional: needs the SMTP settings."""
-    host = os.environ.get("SMTP_HOST")
     to = [a for a in {req.get("email"), *os.environ.get("MAIL_TO", "").split(",")} if a and "@" in a]
-    if not host or not to:
-        return
     icon = {"published": "✓", "rejected": "✗", "error": "✗"}.get(result["status"], "•")
     what = result.get("title") or {"settings": "Ρυθμίσεις αρχικής σελίδας", "correction": "Διόρθωση εκπομπής"}.get(result.get("type"), "Αίτημα")
+    send_mail(to, "%s %s" % (icon, what), result["message"] + ("\n\n" + result["link"] if result.get("link") else "")
+              + "\n\n— Χριστιανισμός & Επιστήμη, αυτόματο μήνυμα")
+
+
+def send_mail(to, subject, text):
+    """An email with the SMTP settings (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, MAIL_FROM). False if it
+    could not be sent (or there is nobody to send to, or no SMTP_HOST)."""
+    host = os.environ.get("SMTP_HOST")
+    to = [a.strip() for a in to if a and "@" in a]
+    if not host or not to:
+        return False
     msg = EmailMessage()
-    msg["Subject"] = "%s %s" % (icon, what)
+    msg["Subject"] = subject
     msg["From"] = os.environ.get("MAIL_FROM") or os.environ.get("SMTP_USER")
-    msg["To"] = ", ".join(sorted(to))
-    msg.set_content(result["message"] + ("\n\n" + result["link"] if result.get("link") else "")
-                    + "\n\n— Χριστιανισμός & Επιστήμη, αυτόματο μήνυμα")
-    port = int(os.environ.get("SMTP_PORT", "465"))
+    msg["To"] = ", ".join(sorted(set(to)))
+    msg.set_content(text)
+    port = int(os.environ.get("SMTP_PORT") or "465")
     try:
         if port == 465:
             s = smtplib.SMTP_SSL(host, port, timeout=60)
@@ -809,8 +816,10 @@ def notify(result, req):
             if os.environ.get("SMTP_USER"):
                 s.login(os.environ["SMTP_USER"], os.environ.get("SMTP_PASSWORD", ""))
             s.send_message(msg)
+        return True
     except (OSError, smtplib.SMTPException) as ex:
         print("  (email not sent: %s)" % ex)
+        return False
 
 
 def main(argv=None):

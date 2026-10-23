@@ -391,7 +391,8 @@ class FlowTest(unittest.TestCase):
         answers[answers.index(("Send an email", "y")):] = [
             ("Send an email", "n"), ("Fetch recordings emailed", "y"), ("The mailbox", ""), ("mail server", ""),
             ("Who may send", "radio@christianity.gr, @studio.example"), ("Password of", "wrong"), ("Try another password", "y"),
-            ("Password of", "right"), ("DeepL API key", ""), ("Claude API key", "")]
+            ("Password of", "right"), ("Who to tell about every new email", "contributor@example.com"),
+            ("DeepL API key", ""), ("Claude API key", "")]
         s = self.setup(answers, gh)
         s.mailbox_factory = FakeBox
         if not self.php:
@@ -406,6 +407,7 @@ class FlowTest(unittest.TestCase):
         self.assertEqual((gh.secrets["MAIL_IMAP_USER"], gh.secrets["MAIL_IMAP_PASSWORD"], gh.secrets["MAIL_TRUSTED_SENDERS"]),
                          ("science@christianity.gr", "right", "radio@christianity.gr, @studio.example"))
         self.assertIn("2 emails in the last 10 days, 1 from the trusted senders, 1 with recordings", "\n".join(s.con.said))
+        self.assertEqual(gh.secrets["MAIL_NOTIFY"], "contributor@example.com")
 
     def test_adding_a_person(self):
         self.test_first_time_setup_from_start_to_finish()

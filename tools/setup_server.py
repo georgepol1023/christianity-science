@@ -440,8 +440,10 @@ class Setup:
         if msgs and not ours:
             senders = sorted({mailwatch.sender(m) for m in msgs})[:8]
             self.say("    (none from the trusted senders; recent senders were: %s)" % ", ".join(senders))
+        notify = con.ask("  Who to tell about every new email in %s: its sender and subject only (addresses, comma "
+                         "between them; Enter for nobody)" % addr, optional=True)
         return {"MAIL_IMAP_HOST": host, "MAIL_IMAP_USER": addr, "MAIL_IMAP_PASSWORD": password,
-                "MAIL_TRUSTED_SENDERS": ", ".join(trust_list)}
+                "MAIL_TRUSTED_SENDERS": ", ".join(trust_list), "MAIL_NOTIFY": notify}
 
     def deepl_key(self):
         """The DeepL key for English titles, checked now with one real translation."""

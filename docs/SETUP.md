@@ -146,6 +146,9 @@ Every hour, the publishing robot reads `science@christianity.gr` (`tools/mailwat
   admin is emailed to upload the recordings by hand. WeTransfer's download interface isn't an official
   one, so if WeTransfer changes its site, this is what happens, and nothing else breaks.
 - **Each email only once.** Every email is handled once, and the robot remembers which.
+- **Who is told about new email.** Everyone in the secret `MAIL_NOTIFY` (commas between several) gets one short
+  email for each new email in science@, from anyone: its sender and its subject, nothing else (`--announce`;
+  only those two lines of each email are read). It is sent from science@ itself, with the robot's login.
 
 The settings are the secrets `MAIL_IMAP_USER`, `MAIL_IMAP_PASSWORD`, `MAIL_IMAP_HOST`
 (`mail.christianity.gr`) and `MAIL_TRUSTED_SENDERS` (e.g. `radio@christianity.gr, @studio.gr`). The setup

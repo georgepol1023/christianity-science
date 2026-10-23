@@ -2,6 +2,8 @@
 
     python tools/mailwatch.py            fetch new recordings and hand them to the inbox (tools/inbox.py publishes)
     python tools/mailwatch.py --check    only say how many new emails with recordings there are (for the workflow)
+    python tools/mailwatch.py --announce tell MAIL_NOTIFY about every new email in the mailbox: its sender and
+                                         subject only (one short email each; nothing else is read or sent)
     python tools/mailwatch.py --local DIR   use a folder standing in for the server (tests)
 
 The mailbox is opened READ-ONLY: the server itself then refuses any change, so nothing is ever marked as
@@ -28,6 +30,7 @@ Settings (GitHub secrets):
   MAIL_IMAP_HOST        mail.christianity.gr (default: the name in the mail server's certificate)
   MAIL_IMAP_PORT        993 (default)        MAIL_IMAP_SSL   1 (default)
   MAIL_TRUSTED_SENDERS  who may send recordings: addresses or whole domains, e.g. "radio@christianity.gr, @christianity.gr"
+  MAIL_NOTIFY           optional: who to tell about every new email (--announce), commas between several
 plus the server settings (tools/serverfs.py) and, for the emails to the admin, the SMTP settings (tools/inbox.py).
 """
 import argparse, datetime, email, email.policy, email.utils, hashlib, html, http.cookiejar, imaplib, json, os, re
@@ -39,6 +42,7 @@ import greeklish, inbox, serverfs
 
 ROOT = os.path.dirname(HERE)
 SEEN = "state/mail-seen.json"
+ANNOUNCED = "state/mail-announced.json"       # the emails MAIL_NOTIFY was told about (--announce)
 DAYS = 10                        # emails older than this are not looked at (WeTransfer links expire anyway)
 GIVE_UP_HOURS = 24               # a link that keeps failing for this long is reported to the admin
 AUDIO = (".mp3", ".wav", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".wma", ".aif", ".aiff")
@@ -82,6 +86,34 @@ class Mailbox:
                 for p in parts:
                     if isinstance(p, tuple):
                         out.append(p[1])
+            return out
+        finally:
+            try:
+                imap.logout()
+            except Exception:
+                pass
+
+
+    def headers(self, days=3):
+        """[raw From/Subject/Message-ID/Date lines] of the emails of the last `days` days; nothing else is read."""
+        host, port, user, password, use_ssl, folder = self.args
+        try:
+            imap = imaplib.IMAP4_SSL(host, port, ssl_context=serverfs.tls_context(), timeout=60) if use_ssl                 else imaplib.IMAP4(host, port, timeout=60)
+        except OSError as ex:
+            raise serverfs.ServerError("could not reach the mail server %s: %s" % (host, ex))
+        try:
+            try:
+                imap.login(user, password)
+            except imaplib.IMAP4.error as ex:
+                raise SystemExit("The mail server refused the login for %s: %s" % (user, ex))
+            if imap.select('"%s"' % folder, readonly=True)[0] != "OK":     # EXAMINE: no change is possible
+                raise SystemExit("The mailbox has no folder %s." % folder)
+            since = (datetime.date.today() - datetime.timedelta(days=days)).strftime("%d-%b-%Y")
+            typ, data = imap.uid("SEARCH", None, "SINCE", since)
+            out = []
+            for uid in (data[0] or b"").split():
+                typ, parts = imap.uid("FETCH", uid, "(BODY.PEEK[HEADER.FIELDS (FROM SUBJECT MESSAGE-ID DATE)])")
+                out += [p[1] for p in parts if isinstance(p, tuple)]
             return out
         finally:
             try:
@@ -670,6 +702,33 @@ class Watch:
         return problems
 
 
+def announce(srv, mailbox, to, send=None, log=print):
+    """Tell `to` about each email not announced before: its sender and subject, nothing else. The first time, the
+    emails already there are only noted, so nobody is sent the last days' mail at once. Returns how many were told."""
+    send = send or inbox.send_mail
+    raw = srv.read("private", ANNOUNCED)
+    first = raw is None
+    done = json.loads(raw or b"{}")
+    told = 0
+    for head in mailbox.headers():
+        msg = parse(head)
+        mid = message_id(msg, head)
+        if mid in done:
+            continue
+        if not first:
+            who = " ".join(str(msg.get("From", "")).split()) or "(άγνωστος αποστολέας)"
+            subject = " ".join(str(msg.get("Subject", "")).split()) or "(χωρίς θέμα)"
+            if not send(to, "Νέο email στο science@: " + subject[:150], "Από: %s\nΘέμα: %s" % (who, subject)):
+                log("  could not tell about an email; trying again next time")
+                continue
+            told += 1
+        done[mid] = time.time()
+    cutoff = time.time() - 30 * 86400
+    srv.write("private", ANNOUNCED, json.dumps({k: v for k, v in done.items() if v > cutoff}).encode())
+    log("first look: %d emails noted, none announced" % len(done) if first else "%d new emails announced" % told)
+    return told
+
+
 def tell_admin(subject, text):
     """An email to MAIL_TO (the inbox's SMTP settings); printed if they are not set."""
     result = {"status": "info", "message": text, "title": subject, "type": "broadcast"}
@@ -692,11 +751,26 @@ def from_env():
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--check", action="store_true")
+    ap.add_argument("--announce", action="store_true")
     ap.add_argument("--local")
     a = ap.parse_args(argv)
     box, trust = from_env()
     if not box:
         print("Email is not set up (MAIL_IMAP_USER / MAIL_IMAP_PASSWORD); nothing to do.")
+        return 0
+    if a.announce:
+        to = [t for t in re.split(r"[,\s;]+", os.environ.get("MAIL_NOTIFY", "")) if "@" in t]
+        if not to or not os.environ.get("SMTP_HOST"):
+            print("Nobody to tell about new emails (MAIL_NOTIFY), or no way to send (SMTP_…); nothing to do.")
+            return 0
+        if not a.local and not serverfs.configured():
+            print("The server is not set up yet; nothing to do.")
+            return 0
+        srv = serverfs.connect(a.local)
+        try:
+            announce(srv, box, to)
+        finally:
+            srv.close()
         return 0
     if not trust:
         print("No trusted senders (MAIL_TRUSTED_SENDERS); nothing is fetched from email.")
