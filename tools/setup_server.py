@@ -641,11 +641,12 @@ def github_key_works(repo, key):
     req = urllib.request.Request("https://api.github.com/repos/%s/actions/workflows/inbox.yml" % repo, headers={
         "Authorization": "Bearer " + key, "Accept": "application/vnd.github+json", "User-Agent": "cs-setup"})
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=30, context=serverfs.tls_context()) as r:   # Pythons without their own certificates
             return r.status == 200
     except urllib.error.HTTPError:
         return False
-    except OSError:
+    except OSError as ex:
+        print("  (%s)" % getattr(ex, "reason", ex))
         return None
 
 
