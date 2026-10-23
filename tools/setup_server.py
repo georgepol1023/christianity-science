@@ -259,6 +259,7 @@ class Setup:
         self.da_base = da_base
         self.mailer = mailer
         self.mailbox_factory = mailbox_factory or mailwatch.Mailbox
+        self.github_check = github_key_works
         self.notes = []                                   # what the person must keep (shown at the end)
         self.da = None                                  # (base, user, password, verify) once given
 
@@ -601,15 +602,62 @@ class Setup:
         self.say("✓ %s can now sign in. Give them the device link (the same for everyone) from your password manager." % uid)
         return True
 
+    def github_key(self):
+        """The upload page's GitHub key, so that it starts the publishing at once after each upload."""
+        repo = github_repo(self.runner)
+        host, user = get_variable(repo, "CS_FTP_HOST", self.runner), get_variable(repo, "CS_FTP_USER", self.runner)
+        private = get_variable(repo, "CS_PRIVATE_DIR", self.runner)
+        if not host:
+            raise Stop("Run the first-time setup first: python tools/setup_server.py")
+        while True:
+            key = self.con.ask("GitHub key for the upload page (github_pat_…; not shown as you paste it)", secret=True)
+            ok = self.github_check(repo, key)
+            if ok:
+                break
+            self.say("  ✗ " + ("GitHub could not be reached; try again in a moment." if ok is None else
+                              "GitHub did not accept this key for %s: check that it has access to that repository, "
+                              "with Actions: Read and write." % repo))
+            if not self.con.yes("  Try another key?", True):
+                return False
+        self.say("  ✓ GitHub accepts the key for %s" % repo)
+        password = self.con.ask("FTP password of %s (from your password manager)" % user, secret=True)
+        srv = serverfs.FtpServer(host, user, password, "/", private, tls=get_variable(repo, "CS_FTP_TLS", self.runner) != "0",
+                                 port=self.ftp_port)
+        try:
+            raw = srv.read("private", "config.php")
+            if not raw:
+                raise Stop("The upload page has no settings yet; run the first-time setup.")
+            cfg = admin_user.parse(raw.decode("utf-8"))
+            cfg["github"] = {"repo": repo, "token": key}
+            srv.write("private", "config.php", admin_user.render(cfg).encode())
+        finally:
+            srv.close()
+        self.say("✓ saved. From now on the upload page starts the publishing as soon as something is sent.")
+        return True
+
+
+def github_key_works(repo, key):
+    """Whether a GitHub key may start this repository's publishing workflow (it can read the workflow). None: no answer."""
+    req = urllib.request.Request("https://api.github.com/repos/%s/actions/workflows/inbox.yml" % repo, headers={
+        "Authorization": "Bearer " + key, "Accept": "application/vnd.github+json", "User-Agent": "cs-setup"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.status == 200
+    except urllib.error.HTTPError:
+        return False
+    except OSError:
+        return None
+
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--go-live", action="store_true")
     ap.add_argument("--add-person", action="store_true")
+    ap.add_argument("--github-key", action="store_true")
     a = ap.parse_args()
     s = Setup()
     try:
-        ok = s.go_live() if a.go_live else s.add_someone() if a.add_person else s.first_time()
+        ok = s.go_live() if a.go_live else s.add_someone() if a.add_person else s.github_key() if a.github_key else s.first_time()
     except Stop as ex:
         print("\n✗ " + str(ex))
         return 1

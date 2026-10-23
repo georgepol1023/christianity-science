@@ -419,6 +419,18 @@ class FlowTest(unittest.TestCase):
         cfg = admin_user.parse(open(os.path.join(self.home, "cs-admin", "config.php"), encoding="utf-8").read())
         self.assertEqual(sorted(cfg["users"]), ["maria", "nikos"])
 
+    def test_the_upload_pages_github_key(self):
+        self.test_first_time_setup_from_start_to_finish()
+        gh = FakeGh({"CS_FTP_HOST": "127.0.0.1", "CS_FTP_USER": "publish@christianity-science.gr", "CS_FTP_TLS": "0",
+                     "CS_PRIVATE_DIR": "/cs-admin"})
+        s = self.setup([("GitHub key", "github_pat_wrong"), ("Try another key", "y"), ("GitHub key", "github_pat_right"),
+                        ("FTP password", self.ftp_password())], gh)
+        s.github_check = lambda repo, key: key == "github_pat_right"
+        self.assertTrue(s.github_key())
+        cfg = admin_user.parse(open(os.path.join(self.home, "cs-admin", "config.php"), encoding="utf-8").read())
+        self.assertEqual(cfg["github"], {"repo": "owner/site", "token": "github_pat_right"})
+        self.assertEqual(sorted(cfg["users"]), ["maria"])          # the rest kept
+
     def test_a_wrong_directadmin_password_stops_with_advice(self):
         s = self.setup([("new FTP account", "y"), ("DirectAdmin user", "admin"), ("DirectAdmin password", "wrong")], FakeGh())
         with self.assertRaises(Stop) as e:
