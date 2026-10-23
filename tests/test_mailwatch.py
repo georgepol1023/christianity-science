@@ -5,14 +5,11 @@
 A stand-in for WeTransfer (a small web server answering like wetransfer.com's download page does) and
 scripted emails; the requests made are then published by the real tools/inbox.py. Needs ffmpeg and node.
 """
-import datetime, email.message, email.utils, http.server, io, json, os, re, shutil, subprocess, sys, tempfile, threading
+import datetime, email.message, email.utils, http.server, io, json, os, re, shutil, subprocess, tempfile, threading
 import time, unittest, zipfile
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from helpers import copy_site_data, make_mp3
 import inbox, mailwatch, serverfs
-from test_inbox import make_mp3, DATA_FILES
 
 TRUST = ["radio@christianity.gr", "@studio.example"]
 
@@ -168,9 +165,7 @@ class MailWatchTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="cs-mail-test-")
         self.root = os.path.join(self.tmp, "repo")
-        for f in DATA_FILES:
-            os.makedirs(os.path.dirname(os.path.join(self.root, f)), exist_ok=True)
-            shutil.copyfile(os.path.join(ROOT, f), os.path.join(self.root, f))
+        copy_site_data(self.root)
         # the site's next broadcast as on 1 Oct 2026, so that the 15th is a broadcast day
         js = os.path.join(self.root, "js", "broadcasts.js")
         s = open(js, encoding="utf-8").read()

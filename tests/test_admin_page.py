@@ -5,13 +5,10 @@
 Needs php (skipped without it; GitHub's test machines have it), ffmpeg and node. Everything runs in a
 temporary folder: a stand-in web folder (site/) and private folder (private/), like the real server.
 """
-import base64, hashlib, hmac, http.client, json, os, re, shutil, socket, struct, subprocess, sys, tempfile, time, unittest
+import base64, hashlib, hmac, http.client, json, os, re, shutil, socket, struct, subprocess, tempfile, time, unittest
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from helpers import ROOT, copy_site_data, make_mp3
 import admin_user, inbox, serverfs
-from test_inbox import make_mp3
 
 PHP = shutil.which("php")
 SECRET = "test-upload-page"
@@ -65,10 +62,9 @@ class PageServer:
         cls.repo = os.path.join(cls.tmp, "repo")
         for d in (cls.site, cls.private):
             os.makedirs(d)
-        for rel in ("js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js", "data/podcast-audio.json", "404.html"):
-            for base in (cls.repo, cls.site):
-                os.makedirs(os.path.dirname(os.path.join(base, rel)), exist_ok=True)
-                shutil.copyfile(os.path.join(ROOT, rel), os.path.join(base, rel))
+        for base in (cls.repo, cls.site):
+            copy_site_data(base)
+            shutil.copyfile(os.path.join(ROOT, "404.html"), os.path.join(base, "404.html"))
         shutil.copytree(os.path.join(ROOT, "admin"), os.path.join(cls.site, SECRET))
         cls.key = "k" * 10 + "device-key-for-tests-0123"
         cfg = {"device_key": cls.key, "users": {

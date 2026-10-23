@@ -7,18 +7,14 @@ Three servers: plain FTP, plain FTP without MLSD (older servers), and FTP over T
 every connection (as most hosts do). On each: every file operation, reconnecting after the connection
 drops, and the deploy and the inbox from start to finish. Skipped where pyftpdlib is not installed.
 """
-import datetime, json, os, shutil, sys, tempfile, threading, unittest
+import datetime, json, os, shutil, tempfile, unittest
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from helpers import ROOT, copy_site_data, make_mp3, start_ftp
 import deploy, inbox, serverfs
-from test_inbox import make_mp3, DATA_FILES
 
 try:
     from pyftpdlib.authorizers import DummyAuthorizer
     from pyftpdlib.handlers import FTPHandler
-    from pyftpdlib.servers import ThreadedFTPServer
 except ImportError:
     FTPHandler = None
 try:
@@ -79,14 +75,7 @@ class FtpBase:
         handler.authorizer = auth
         handler.banner = "test"
         handler.permit_foreign_addresses = True
-        self.server = ThreadedFTPServer(("127.0.0.1", 0), handler)
-        self.port = self.server.socket.getsockname()[1]
-        # pyftpdlib's threaded server shares one stop signal between all its servers: give this one its own,
-        # or stopping the previous test's server can stop this one half-way through a test
-        self.server._exit = threading.Event()
-        self.server._lock = threading.Lock()
-        self.thread = threading.Thread(target=self.server.serve_forever, kwargs={"timeout": 0.5}, daemon=True)
-        self.thread.start()
+        self.server, self.port, self.thread = start_ftp(handler)
         self.env = dict(env, FTP_HOST="127.0.0.1", FTP_USER=USER, FTP_PASSWORD=PASSWORD, FTP_SITE_DIR="/site",
                         FTP_PRIVATE_DIR="/private", FTP_PORT=str(self.port))
         self.old_env = {k: os.environ.get(k) for k in self.env}
@@ -190,9 +179,7 @@ class FtpBase:
 
     def test_inbox_over_ftp(self):
         repo = os.path.join(self.tmp, "repo")
-        for f in DATA_FILES:
-            os.makedirs(os.path.dirname(os.path.join(repo, f)), exist_ok=True)
-            shutil.copyfile(os.path.join(ROOT, f), os.path.join(repo, f))
+        copy_site_data(repo)
         req = self.disk("private", "inbox", "20261015-120000-0000ftp1")
         os.makedirs(req)
         files = []

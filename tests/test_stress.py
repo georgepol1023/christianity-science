@@ -8,10 +8,9 @@ random dates (across season boundaries, new seasons, the oldest of a season), aw
 site loads it, and checked: it loads, each season is newest first, every title reads back exactly, nothing else moved.
 The random seed is printed on failure, so a failing case can be repeated.
 """
-import datetime, os, random, re, shutil, sys, tempfile, unittest
+import datetime, random, re, shutil, tempfile, unittest
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
+from helpers import ROOT, copy_site_data
 import inbox
 
 AWKWARD = ['Τίτλος με "εισαγωγικά"', "Ο Κύριος's \\ backslash", "«Εξ ενός αίματος» – Μέρος 2ο", "Ϊ ΐ ΰ ϋ ά έ ή ί ό ύ ώ",
@@ -26,9 +25,7 @@ def seasons_of(site):
 class EditingStressTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="cs-stress-")
-        for f in ("js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js"):
-            os.makedirs(os.path.dirname(os.path.join(self.tmp, f)), exist_ok=True)
-            shutil.copyfile(os.path.join(ROOT, f), os.path.join(self.tmp, f))
+        copy_site_data(self.tmp, files=("js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js"))
         self.seed = random.randrange(1 << 30)
         self.rnd = random.Random(self.seed)
 

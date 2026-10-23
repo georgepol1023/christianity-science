@@ -9,16 +9,13 @@ and (where php is installed) PHP's web server, so the checks over "the internet"
 import base64, http.server, os, re, shutil, socket, subprocess, sys, tempfile, threading, time, unittest
 import urllib.parse
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from helpers import start_ftp
 import admin_user, serverfs, setup_server
 from setup_server import Stop
 
 try:
     from pyftpdlib.authorizers import DummyAuthorizer
     from pyftpdlib.handlers import FTPHandler
-    from pyftpdlib.servers import ThreadedFTPServer
 except ImportError:
     FTPHandler = None
 PHP = shutil.which("php")
@@ -223,12 +220,7 @@ class FlowTest(unittest.TestCase):
             f.write("the old site")
         self.auth = DummyAuthorizer()
         handler = type("H", (FTPHandler,), {"authorizer": self.auth})
-        self.ftp = ThreadedFTPServer(("127.0.0.1", 0), handler)
-        self.ftp_port = self.ftp.socket.getsockname()[1]
-        self.ftp._exit = threading.Event()        # its own stop signal (pyftpdlib shares one between servers)
-        self.ftp._lock = threading.Lock()
-        self.ftp_thread = threading.Thread(target=self.ftp.serve_forever, kwargs={"timeout": 0.5}, daemon=True)
-        self.ftp_thread.start()
+        self.ftp, self.ftp_port, self.ftp_thread = start_ftp(handler)
         self.da = FakeDirectAdmin(self.auth, self.home)
         self.da_base = self.da.start()
         self.php = None

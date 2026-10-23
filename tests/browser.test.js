@@ -14,6 +14,15 @@ const path = require("path");
 const puppeteer = require("puppeteer-core");
 
 const ROOT = path.resolve(__dirname, "..");
+
+/* The archive as js/broadcasts.js has it, so that publishing a broadcast does not break the tests. */
+const ARCHIVE = (() => {
+  const ctx = { window: {} };
+  require("vm").runInNewContext(fs.readFileSync(path.join(ROOT, "js/broadcasts.js"), "utf8"), ctx);
+  const seasons = ctx.window.BROADCASTS, episodes = seasons.flatMap((s) => s.episodes);
+  const latest = episodes.reduce((a, b) => (b.date > a.date ? b : a));
+  return { seasons: seasons.length, episodes: episodes.length, latest: latest.title };
+})();
 const BASE = process.env.BASE || "http://127.0.0.1:8081/";
 const CHROME = process.env.CHROME || [
   "C:/Program Files/Google/Chrome/Application/chrome.exe",
@@ -83,12 +92,12 @@ test("every page loads without JS errors or broken local assets, and fits a 375p
 /* =====================================================================
    Home page: archive, search, filters, deep links
    ===================================================================== */
-test("home: archive lists all 355 broadcasts in 20 seasons", async () => {
+test("home: archive lists every broadcast in its season", async () => {
   const page = await open("index.html");
-  assert.equal(await page.$$eval("#list .ep", (e) => e.length), 355);
-  assert.equal(await page.$$eval("#list .season", (e) => e.length), 20);
-  assert.match(await page.$eval("#archiveStats", (e) => e.textContent), /355 εκπομπές σε 20 κύκλους/);
-  assert.match(await page.$eval("#latest .latest__title", (e) => e.textContent), /αθεϊστικά/);
+  assert.equal(await page.$$eval("#list .ep", (e) => e.length), ARCHIVE.episodes);
+  assert.equal(await page.$$eval("#list .season", (e) => e.length), ARCHIVE.seasons);
+  assert.match(await page.$eval("#archiveStats", (e) => e.textContent), new RegExp(`${ARCHIVE.episodes} εκπομπές σε ${ARCHIVE.seasons} κύκλους`));
+  assert.equal(await page.$eval("#latest .latest__title", (e) => e.textContent.trim()), ARCHIVE.latest);
   assert.deepEqual(page.problems, []);
   await page.close2();
 });
@@ -168,7 +177,7 @@ test("home: search with no match shows the empty state; clearing restores everyt
   await page.waitForFunction(() => !document.querySelector("#empty").hidden);
   assert.equal(await page.$$eval("#list .ep", (e) => e.length), 0);
   await page.click("#clearSearch");
-  await page.waitForFunction(() => document.querySelectorAll("#list .ep").length === 355);
+  await page.waitForFunction((n) => document.querySelectorAll("#list .ep").length === n, {}, ARCHIVE.episodes);
   assert.equal(await page.$eval("#empty", (e) => e.hidden), true);
   await page.close2();
 });
@@ -180,7 +189,7 @@ test("home: season chips filter the list", async () => {
   assert.equal(await page.$$eval("#list .ep", (e) => e.length), 12);
   assert.equal(await page.$eval('#seasonBar [data-season="1"]', (e) => e.getAttribute("aria-pressed")), "true");
   await page.click('#seasonBar [data-season="all"]');
-  assert.equal(await page.$$eval("#list .ep", (e) => e.length), 355);
+  assert.equal(await page.$$eval("#list .ep", (e) => e.length), ARCHIVE.episodes);
   await page.close2();
 });
 
@@ -864,8 +873,8 @@ test("converted pages: videos use privacy-friendly YouTube embeds and pager link
    ===================================================================== */
 test("english home: interface, titles and dates are in English; audio plays from the shared mp3 folder", async () => {
   const page = await open("en/index.html");
-  assert.equal(await page.$$eval("#list .ep", (e) => e.length), 355);
-  assert.match(await page.$eval("#archiveStats", (e) => e.textContent), /^355 broadcasts in 20 seasons, .*Audio in Greek\.$/);
+  assert.equal(await page.$$eval("#list .ep", (e) => e.length), ARCHIVE.episodes);
+  assert.match(await page.$eval("#archiveStats", (e) => e.textContent), new RegExp(`^${ARCHIVE.episodes} broadcasts in ${ARCHIVE.seasons} seasons, .*Audio in Greek\\.$`));
   assert.equal(await page.$eval("#seasonBar [data-season=all]", (e) => e.textContent), "All seasons");
   assert.match(await page.$eval("#latest .latest__meta", (e) => e.textContent), /^\d{1,2} [A-Z][a-z]+ \d{4}, Season \d+, \d parts$/);
   assert.match(await page.$eval("#list .ep__title", (e) => e.textContent), /^[\x00-\u024f“”‘’–—…·]+$/);   // Latin text only

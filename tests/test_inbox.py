@@ -5,45 +5,16 @@
 Each test works on a copy of the site's data files and a folder standing in for the server, with short
 generated recordings (needs ffmpeg and node, like the tools themselves). Nothing real is touched.
 """
-import json, os, shutil, subprocess, sys, tempfile, time, unittest
+import json, os, subprocess, sys, tempfile, time, unittest
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
+from helpers import copy_site_data, make_mp3, wipe
 import inbox, serverfs
-
-DATA_FILES = ["js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js", "data/podcast-audio.json"]
-_mp3_cache = {}
-
-
-def wipe(path):
-    """Remove a test folder, git's read-only files too (Windows), so no test leaves anything behind."""
-    import stat
-
-    def again(func, p, _):
-        os.chmod(p, stat.S_IWRITE)
-        func(p)
-    shutil.rmtree(path, onerror=again)
-
-
-def make_mp3(path, freq, seconds=61):
-    """A short mono mp3 (a tone); the same frequency gives the same file."""
-    key = (freq, seconds)
-    if key not in _mp3_cache:
-        out = os.path.join(tempfile.gettempdir(), "cs-test-%d-%d.mp3" % key)
-        if not os.path.exists(out):
-            subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=%d:duration=%d" % key,
-                            "-ac", "1", "-b:a", "16k", out], check=True)
-        _mp3_cache[key] = out
-    shutil.copyfile(_mp3_cache[key], path)
-
 
 class InboxTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp(prefix="cs-inbox-test-")
         self.root = os.path.join(self.tmp, "repo")
-        for f in DATA_FILES:
-            os.makedirs(os.path.dirname(os.path.join(self.root, f)), exist_ok=True)
-            shutil.copyfile(os.path.join(ROOT, f), os.path.join(self.root, f))
+        copy_site_data(self.root)
         self.srv = serverfs.connect(os.path.join(self.tmp, "server"))
         self.logs = []
         self.box = inbox.Inbox(self.srv, self.root, push=False, build=False, keep_local=False, log=self.logs.append)
@@ -481,9 +452,7 @@ class GitRaceTest(unittest.TestCase):
         git("init", "-q", "--bare", "-b", "main", self.remote)
         seed = os.path.join(self.tmp, "seed")
         git("clone", "-q", self.remote, seed)
-        for f in DATA_FILES:
-            os.makedirs(os.path.dirname(os.path.join(seed, f)), exist_ok=True)
-            shutil.copyfile(os.path.join(ROOT, f), os.path.join(seed, f))
+        copy_site_data(seed)
         for c in (seed,):
             git("-c", "user.name=t", "-c", "user.email=t@t", "checkout", "-q", "-b", "main", cwd=c)
             git("add", "-A", cwd=c)

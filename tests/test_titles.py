@@ -4,14 +4,23 @@
 
 DeepL is a stand-in here (a small web server answering as DeepL does); the topics are measured on the real site.
 """
-import http.server, json, os, shutil, sys, tempfile, threading, unittest
+import http.server, json, os, shutil, tempfile, threading, unittest
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "tools"))
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from helpers import ROOT, copy_site_data, make_mp3
 import inbox, serverfs, titles
 
-SITE = inbox.load_site(ROOT)
+
+def site_before_test_date():
+    """The site's broadcasts without the one of TEST_DATE (so its title is not already known)."""
+    tmp = tempfile.mkdtemp()
+    try:
+        copy_site_data(tmp)
+        return inbox.load_site(tmp)
+    finally:
+        shutil.rmtree(tmp)
+
+
+SITE = site_before_test_date()
 NAMES = inbox.topic_names(ROOT)
 
 
@@ -164,16 +173,13 @@ class InboxIntegrationTest(unittest.TestCase):
     """A broadcast sent without English title and topics gets both, and is published."""
 
     def test_filled_in_by_themselves(self):
-        from test_inbox import make_mp3, DATA_FILES
         tmp = tempfile.mkdtemp()
         deepl = FakeDeepL()
         deepl.answers["Παγκόσμια ημέρα ψυχικής υγείας"] = "World Mental Health Day"
         os.environ.update(DEEPL_BASE=deepl.base, DEEPL_API_KEY="k:fx")
         try:
             root = os.path.join(tmp, "repo")
-            for f in DATA_FILES:
-                os.makedirs(os.path.dirname(os.path.join(root, f)), exist_ok=True)
-                shutil.copyfile(os.path.join(ROOT, f), os.path.join(root, f))
+            copy_site_data(root)
             srv = serverfs.connect(os.path.join(tmp, "server"))
             d = os.path.join(tmp, "server", "private", "inbox", "20261016-120000-0000aaaa")
             os.makedirs(d)

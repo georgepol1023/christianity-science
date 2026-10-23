@@ -5,7 +5,7 @@
 Needs php (skipped without it; GitHub's test machines have it). The stand-in for sendmail keeps each email in a
 file instead of sending it, or fails when told to (a file "fail" next to it).
 """
-import base64, email, email.policy, glob, http.client, json, os, shutil, socket, subprocess, sys, tempfile, time, unittest
+import email, email.policy, glob, http.client, json, os, shutil, socket, subprocess, sys, tempfile, time, unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PHP = shutil.which("php")
