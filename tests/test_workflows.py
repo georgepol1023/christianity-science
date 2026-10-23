@@ -31,7 +31,7 @@ def reads(script, seen=None):
 def steps(path):
     """[(name, run commands, the env it gets)] of a workflow (simple YAML reading, enough for these files)."""
     text = open(path, encoding="utf-8").read()
-    secrets = lambda block: set(re.findall(r"^\s+([A-Z_]+): \$\{\{ (?:secrets|vars)\.[A-Z_]+ \}\}", block, re.M))
+    secrets = lambda block: set(re.findall(r"^\s+([A-Z_]+): \$\{\{ (?:secrets|vars)\.[A-Z_]+(?: \|\| (?:secrets|vars)\.[A-Z_]+)* \}\}", block, re.M))
     top = re.search(r"^env:\n((?:  .*\n)+)", text, re.M)
     job_env = secrets(top.group(1)) if top else set()
     out = []
@@ -61,7 +61,7 @@ class WorkflowSettingsTest(unittest.TestCase):
         stored = set(re.findall(r'"([A-Z][A-Z0-9_]{3,})"', setup))
         asked = set()
         for wf in glob.glob(os.path.join(ROOT, ".github", "workflows", "*.yml")):
-            asked |= set(re.findall(r"\$\{\{ secrets\.([A-Z_]+) \}\}", open(wf, encoding="utf-8").read()))
+            asked |= set(re.findall(r"\bsecrets\.([A-Z_]+)", open(wf, encoding="utf-8").read()))
         self.assertEqual(sorted(asked - stored), [])
 
 

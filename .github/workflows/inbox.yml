@@ -28,11 +28,13 @@ env:
   MAIL_IMAP_USER: ${{ secrets.MAIL_IMAP_USER }}
   MAIL_IMAP_PASSWORD: ${{ secrets.MAIL_IMAP_PASSWORD }}
   MAIL_TRUSTED_SENDERS: ${{ secrets.MAIL_TRUSTED_SENDERS }}
-  SMTP_HOST: ${{ secrets.SMTP_HOST }}
+  # the emails about each broadcast (to MAIL_TO, and to whoever sent it from the upload page): sent from the
+  # SMTP_… mailbox, or else from science@ itself with the login the robot reads it with (sending changes nothing there)
+  SMTP_HOST: ${{ secrets.SMTP_HOST || secrets.MAIL_IMAP_HOST }}
   SMTP_PORT: ${{ secrets.SMTP_PORT }}
-  SMTP_USER: ${{ secrets.SMTP_USER }}
-  SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-  MAIL_FROM: ${{ secrets.MAIL_FROM }}
+  SMTP_USER: ${{ secrets.SMTP_USER || secrets.MAIL_IMAP_USER }}
+  SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD || secrets.MAIL_IMAP_PASSWORD }}
+  MAIL_FROM: ${{ secrets.MAIL_FROM || secrets.MAIL_IMAP_USER }}
   MAIL_TO: ${{ secrets.MAIL_TO }}
   DEEPL_API_KEY: ${{ secrets.DEEPL_API_KEY }}           # English titles (tools/titles.py)
   ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional: a suggested title when the file names cannot be read
