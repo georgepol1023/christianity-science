@@ -10,7 +10,7 @@ Redirect stubs (old addresses) get noindex instead, and are left out of the site
 
 Run after tools/build_en.py and before tools/stamp.py (tools/build_all.py does all three).
 """
-import os, re, datetime, html
+import os, re, datetime, html, subprocess
 
 # The official address of the site. If you choose the address without "www", change it here and re-run.
 SITE_URL = "https://www.christianity-science.gr/"
@@ -83,15 +83,50 @@ def apply(rel):
     return 'http-equiv="refresh"' not in src
 
 
-def sitemap(listed):
+def git(*args):
+    """The output of a git command in ROOT, or None if git is not there (a copy of the site without .git)."""
+    try:
+        r = subprocess.run(["git", "-c", "core.quotepath=false", *args], cwd=ROOT, capture_output=True)
+    except OSError:
+        return None
+    return r.stdout.decode("utf-8") if r.returncode == 0 else None
+
+
+def last_changed(listed):
+    """{page: the day it last changed}. Not the files' own times: GitHub's copy of the site is made afresh for every
+    run, so they would all say today. A page that differs from git's last commit (or is new) changed today; any other
+    keeps the day of its last commit, or, where git has only the last commit (GitHub's shallow copy), the day the
+    sitemap already gives it."""
     today = datetime.date.today().isoformat()
+    status = git("status", "--porcelain", "-z", "--untracked-files=all")
+    if status is None:
+        return {rel: min(datetime.date.fromtimestamp(os.path.getmtime(os.path.join(ROOT, rel))).isoformat(), today)
+                for rel in listed}
+    changed = {entry[3:] for entry in status.split("\0") if entry[2:3] == " "}
+    known = {}
+    if git("rev-parse", "--is-shallow-repository") == "false\n":
+        day = None
+        for line in (git("log", "--format=@%cs", "--name-only") or "").splitlines():
+            if line.startswith("@"):
+                day = line[1:]
+            elif line:
+                known.setdefault(line, day)
+    else:
+        path = os.path.join(ROOT, "sitemap.xml")
+        old = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
+        by_url = dict(re.findall(r"<loc>([^<]*)</loc>\s*<lastmod>([^<]*)</lastmod>", old))
+        known = {rel: by_url.get(html.escape(url(rel))) for rel in listed}
+    return {rel: today if rel in changed else min(known.get(rel) or today, today) for rel in listed}
+
+
+def sitemap(listed):
+    days = last_changed(listed)
     out = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">']
     for rel in sorted(listed, key=lambda r: (r.count("/"), r)):
-        mod = datetime.date.fromtimestamp(os.path.getmtime(os.path.join(ROOT, rel))).isoformat()
         out.append("  <url>")
         out.append("    <loc>%s</loc>" % html.escape(url(rel)))
-        out.append("    <lastmod>%s</lastmod>" % min(mod, today))
+        out.append("    <lastmod>%s</lastmod>" % days[rel])
         pair = counterpart(rel)
         if pair:
             out.append('    <xhtml:link rel="alternate" hreflang="el" href="%s"/>' % html.escape(url(pair[0])))
