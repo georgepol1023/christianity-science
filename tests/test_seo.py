@@ -48,6 +48,12 @@ class SitemapDatesTest(unittest.TestCase):
         self.write(self.repo, "a.html", "<p>changed</p>")
         self.assertEqual(self.dates(self.repo), {"a.html": TODAY, "b.html": "2026-01-05"})
 
+    def test_a_page_rebuilt_without_its_version_stamps_has_not_changed(self):
+        self.write(self.repo, "a.html", '<link href="css/site.css?v=0123abcd">')
+        git(self.repo, "commit", "-q", "-am", "stamped", date="2026-02-07T12:00:00Z")
+        self.write(self.repo, "a.html", '<link href="css/site.css">')      # tools/stamp.py runs after seo.py
+        self.assertEqual(self.dates(self.repo)["a.html"], "2026-02-07")
+
     def test_a_fresh_shallow_copy_keeps_the_dates_of_unchanged_pages(self):
         self.dates(self.repo)                                  # the sitemap as committed
         git(self.repo, "add", "-A")

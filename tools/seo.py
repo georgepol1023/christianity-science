@@ -92,6 +92,14 @@ def git(*args):
     return r.stdout.decode("utf-8") if r.returncode == 0 else None
 
 
+def same_as_committed(rel):
+    """True if the page is as in git's last commit but for the version stamps (?v=…), which tools/stamp.py puts
+    back after this tool runs (a page rebuilt by an earlier tool has none yet)."""
+    old = git("show", "HEAD:" + rel)
+    unstamped = lambda s: re.sub(r"\?v=[0-9a-f]+", "", s)
+    return old is not None and unstamped(old) == unstamped(open(os.path.join(ROOT, rel), encoding="utf-8").read())
+
+
 def last_changed(listed):
     """{page: the day it last changed}. Not the files' own times: GitHub's copy of the site is made afresh for every
     run, so they would all say today. A page that differs from git's last commit (or is new) changed today; any other
@@ -102,7 +110,8 @@ def last_changed(listed):
     if status is None:
         return {rel: min(datetime.date.fromtimestamp(os.path.getmtime(os.path.join(ROOT, rel))).isoformat(), today)
                 for rel in listed}
-    changed = {entry[3:] for entry in status.split("\0") if entry[2:3] == " "}
+    changed = {rel for rel in (entry[3:] for entry in status.split("\0") if entry[2:3] == " ")
+               if rel in listed and not same_as_committed(rel)}
     known = {}
     if git("rev-parse", "--is-shallow-repository") == "false\n":
         day = None
