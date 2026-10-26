@@ -269,6 +269,12 @@ svg[viewBox="0 0 24 24"] { width: 22px; height: 22px; fill: none; stroke: curren
 .chip--clear { display: inline-grid; place-items: center; padding: 0; width: 2.2rem; margin-left: -.15rem; }
 .chip--clear svg { width: 15px; height: 15px; }
 .seasons .chip--clear + .chip, .seasons .chip--topics:not(.is-set) + .chip { margin-left: .5rem; }
+/* A drag bar under the seasons row, so a mouse can slide it right; added by js/app.js on desktop only,
+ * and shown (.is-on) only while the chips are wider than the row. Touch devices swipe, so they never see it. */
+.seasonscroll { display: none; height: 11px; margin: 0 0 .4rem; padding: 3px 0; cursor: pointer; touch-action: none; }
+.seasonscroll.is-on { display: block; }
+.seasonscroll__thumb { height: 4px; border-radius: 999px; background: var(--line); transition: background .15s; }
+.seasonscroll:hover .seasonscroll__thumb, .seasonscroll.is-drag .seasonscroll__thumb { background: var(--slate); }
 .tagdlg { border: 0; border-radius: 22px; padding: 1.1rem 1.25rem 1.4rem; width: min(560px, calc(100% - 32px)); max-height: min(80vh, 640px);
   overflow-y: auto; overscroll-behavior: contain; background: var(--surface); color: var(--ink); box-shadow: 0 24px 70px rgba(10, 14, 40, .3); }
 .tagdlg::backdrop { background: rgba(12, 16, 40, .45); }

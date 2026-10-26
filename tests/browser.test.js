@@ -193,6 +193,29 @@ test("home: season chips filter the list", async () => {
   await page.close2();
 });
 
+test("home (desktop): a drag bar under the seasons slides them right; touch never shows it", async () => {
+  // desktop (a mouse/trackpad: the default headless viewport reports hover+fine pointer), window too
+  // narrow for all the season chips
+  const page = await open("index.html", { width: 520 });
+  assert.equal(await page.$eval(".seasonscroll", (e) => getComputedStyle(e).display), "block", "the bar shows when the chips overflow");
+  await page.evaluate(() => document.querySelector(".seasonscroll").scrollIntoView({ block: "center", behavior: "instant" }));
+  const before = await page.$eval("#seasonBar", (e) => e.scrollLeft);
+  const box = await page.$eval(".seasonscroll__thumb", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.mouse.move(box.x, box.y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 160, box.y, { steps: 8 });
+  await page.mouse.up();
+  const after = await page.$eval("#seasonBar", (e) => e.scrollLeft);
+  assert.ok(after > before + 20, `dragging the bar should scroll the seasons right (was ${before}, now ${after})`);
+  assert.deepEqual(page.problems, []);
+  await page.close2();
+
+  // touch phone (isMobile reports hover:none, pointer:coarse): the bar is never added
+  const phone = await open("index.html", { before: (p) => p.setViewport({ width: 375, height: 800, isMobile: true, hasTouch: true }) });
+  assert.equal(await phone.$$eval(".seasonscroll", (e) => e.length), 0, "no drag bar on touch devices");
+  await phone.close2();
+});
+
 test("home: '/' opens the site-wide search; Escape closes it", async () => {
   const page = await open("index.html");
   await page.keyboard.press("/");

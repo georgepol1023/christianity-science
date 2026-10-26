@@ -288,6 +288,51 @@
     SEASONS.forEach(function (s) { h += '<button class="chip" data-season="' + s.n + '" aria-pressed="false">' + T.season(s.n) + "</button>"; });
     seasonBar.innerHTML = h;
   })();
+
+  /* A drag bar under the seasons row: on desktop (a mouse or trackpad) you can slide the chips right by
+   * dragging it, instead of only swiping or shift-scrolling. It appears only while the chips overflow the row. */
+  if (window.matchMedia && matchMedia("(hover: hover) and (pointer: fine)").matches) {
+    var track = document.createElement("div");
+    track.className = "seasonscroll";
+    track.setAttribute("aria-hidden", "true");
+    var thumb = document.createElement("div");
+    thumb.className = "seasonscroll__thumb";
+    track.appendChild(thumb);
+    seasonBar.insertAdjacentElement("afterend", track);
+    var maxScroll = function () { return seasonBar.scrollWidth - seasonBar.clientWidth; };
+    var sync = function () {
+      var max = maxScroll();
+      track.classList.toggle("is-on", max > 1);
+      if (max <= 1) return;
+      var tw = track.clientWidth, thumbW = Math.max(40, Math.round(tw * seasonBar.clientWidth / seasonBar.scrollWidth));
+      thumb.style.width = thumbW + "px";
+      thumb.style.transform = "translateX(" + (seasonBar.scrollLeft / max) * (tw - thumbW) + "px)";
+    };
+    var drag = null;
+    thumb.addEventListener("pointerdown", function (e) {
+      drag = { x: e.clientX, left: seasonBar.scrollLeft }; thumb.setPointerCapture(e.pointerId);
+      track.classList.add("is-drag"); e.preventDefault();
+    });
+    thumb.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      var travel = track.clientWidth - thumb.offsetWidth;
+      if (travel > 0) seasonBar.scrollLeft = drag.left + (e.clientX - drag.x) / travel * maxScroll();
+    });
+    var endDrag = function () { drag = null; track.classList.remove("is-drag"); };
+    thumb.addEventListener("pointerup", endDrag);
+    thumb.addEventListener("pointercancel", endDrag);
+    track.addEventListener("pointerdown", function (e) {           // click the track to jump there
+      if (e.target === thumb) return;
+      var travel = track.clientWidth - thumb.offsetWidth;
+      if (travel <= 0) return;
+      var pos = e.clientX - track.getBoundingClientRect().left - thumb.offsetWidth / 2;
+      seasonBar.scrollLeft = Math.max(0, Math.min(1, pos / travel)) * maxScroll();
+    });
+    seasonBar.addEventListener("scroll", sync, { passive: true });
+    window.addEventListener("resize", sync);
+    sync();
+    setTimeout(sync, 0);                                           // again once fonts have settled the widths
+  }
   seasonBar.addEventListener("click", function (e) {
     if (e.target.closest("#tagOpen")) { openTags(); return; }
     if (e.target.closest("[data-tag-clear]")) { setTag("all"); renderList(); return; }
