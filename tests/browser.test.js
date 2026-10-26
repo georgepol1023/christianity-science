@@ -290,6 +290,21 @@ test("column: topics and years filter the newspaper articles, together with the 
   await en.close2();
 });
 
+test("column (desktop): the same drag bar slides the years right", async () => {
+  const page = await open("column.html", { width: 520 });
+  assert.equal(await page.$eval(".seasonscroll", (e) => getComputedStyle(e).display), "block", "the bar shows when the years overflow");
+  await page.evaluate(() => document.querySelector(".seasonscroll").scrollIntoView({ block: "center", behavior: "instant" }));
+  const before = await page.$eval("#colBar", (e) => e.scrollLeft);
+  const box = await page.$eval(".seasonscroll__thumb", (e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  await page.mouse.move(box.x, box.y);
+  await page.mouse.down();
+  await page.mouse.move(box.x + 160, box.y, { steps: 8 });
+  await page.mouse.up();
+  assert.ok(await page.$eval("#colBar", (e) => e.scrollLeft) > before + 20, "dragging the bar scrolls the years right");
+  assert.deepEqual(page.problems, []);
+  await page.close2();
+});
+
 test("search: a topic's name finds its broadcasts; on the English page the English name does too", async () => {
   const page = await open("index.html");
   await page.type("#q", "βιοηθική");

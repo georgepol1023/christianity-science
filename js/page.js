@@ -139,6 +139,7 @@
         apply();
       };
       setTag("all");
+      if (window.dragScroll) dragScroll(bar);   // desktop: a drag bar under the year row (js/dragscroll.js)
       var toTop = function () { var top = bar.getBoundingClientRect().top; if (top < 0 || top > innerHeight) bar.scrollIntoView(); };
       bar.addEventListener("click", function (e) {
         if (e.target.closest("#tagOpen")) {
