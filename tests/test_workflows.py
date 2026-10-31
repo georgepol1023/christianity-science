@@ -11,7 +11,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOOLS = os.path.join(ROOT, "tools")
 # only for tests, or with good defaults: not needed from the workflows
 OPTIONAL = {"FTP_TLS_CAFILE", "WETRANSFER_BASE", "DEEPL_BASE", "GITHUB_OUTPUT", "CS_PRIVATE_DIR", "CS_SHOW_ERRORS",
-            "FTP_PORT", "MAIL_IMAP_PORT", "MAIL_IMAP_SSL", "MAIL_IMAP_FOLDER", "PHP", "FTP_TLS", "MAIL_IMAP_HOST"}
+            "FTP_PORT", "MAIL_IMAP_PORT", "MAIL_IMAP_SSL", "MAIL_IMAP_FOLDER", "PHP", "FTP_TLS", "MAIL_IMAP_HOST",
+            "CS_REPLACE_ROOT"}
 
 
 def reads(script, seen=None):

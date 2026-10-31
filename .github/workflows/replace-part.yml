@@ -1,0 +1,66 @@
+# One-off: replace the mp3 of a single half-hour of an existing broadcast, keeping everything else as it is
+# (same file name, same date, same podcast episode, so Spotify just refreshes that one episode). The new mp3 is
+# committed under replace-part-upload/ first; this job puts it on the server, rebuilds the whole-broadcast file
+# and podcast.xml, removes the uploaded mp3 from git, commits and deploys. Start it from the Actions tab.
+name: Replace one broadcast part
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Broadcast date (YYYY-MM-DD)"
+        required: true
+        default: "2010-01-28"
+      part:
+        description: "Which half-hour (1, 2, …)"
+        required: true
+        default: "1"
+      file:
+        description: "The new mp3, a path committed under replace-part-upload/"
+        required: true
+        default: "replace-part-upload/CS_2010_01_28_(1)_Pneymatiki_Ypostasi_Anthropou_2.mp3"
+
+permissions:
+  contents: write
+
+concurrency:              # one change to the site at a time (shared with deploy, inbox and the column)
+  group: site-publish
+  cancel-in-progress: false
+
+env:
+  FTP_HOST: ${{ secrets.FTP_HOST }}
+  FTP_USER: ${{ secrets.FTP_USER }}
+  FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+  FTP_SITE_DIR: ${{ secrets.FTP_SITE_DIR }}
+  FTP_PRIVATE_DIR: ${{ secrets.FTP_PRIVATE_DIR }}
+  FTP_TLS: ${{ secrets.FTP_TLS }}
+  ADMIN_PATH: ${{ secrets.ADMIN_PATH }}
+
+jobs:
+  replace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ffmpeg (joining the parts)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q ffmpeg
+      - name: Replace the part on the server and update the metadata
+        run: python tools/replace_part.py --date "${{ inputs.date }}" --part "${{ inputs.part }}" --file "${{ inputs.file }}"
+      - name: Rebuild the podcast feed
+        run: python tools/podcast.py
+      - name: Commit the feed, drop the uploaded mp3
+        run: |
+          git config user.name "George"
+          git config user.email "148995294+georgepol1023@users.noreply.github.com"
+          git rm -q --ignore-unmatch "${{ inputs.file }}"
+          git add -A
+          git commit -m "Replace ${{ inputs.date }} part ${{ inputs.part }} with a newer recording"
+          git pull -q --rebase origin "${GITHUB_REF_NAME}"
+          git push
+      - name: Put the changed pages on the server
+        run: python tools/deploy.py
