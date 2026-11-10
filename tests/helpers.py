@@ -16,19 +16,24 @@ _mp3_cache = {}
 
 
 def copy_site_data(dest, files=DATA_FILES):
-    """Copy the site's data files into the folder `dest`, without any broadcast of TEST_DATE."""
+    """Copy the site's data files into `dest` as the site was just before TEST_DATE: every broadcast dated on or
+    after TEST_DATE is left out, so a test's made-up broadcast of that day is reliably the newest (and real
+    broadcasts added later never break the tests). Dates compare as text (ISO YYYY-MM-DD / YYYY_MM_DD)."""
+    under = TEST_DATE.replace("-", "_")
     for rel in files:
         path = os.path.join(dest, rel)
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(os.path.join(ROOT, rel), encoding="utf-8") as f:
             text = f.read()
         if rel == "js/broadcasts.js":
-            text = re.sub(r'(?m)^\s*ep\("%s",.*\n' % TEST_DATE, "", text)
+            text = re.sub(r'(?m)^\s*ep\("(\d{4}-\d\d-\d\d)",.*\n', lambda m: "" if m.group(1) >= TEST_DATE else m.group(0), text)
         elif rel == "js/broadcasts-en.js":
-            text = re.sub(r'(?m)^\s*"%s": .*\n' % TEST_DATE, "", text)
-        elif rel == "data/podcast-audio.json":            # written as tools/inbox.py writes it
-            folder = "/%s/" % TEST_DATE.replace("-", "_")
-            audio = {k: v for k, v in json.loads(text).items() if folder not in k}
+            text = re.sub(r'(?m)^\s*"(\d{4}-\d\d-\d\d)": .*\n', lambda m: "" if m.group(1) >= TEST_DATE else m.group(0), text)
+        elif rel == "data/podcast-audio.json":            # keys are mp3 paths with a .../YYYY_MM_DD/... segment
+            def before_test_date(key):
+                m = re.search(r"/(\d{4}_\d\d_\d\d)/", key)
+                return not m or m.group(1) < under
+            audio = {k: v for k, v in json.loads(text).items() if before_test_date(k)}
             text = json.dumps(dict(sorted(audio.items(), reverse=True)), ensure_ascii=False, indent=0) + "\n"
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)
