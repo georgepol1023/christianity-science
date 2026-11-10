@@ -732,36 +732,43 @@
   }
   // "Ακούστε ζωντανά": play the live radio stream (SITE_CONFIG.liveStream) inside the page, no new tab. Without
   // JS, or with no stream set, the button stays a plain link to the station's own page (CFG.liveUrl).
+  // liveAudio/liveApply/liveToggle are shared with the "keep playing while browsing" code below: it keeps the
+  // stream alive across pages, and inside the home page's frame the button toggles the top page's stream (liveTop).
   var liveLink = $("#liveLink"), liveLabel = $("#liveLabel");
+  var liveAudio = null, liveApply = null, liveToggle = null, liveTop = null, onLiveChange = null;
   liveLink.href = CFG.liveUrl || "#";
   if (CFG.liveStream) {
     liveLink.removeAttribute("target"); liveLink.removeAttribute("rel");
     liveLink.setAttribute("aria-pressed", "false");
-    var liveAudio = new Audio(), idleText = liveLabel ? liveLabel.textContent : "";
-    var liveState = function (on) {
+    liveAudio = new Audio();
+    var idleText = liveLabel ? liveLabel.textContent : "";
+    liveApply = function (on) {
       liveLink.classList.toggle("is-live-playing", on);
       liveLink.setAttribute("aria-pressed", on ? "true" : "false");
+      if (!on) liveLink.classList.remove("is-loading");
       if (liveLabel) liveLabel.textContent = on ? T.liveStop : idleText;
     };
-    liveAudio.addEventListener("play", function () { audio.pause(); liveState(true); });   // one thing plays at a time
-    liveAudio.addEventListener("playing", function () { liveLink.classList.remove("is-loading"); });
-    liveAudio.addEventListener("pause", function () { liveState(false); });
-    liveAudio.addEventListener("error", function () { liveLink.classList.remove("is-loading"); liveState(false); });
-    audio.addEventListener("play", function () { if (!liveAudio.paused) liveAudio.pause(); });  // a broadcast stops the live stream
-    liveLink.addEventListener("click", function (e) {
-      e.preventDefault();
+    liveToggle = function () {
+      if (liveTop) { liveTop(); return; }              // inside the home's frame: the top page plays it, not a 2nd stream
       if (liveAudio.paused) {
         liveLink.classList.add("is-loading");
-        liveAudio.src = CFG.liveStream;                  // set each time, so a dropped live stream reconnects
-        liveAudio.play().catch(function () {             // autoplay refused or stream unreachable: open the station page
-          liveLink.classList.remove("is-loading"); liveState(false);
+        liveAudio.src = CFG.liveStream;                // set each time, so a dropped live stream reconnects
+        liveAudio.play().catch(function () {           // autoplay refused or stream unreachable: open the station page
+          liveApply(false);
           if (CFG.liveUrl) window.open(CFG.liveUrl, "_blank", "noopener");
         });
       } else {
         liveAudio.pause();
       }
-    });
+    };
+    liveAudio.addEventListener("play", function () { audio.pause(); liveApply(true); if (onLiveChange) onLiveChange(); });   // one thing plays at a time
+    liveAudio.addEventListener("playing", function () { liveLink.classList.remove("is-loading"); });
+    liveAudio.addEventListener("pause", function () { liveApply(false); if (onLiveChange) onLiveChange(); });
+    liveAudio.addEventListener("error", function () { liveApply(false); });
+    audio.addEventListener("play", function () { if (liveAudio && !liveAudio.paused) liveAudio.pause(); });  // a broadcast stops the live stream
+    liveLink.addEventListener("click", function (e) { e.preventDefault(); liveToggle(); });
   }
+  var liveOn = function () { return !!(liveAudio && !liveAudio.paused); };
   var spotify = $("#spotifyLink");                       // shown once SITE_CONFIG.spotifyUrl is filled in
   if (spotify && CFG.spotifyUrl) { spotify.href = CFG.spotifyUrl; spotify.hidden = false; }
 
@@ -878,12 +885,15 @@
     var shell = null, shellScroll = 0, shellHref = "", shell0 = document.title;
     var HOME = location.pathname;                              // this page's address (the frame changes location)
     var here = function (u) { return sameSite(u) && homePath(u.pathname) === homePath(HOME); };
-    var playState = function () { return player.ep ? { id: player.ep.id, part: player.part, playing: player.playing } : null; };
+    var playState = function () {
+      return { ep: player.ep ? { id: player.ep.id, part: player.part, playing: player.playing } : null, live: liveOn() };
+    };
     var tell = function (msg) {
       if (shell && shell.contentWindow) shell.contentWindow.postMessage(msg, location.protocol === "file:" ? "*" : location.origin);
     };
     var oldSync = syncParts;
     syncParts = function () { oldSync(); tell({ cs: "state", state: playState() }); };
+    onLiveChange = function () { tell({ cs: "state", state: playState() }); };   // the live stream started/stopped
     // the address bar cannot be changed for pages opened from a folder; the frame still works
     var setURL = function (push, st, url) { try { history[push ? "pushState" : "replaceState"](st, "", url); } catch (e) {} };
     var pageLink = function (a, e) {                           // a link to another page of this site?
@@ -934,9 +944,10 @@
       else if (m.cs === "load") { if (BY_ID[m.id]) player.load(BY_ID[m.id], m.part, m.start, m.autoplay); }
       else if (m.cs === "toggle") player.toggle();
       else if (m.cs === "skip") player.skip(m.s);
+      else if (m.cs === "liveToggle" && liveToggle) liveToggle();
     });
     document.addEventListener("click", function (e) {
-      if (!player.ep) return;                                  // nothing playing: links work as usual
+      if (!player.ep && !liveOn()) return;                     // nothing playing: links work as usual
       var u = pageLink(e.target.closest("a[href]"), e);
       if (!u) return;
       e.preventDefault();
@@ -956,10 +967,12 @@
     var HOME_IN = null;
     var up = function (msg) { window.parent.postMessage(msg, "*"); };
     var follow = function (s) {
-      player.ep = s ? BY_ID[s.id] || null : null; player.part = s ? s.part : 0; player.playing = !!(s && s.playing);
+      var ep = s && s.ep;
+      player.ep = ep ? BY_ID[ep.id] || null : null; player.part = ep ? ep.part : 0; player.playing = !!(ep && ep.playing);
       $$(".ep.is-active").forEach(function (el) { el.classList.remove("is-active"); });
       if (player.ep) { var row = $("#e-" + player.ep.id); if (row) row.classList.add("is-active"); }
       syncParts();
+      if (liveApply) liveApply(!!(s && s.live));             // mirror the top page's live stream on this page's button
     };
     window.addEventListener("message", function (e) {
       var m = e.data;
@@ -971,6 +984,7 @@
         player.load = function (ep, part, start, autoplay) { up({ cs: "load", id: ep.id, part: part, start: start, autoplay: autoplay }); };
         player.toggle = function () { up({ cs: "toggle" }); };
         player.skip = function (s) { up({ cs: "skip", s: s }); };
+        if (liveAudio) { liveAudio.pause(); liveTop = function () { up({ cs: "liveToggle" }); }; }   // the top page owns the live stream
       }
       if ((m.cs === "shell" || m.cs === "state") && HOME_IN) follow(m.state);
     });

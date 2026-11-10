@@ -802,6 +802,46 @@ test("live radio: «Ακούστε ζωντανά» plays the stream in the page
   await en.close2();
 });
 
+test("live radio: keeps playing while browsing; the home page in the frame drives the one stream", async () => {
+  const stub = (p) => p.evaluateOnNewDocument(() => {   // applies to the page and every frame it opens
+    Object.defineProperty(HTMLMediaElement.prototype, "paused", { configurable: true, get() { return this.__paused !== false; } });
+    HTMLMediaElement.prototype.play = function () {
+      if (this.__paused !== false) { this.__paused = false; this.dispatchEvent(new Event("play")); this.dispatchEvent(new Event("playing")); }
+      return Promise.resolve();
+    };
+    HTMLMediaElement.prototype.pause = function () { if (this.__paused === false) { this.__paused = true; this.dispatchEvent(new Event("pause")); } };
+  });
+  const page = await open("index.html", { before: stub });
+  const shown = (p) => page.waitForFunction((p) => { const f = document.querySelector("#shell");
+    try { return f && f.contentWindow.location.pathname.endsWith(p) && f.contentDocument.readyState === "complete"; } catch (e) { return false; } }, {}, p);
+
+  await page.click("#liveLink");
+  await page.waitForFunction(() => document.querySelector("#liveLink").getAttribute("aria-pressed") === "true");
+  // a top-bar link opens over the home page instead of navigating away, so the stream never stops
+  await page.click('.nav a[href="articles.html"]');
+  await shown("/articles.html");
+  assert.ok(await page.$("#shell"), "the page opened in a frame over the home page");
+  assert.match(page.url(), /\/articles\.html$/);
+  assert.equal(await page.$eval("#liveLink", (a) => a.getAttribute("aria-pressed")), "true", "the live stream is still playing underneath");
+
+  // reach the home page inside the frame (the English one, so it stays in the frame instead of closing it):
+  // its button mirrors the one playing stream, and does not start a second one
+  const frame = async () => (await page.waitForSelector("#shell")).contentFrame();
+  let f = await frame();
+  await f.click("#langSwitch");
+  await shown("/en/articles.html");
+  f = await frame();
+  await f.click('.nav a[href="index.html#archive"]');
+  await shown("/en/index.html");
+  f = await frame();
+  await f.waitForFunction(() => document.querySelector("#liveLink").getAttribute("aria-pressed") === "true");
+  assert.equal(await f.$eval("#liveLabel", (e) => e.textContent), "Stop", "the frame's button shows the stream is playing");
+  // clicking it in the frame stops the top page's stream (not a separate one)
+  await f.click("#liveLink");
+  await page.waitForFunction(() => document.querySelector("#liveLink").getAttribute("aria-pressed") === "false");
+  await page.close2();
+});
+
 test("countdown: shows the next Thursday 22:00 broadcast", async () => {
   const page = await openAt("2026-10-12T10:00:00Z");
   assert.match(await page.$eval("#nextDate", (e) => e.textContent), /Πέμπτη 15 Οκτωβρίου/);
