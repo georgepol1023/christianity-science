@@ -56,7 +56,7 @@
       finished: "Ολοκληρώθηκε η εκπομπή.",
       notFound: function (f) { return "Το αρχείο ήχου δεν βρέθηκε στον διακομιστή: " + f; },
       icsSummary: "Χριστιανισμός & Επιστήμη (ζωντανά)", icsDesc: "Ραδιοφωνική εκπομπή στο ράδιο «Χριστιανισμός»",
-      onAir: "Σε εξέλιξη τώρα",
+      onAir: "Σε εξέλιξη τώρα", liveStop: "Διακοπή",
       units: function (dd) { return [dd === 1 ? "ημέρα" : "ημέρες", "ώρες", "λεπτά", "δευτ."]; },
       column: function (m) { return "Άρθρο " + m; },
       video: "Βίντεο: Χριστιανισμός & Επιστήμη"
@@ -96,7 +96,7 @@
       finished: "Broadcast finished.",
       notFound: function (f) { return "Audio file not found on the server: " + f; },
       icsSummary: "Christianity & Science (live)", icsDesc: "Radio broadcast on Radio Christianity",
-      onAir: "On air now",
+      onAir: "On air now", liveStop: "Stop",
       units: function (dd) { return [dd === 1 ? "day" : "days", "hours", "minutes", "sec"]; },
       column: function () { return "Latest column (in Greek)"; },
       video: "Video: Christianity & Science"
@@ -730,7 +730,38 @@
     }
     return t;
   }
-  $("#liveLink").href = CFG.liveUrl || "#";
+  // "Ακούστε ζωντανά": play the live radio stream (SITE_CONFIG.liveStream) inside the page, no new tab. Without
+  // JS, or with no stream set, the button stays a plain link to the station's own page (CFG.liveUrl).
+  var liveLink = $("#liveLink"), liveLabel = $("#liveLabel");
+  liveLink.href = CFG.liveUrl || "#";
+  if (CFG.liveStream) {
+    liveLink.removeAttribute("target"); liveLink.removeAttribute("rel");
+    liveLink.setAttribute("aria-pressed", "false");
+    var liveAudio = new Audio(), idleText = liveLabel ? liveLabel.textContent : "";
+    var liveState = function (on) {
+      liveLink.classList.toggle("is-live-playing", on);
+      liveLink.setAttribute("aria-pressed", on ? "true" : "false");
+      if (liveLabel) liveLabel.textContent = on ? T.liveStop : idleText;
+    };
+    liveAudio.addEventListener("play", function () { audio.pause(); liveState(true); });   // one thing plays at a time
+    liveAudio.addEventListener("playing", function () { liveLink.classList.remove("is-loading"); });
+    liveAudio.addEventListener("pause", function () { liveState(false); });
+    liveAudio.addEventListener("error", function () { liveLink.classList.remove("is-loading"); liveState(false); });
+    audio.addEventListener("play", function () { if (!liveAudio.paused) liveAudio.pause(); });  // a broadcast stops the live stream
+    liveLink.addEventListener("click", function (e) {
+      e.preventDefault();
+      if (liveAudio.paused) {
+        liveLink.classList.add("is-loading");
+        liveAudio.src = CFG.liveStream;                  // set each time, so a dropped live stream reconnects
+        liveAudio.play().catch(function () {             // autoplay refused or stream unreachable: open the station page
+          liveLink.classList.remove("is-loading"); liveState(false);
+          if (CFG.liveUrl) window.open(CFG.liveUrl, "_blank", "noopener");
+        });
+      } else {
+        liveAudio.pause();
+      }
+    });
+  }
   var spotify = $("#spotifyLink");                       // shown once SITE_CONFIG.spotifyUrl is filled in
   if (spotify && CFG.spotifyUrl) { spotify.href = CFG.spotifyUrl; spotify.hidden = false; }
 

@@ -30,6 +30,9 @@
     // Επόμενη ζωντανή εκπομπή (ώρα Ελλάδας). Αν περάσει, η σελίδα υπολογίζει αυτόματα +14 ημέρες.
     nextBroadcast: "2026-10-15T22:00:00+03:00",
     liveUrl: "https://www.christianity.gr/radiophono/akouste-zontana",
+    // Η απευθείας ροή του ραδιοφώνου «Χριστιανισμός» (104.3 FM): το κουμπί «Ακούστε ζωντανά» την παίζει μέσα
+    // στη σελίδα, χωρίς να ανοίγει άλλη καρτέλα. Κενό = το κουμπί απλώς ανοίγει το liveUrl σε νέα καρτέλα.
+    liveStream: "https://uk1.streamingpulse.com/ssl/ChristianityRadio",
     // Η εκπομπή στο Spotify (σύνδεσμος της σελίδας της εκπομπής). Κενό = το κουμπί «Ακούστε στο Spotify» δεν εμφανίζεται.
     spotifyUrl: "https://open.spotify.com/show/6eyFkp4HBWCa4byp7F0CI1",
     // Το podcast (podcast.xml, tools/podcast.py): εδώ στέλνει το Spotify τον κωδικό επιβεβαίωσης της εκπομπής.

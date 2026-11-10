@@ -181,6 +181,11 @@ svg[viewBox="0 0 24 24"] { width: 22px; height: 22px; fill: none; stroke: curren
 .btn:active { transform: scale(.98); }
 .btn--gold { background: var(--gold); color: #1A1D33; width: 100%; }
 .btn--gold:hover { filter: brightness(1.07); }
+/* «Ακούστε ζωντανά» playing the live stream inline (js/app.js): pulsing waves while it plays, dimmed while it buffers */
+#liveLink.is-loading { opacity: .65; pointer-events: none; }
+#liveLink.is-live-playing svg { animation: livewaves 1.4s ease-in-out infinite; }
+@keyframes livewaves { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { #liveLink.is-live-playing svg { animation: none; } }
 .btn--ghost { background: rgba(255,255,255,.1); color: #fff; }
 .btn[hidden] { display: none; }
 /* under «Ακούστε ζωντανά»: quieter than the gold button; Spotify's logo stays in Spotify's green */

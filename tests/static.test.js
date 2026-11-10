@@ -454,7 +454,7 @@ test("tools/stamp.py: stamps nested pages correctly and is idempotent", () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamp-"));
   fs.mkdirSync(path.join(tmp, "tools")); fs.mkdirSync(path.join(tmp, "css")); fs.mkdirSync(path.join(tmp, "js")); fs.mkdirSync(path.join(tmp, "material"));
   fs.copyFileSync(path.join(ROOT, "tools/stamp.py"), path.join(tmp, "tools/stamp.py"));
-  for (const f of ["css/site.css", "js/app.js", "js/page.js", "js/search.js", "js/related.js", "js/sitesearch.js", "js/search-index.js", "js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
+  for (const f of ["css/site.css", "js/app.js", "js/dragscroll.js", "js/page.js", "js/search.js", "js/related.js", "js/sitesearch.js", "js/search-index.js", "js/broadcasts.js", "js/broadcasts-en.js", "js/tags.js"]) fs.writeFileSync(path.join(tmp, f), "x" + f);
   fs.writeFileSync(path.join(tmp, "a.html"), '<link href="css/site.css"><script src="js/page.js?v=0000000000"></script>');
   fs.writeFileSync(path.join(tmp, "material/b.htm"), '<link href="../css/site.css">');
   const py = process.env.PYTHON || "python";

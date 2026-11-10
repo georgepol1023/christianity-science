@@ -409,6 +409,8 @@ def column_page(online, archive):
                   lambda m: m.group(1) + "\n" + "\n".join(body) + "\n      " + m.group(2), shell)
     if "js/tags.js" not in page:
         page = page.replace('<script src="js/page.js', '<script src="js/tags.js"></script>\n  <script src="js/page.js', 1)
+    if "js/dragscroll.js" not in page:        # the desktop drag bar under the year row (js/page.js uses it)
+        page = page.replace('<script src="js/page.js', '<script src="js/dragscroll.js"></script>\n  <script src="js/page.js', 1)
     open(os.path.join(ROOT, "column.html"), "w", encoding="utf-8", newline="\n").write(page)
 
 

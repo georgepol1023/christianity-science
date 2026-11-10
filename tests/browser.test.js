@@ -758,6 +758,50 @@ test("Spotify: the button under «Ακούστε ζωντανά» links to the s
   await en.close2();
 });
 
+test("live radio: «Ακούστε ζωντανά» plays the stream in the page (no new tab) and toggles", async () => {
+  // stub real playback so the test needs no network or audio device; record what src the live button plays
+  const stub = (p) => p.evaluateOnNewDocument(() => {
+    window.__liveSrc = null;
+    // a fake media element that tracks paused state, so play()/pause() and .paused stay consistent (no real audio)
+    Object.defineProperty(HTMLMediaElement.prototype, "paused", { configurable: true, get() { return this.__paused !== false; } });
+    HTMLMediaElement.prototype.play = function () {
+      if (this.src && this.src.indexOf("streamingpulse") >= 0) window.__liveSrc = this.src;
+      if (this.__paused !== false) { this.__paused = false; this.dispatchEvent(new Event("play")); this.dispatchEvent(new Event("playing")); }
+      return Promise.resolve();
+    };
+    HTMLMediaElement.prototype.pause = function () { if (this.__paused === false) { this.__paused = true; this.dispatchEvent(new Event("pause")); } };
+  });
+  const page = await open("index.html", { before: stub });
+  // inline mode: the link no longer opens a new tab
+  assert.equal(await page.$eval("#liveLink", (a) => a.getAttribute("target")), null, "no target=_blank");
+  assert.equal(await page.$eval("#liveLink", (a) => a.getAttribute("aria-pressed")), "false");
+  assert.equal(await page.$eval("#liveLabel", (e) => e.textContent), "Ακούστε ζωντανά");
+
+  const url0 = page.url();
+  await page.click("#liveLink");
+  await page.waitForFunction(() => document.querySelector("#liveLink").getAttribute("aria-pressed") === "true");
+  assert.equal(page.url(), url0, "clicking did not navigate");
+  assert.equal(await page.$eval("#liveLabel", (e) => e.textContent), "Διακοπή");
+  assert.match(await page.evaluate(() => window.__liveSrc || ""), /\/ssl\/ChristianityRadio$/, "played the configured stream");
+
+  // starting a broadcast stops the live stream (one thing at a time)
+  await page.click("#list .ep .ep__play");
+  await page.waitForFunction(() => document.querySelector("#liveLink").getAttribute("aria-pressed") === "false");
+  assert.equal(await page.$eval("#liveLabel", (e) => e.textContent), "Ακούστε ζωντανά");
+
+  // clicking again starts it, clicking once more stops it
+  await page.click("#liveLink");
+  await page.waitForFunction(() => document.querySelector("#liveLink").getAttribute("aria-pressed") === "true");
+  await page.click("#liveLink");
+  await page.waitForFunction(() => document.querySelector("#liveLink").getAttribute("aria-pressed") === "false");
+  await page.close2();
+
+  const en = await open("en/index.html");
+  assert.equal(await en.$eval("#liveLabel", (e) => e.textContent), "Listen live");
+  assert.equal(await en.$eval("#liveLink", (a) => a.getAttribute("target")), null);
+  await en.close2();
+});
+
 test("countdown: shows the next Thursday 22:00 broadcast", async () => {
   const page = await openAt("2026-10-12T10:00:00Z");
   assert.match(await page.$eval("#nextDate", (e) => e.textContent), /Πέμπτη 15 Οκτωβρίου/);
