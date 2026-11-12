@@ -26,6 +26,18 @@ SITE_EL, SITE_EN = "Χριστιανισμός & Επιστήμη", "Christianit
 MIN_SCORE = 0.12          # below this two items are not considered related
 MIN_SHARED = 2            # …and share this many words, or a word in both titles («σύγχρονος» alone is chance)
 MIN_SCORE_BB = 0.15       # two broadcasts: a higher bar (one shared word like «σύγχρονος» is not enough)
+
+# Links the word-matching makes that are not really related, removed by hand. Keys are item keys: a broadcast id
+# ("2026_10_29"), or a page path ("column/2206.htm", "material/2012_09_20.htm", "faq.html#q-4"). Symmetric: it is
+# hidden on both sides (A no longer lists B, and B no longer lists A).
+NOT_RELATED = {
+    "2026_10_29": {"column/2206.htm", "column/2210.htm"},   # Wellness: the gender-roles articles only share «διαφορετικ-»
+}
+
+# Links the word-matching misses but that are related, added by hand (same item keys as NOT_RELATED, also symmetric).
+ALSO_RELATED = {
+    "2026_11_12": {"column/2372.htm"},   # «Οργισμένη γενιά» ↔ «Ο θυμός και η διαχείρισή του» (οργή / θυμός: the words differ)
+}
 MONTHS_EL = ["Ιαν", "Φεβ", "Μαρ", "Απρ", "Μαΐ", "Ιουν", "Ιουλ", "Αυγ", "Σεπ", "Οκτ", "Νοε", "Δεκ"]
 MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 LABEL = {
@@ -210,6 +222,8 @@ def related_to(i, items, vecs, kinds, per_kind):
     for j, it in enumerate(items):
         if j == i or it["kind"] not in kinds:
             continue
+        if it["key"] in NOT_RELATED.get(items[i]["key"], ()) or items[i]["key"] in NOT_RELATED.get(it["key"], ()):
+            continue                                   # removed by hand (NOT_RELATED)
         both_b = items[i]["kind"] == "B" and it["kind"] == "B"
         if both_b and not (it["tags"] & items[i]["tags"]):
             continue                                   # two broadcasts must share a topic (js/broadcasts.js)
@@ -238,6 +252,13 @@ def related_to(i, items, vecs, kinds, per_kind):
                 break
         if picks:
             out[k] = picks
+    forced = set(ALSO_RELATED.get(items[i]["key"], ())) | {a for a, bs in ALSO_RELATED.items() if items[i]["key"] in bs}
+    for pkey in forced:                                # links added by hand (ALSO_RELATED), pinned first in their group
+        j = next((x for x, it in enumerate(items) if it["key"] == pkey), None)
+        if j is None or items[j]["kind"] not in kinds:
+            continue
+        lst = [j] + [x for x in out.get(items[j]["kind"], []) if x != j]
+        out[items[j]["kind"]] = lst[:per_kind]
     return out
 
 
