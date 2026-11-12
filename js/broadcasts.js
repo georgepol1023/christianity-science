@@ -59,6 +59,7 @@
 
   window.BROADCASTS = [
     season(20, "2026 – 2027", [
+      ep("2026-11-12", "Οργισμένη γενιά", "Orgismeni_genia", { tags: "society" }),
       ep("2026-10-29", "Wellness και διαφορετική πνευματικότητα", "Wellness_kai_diaforetiki_pneymatikotita", { tags: "mind" }),
       ep("2026-10-15", "Παγκόσμια ημέρα ψυχικής υγείας", "Pagkosmia_imera_psyxikis_ygeias", { tags: "mind" }),
       ep("2026-10-01", "Απαντήσεις σε αθεϊστικά επιχειρήματα", "Atheistika_Epixeirimata", { cs: true, tags: "apologetics" }),
